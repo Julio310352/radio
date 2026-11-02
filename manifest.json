@@ -1,0 +1,1 @@
+{"name":"Mi Radio","short_name":"Mi Radio","start_url":"./","display":"standalone","background_color":"#1b140f","theme_color":"#1b140f","icons":[{"src":"icono.png","sizes":"180x180","type":"image/png"},{"src":"icono-512.png","sizes":"512x512","type":"image/png"}]}

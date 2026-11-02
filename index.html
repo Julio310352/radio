@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Radio</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Radio">
+<meta name="theme-color" content="#1b140f">
+<link rel="apple-touch-icon" href="icono.png">
+<link rel="icon" href="icono.png">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* Aspecto: radio antigua de madera con dial ámbar iluminado. Lista arriba, reproductor fijo abajo. */
+:root{
+  --bg:#1b140f;      /* madera oscura */
+  --panel:#261d16;   /* madera algo más clara */
+  --line:#3b2e23;
+  --text:#f3e7d3;    /* marfil de los botones */
+  --muted:#a8937a;
+  --dial:#f2b34a;    /* luz del dial */
+  --needle:#e0482f;  /* aguja */
+  --glow:#ff8a2a;    /* filamento de las lámparas */
+  --lcd:#ffb347;     /* letras de la pantalla RDS */
+  --lcd-bg:#170f08;
+  --brass:#c9a46a;   /* latón de los mandos */
+  --f-lcd:"VT323","Courier New",monospace;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-body);-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Cabecera con dial */
+header.cab{padding-top:calc(env(safe-area-inset-top,0px) + 8px);padding-bottom:16px;border-bottom:3px solid #0e0a07;
+  background:repeating-linear-gradient(97deg,rgba(0,0,0,.10) 0 2px,transparent 2px 11px),linear-gradient(180deg,#3d2817,#28190e)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tabsbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;border-bottom:1px solid var(--line)}
+
+/* Lámparas */
+.tubes{display:flex;justify-content:center;align-items:flex-end;gap:16px;height:70px;margin:8px 0 6px}
+.tube{position:relative;width:22px;height:50px;border-radius:11px 11px 3px 3px;overflow:hidden;
+  background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.24) 28%,rgba(255,255,255,.04) 55%,rgba(255,255,255,.14));
+  border:1px solid rgba(255,235,200,.28);box-shadow:0 0 calc(var(--lv,0) * 22px) rgba(255,138,42,calc(var(--lv,0) * .55))}
+.tube.big{width:30px;height:66px;border-radius:15px 15px 3px 3px}
+.tube::before{content:"";position:absolute;left:50%;bottom:9px;width:12px;height:58%;transform:translateX(-50%);border-radius:6px;
+  background:radial-gradient(ellipse at 50% 75%,var(--glow) 0%,rgba(255,138,42,.55) 35%,rgba(255,138,42,0) 72%);
+  opacity:var(--lv,.12);transform:translateX(-50%) scaleY(var(--sy,1));transform-origin:50% 100%;transition:opacity .1s linear,transform .1s linear}
+.tube::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:#20160e;border-top:1px solid rgba(255,235,200,.2)}
+.tube i{position:absolute;left:30%;right:30%;top:22%;bottom:12px;border:1px solid rgba(200,200,200,.18);border-radius:2px}
+.cab.tuning .tube::before{opacity:.7;animation:pulse .5s infinite alternate}
+@keyframes pulse{from{opacity:.45}to{opacity:.9}}
+
+/* Pantalla RDS y mandos */
+.face{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:12px}
+.face > *{min-width:0}
+@media (min-width:700px){.face{grid-template-columns:minmax(0,1fr) 320px;align-items:center}}
+.lcd{min-width:0;background:var(--lcd-bg);border-radius:8px;padding:8px 14px 10px;border:2px solid #0b0805;
+  box-shadow:inset 0 0 22px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.08);font-family:var(--f-lcd);color:var(--lcd);text-shadow:0 0 7px rgba(255,179,71,.55)}
+.lcd-top{display:flex;gap:12px;font-size:17px;letter-spacing:.06em}
+.ind{opacity:.16;transition:opacity .3s}
+.ind.on{opacity:1}
+.ind.recl.on{color:var(--needle);text-shadow:0 0 7px var(--needle)}
+.lcd-main{display:flex;align-items:baseline;gap:8px}
+.freq{font-size:60px;line-height:.95;font-variant-numeric:tabular-nums}
+.mhz{font-size:22px}
+.ps{font-size:38px;line-height:1.05;letter-spacing:.14em;white-space:pre;overflow:hidden}
+.rt{font-size:19px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.controls{display:flex;align-items:center;justify-content:center;gap:20px}
+.seek{width:58px;height:58px;border-radius:50%;border:1px solid #0b0805;color:#2a1b10;font-size:15px;font-weight:700;
+  background:radial-gradient(circle at 35% 30%,#f0dcb2,var(--brass) 55%,#6e5431);box-shadow:0 4px 10px rgba(0,0,0,.55)}
+.seek:active{transform:translateY(1px);box-shadow:0 2px 5px rgba(0,0,0,.55)}
+.knob{position:relative;flex:none;width:128px;height:128px;border-radius:50%;touch-action:none;cursor:grab;
+  box-shadow:0 8px 18px rgba(0,0,0,.65),0 0 0 6px rgba(0,0,0,.25)}
+.knob:active{cursor:grabbing}
+.knob-rot{position:absolute;inset:0;border-radius:50%;transform:rotate(var(--rot,0deg));display:grid;place-items:center;
+  background:repeating-conic-gradient(from 0deg,rgba(0,0,0,.38) 0 4deg,transparent 4deg 9deg),radial-gradient(circle at 35% 30%,#7d5c3a,#3a2717 72%)}
+.knob-cap{position:relative;width:68%;height:68%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3e1bb,var(--brass) 55%,#6e5431);box-shadow:inset 0 -3px 6px rgba(0,0,0,.35)}
+.knob-cap::after{content:"";position:absolute;top:7px;left:50%;width:5px;height:18px;margin-left:-2.5px;border-radius:3px;background:#3a2717}
+.memrow{display:flex;gap:8px;margin-top:12px}
+.memsel{flex:1;min-width:0;background:var(--lcd-bg);color:var(--lcd);border:2px solid #0b0805;border-radius:8px;padding:6px 10px;font-family:var(--f-lcd);font-size:20px}
+.mbtn{flex:none;min-width:58px;border:1px solid #0b0805;border-radius:8px;padding:0 10px;font-family:var(--f-display);font-weight:700;font-size:16px;letter-spacing:.08em;color:#2a1b10;
+  background:linear-gradient(180deg,#f0dcb2,var(--brass) 60%,#8a6a3e);box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.mbtn:active{transform:translateY(1px)}
+.mbtn[aria-busy="true"]{opacity:.6}
+.volrow{display:flex;align-items:center;gap:10px;margin-top:12px}
+.vlab{font-family:var(--f-display);font-weight:700;letter-spacing:.12em;color:var(--brass);font-size:14px}
+input[type=range]{accent-color:var(--dial)}
+#vol{flex:1;min-width:0;height:32px}
+.vhint{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.4}
+.eqpanel{margin-top:12px;background:var(--lcd-bg);border:2px solid #0b0805;border-radius:8px;padding:10px 12px;box-shadow:inset 0 0 18px rgba(0,0,0,.7)}
+.eqsw{display:flex;align-items:center;gap:10px;font-family:var(--f-lcd);font-size:21px;color:var(--lcd)}
+.eqsw input{width:22px;height:22px;accent-color:var(--dial)}
+.eqbands{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:8px;justify-items:center;transition:opacity .3s}
+.eqpanel.off .eqbands{opacity:.35}
+.band{display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--f-lcd);color:var(--lcd);font-size:17px;font-variant-numeric:tabular-nums}
+.band input{writing-mode:vertical-lr;direction:rtl;height:110px;width:30px;margin:0}
+.eqpre{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.eqpre button{background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted)}
+.eqpre button[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
+.knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin-top:6px}
+.dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.04em;text-transform:uppercase}
+h1 span{color:var(--dial)}
+.qbtn{background:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--dial)}
+.qbtn.eco{color:var(--muted)}
+.dial{position:relative;height:50px;margin-top:4px;box-shadow:inset 0 0 14px rgba(0,0,0,.6);border-radius:6px;background:
+  linear-gradient(180deg,rgba(242,179,74,.20),rgba(242,179,74,.06));
+  border:1px solid rgba(242,179,74,.35);overflow:hidden}
+.dial::before{content:"";position:absolute;inset:auto 6px 6px 6px;height:12px;
+  background:repeating-linear-gradient(90deg,rgba(242,179,74,.75) 0 1px,transparent 1px 10px);opacity:.8}
+.dial .n{position:absolute;top:4px;transform:translateX(-50%);font-family:var(--f-display);font-size:13px;font-weight:600;color:var(--dial)}
+.needle{position:absolute;top:2px;bottom:2px;width:2px;background:var(--needle);box-shadow:0 0 8px var(--needle);left:var(--pos,50%);transition:left .9s cubic-bezier(.3,.7,.2,1)}
+@media (prefers-reduced-motion:reduce){.needle{transition:none}}
+
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tab{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+.tab[aria-selected="true"]{color:var(--bg);background:var(--dial);border-color:var(--dial)}
+
+/* Controles de búsqueda */
+.tools{display:flex;flex-direction:column;gap:8px;padding-block:12px}
+.field{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:16px}
+.field::placeholder{color:var(--muted)}
+.flabel{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dial);margin-bottom:-4px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
+:focus-visible{outline:2px solid var(--dial);outline-offset:2px}
+
+/* Listas */
+h2{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--dial);margin:18px 0 6px}
+ul.list{list-style:none;margin:0;padding:0}
+.st{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line)}
+.st-main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;background:none;border:0;padding:10px 0;text-align:left}
+.logo{flex:none;width:44px;height:44px;border-radius:8px;background:var(--panel);object-fit:contain;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;color:var(--dial);font-size:16px;overflow:hidden}
+img.logo{background:#f3e7d3}
+.info{min-width:0}
+.name{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.st.on .name{color:var(--dial)}
+.st.on .name::before{content:"● ";color:var(--needle)}
+.star{flex:none;width:44px;height:44px;background:none;border:0;font-size:22px;color:var(--muted)}
+.star[aria-pressed="true"]{color:var(--dial)}
+.msg{color:var(--muted);padding:24px 0;text-align:center;line-height:1.5}
+.btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin-top:10px}
+.more{display:block;width:100%;margin:12px 0}
+.note{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 8px;max-width:65ch}
+.links{display:grid;gap:8px;margin-bottom:12px}
+.lnk{display:block;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--text);text-decoration:none}
+.lnk strong{display:block;font-size:16px;color:var(--dial)}
+.lnk strong::after{content:" ↗";color:var(--muted);font-weight:400}
+.lnk span{display:block;font-size:13px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+/* Reproductor */
+.player{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--panel);border-top:1px solid var(--line);
+  padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.player .row{display:flex;align-items:center;gap:12px}
+.player .info{flex:1}
+.status{font-size:13px;color:var(--muted);margin-top:2px}
+.status.live{color:var(--dial)}
+.status.err{color:var(--needle)}
+.pbtn{flex:none;width:56px;height:56px;border-radius:50%;border:0;background:var(--dial);color:var(--bg);display:grid;place-items:center}
+.pbtn:disabled{opacity:.4}
+.pbtn svg{width:24px;height:24px;fill:currentColor}
+.timer{flex:none;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--muted);min-width:58px}
+.timer.act{color:var(--dial);border-color:var(--dial)}
+.player .row2{display:flex;align-items:center;gap:8px;margin-top:8px}
+.rec{flex:none;display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--muted)}
+.rec .dot{width:10px;height:10px;border-radius:50%;background:var(--needle)}
+.rec.act{border-color:var(--needle);color:var(--text)}
+.rec.act .dot{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.rec.act .dot{animation:none}}
+.recinfo{flex:1;min-width:0;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gr-info{flex:1;min-width:0;padding:10px 0}
+.rbtns{flex:none;display:flex}
+.mini{min-width:44px;height:44px;background:none;border:0;color:var(--muted);font-size:14px;padding:0 6px}
+.mini.play{color:var(--dial);font-size:18px}
+.mini.warn{color:var(--needle);font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="cab" id="cab">
+  <div class="wrap">
+    <div class="top">
+      <h1>Mi <span>Radio</span></h1>
+      <button class="qbtn" id="qBtn" type="button">Calidad alta</button>
+    </div>
+    <div class="tubes" aria-hidden="true">
+      <span class="tube"><i></i></span><span class="tube big"><i></i></span><span class="tube"><i></i></span><span class="tube big"><i></i></span><span class="tube"><i></i></span>
+    </div>
+    <div class="dial" aria-hidden="true">
+      <span class="n" style="left:6%">88</span><span class="n" style="left:23.6%">92</span>
+      <span class="n" style="left:41.2%">96</span><span class="n" style="left:58.8%">100</span>
+      <span class="n" style="left:76.4%">104</span><span class="n" style="left:94%">108</span>
+      <div id="marks"></div>
+      <div class="needle" id="needle"></div>
+    </div>
+    <div class="face">
+      <div class="lcd" aria-live="polite">
+        <div class="lcd-top"><span class="ind on">FM</span><span class="ind" id="iRDS">RDS</span><span class="ind" id="iST">ST</span><span class="ind recl" id="iREC">REC</span></div>
+        <div class="lcd-main"><span class="freq" id="lFreq">--.-</span><span class="mhz" id="lMhz">MHz</span></div>
+        <div class="ps" id="lPS">MI RADIO</div>
+        <div class="rt" id="lRT">Gira la rueda para buscar emisoras</div>
+      </div>
+      <div>
+        <div class="controls">
+          <button class="seek" id="sPrev" type="button" aria-label="Emisora anterior">◀◀</button>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Rueda de sintonía"><div class="knob-rot" id="knobRot"><div class="knob-cap"></div></div></div>
+          <button class="seek" id="sNext" type="button" aria-label="Emisora siguiente">▶▶</button>
+        </div>
+        <span class="knob-label">Sintonía</span>
+        <div class="memrow">
+          <select class="memsel" id="mem" aria-label="Memorias"><option value="">Memorias</option></select>
+          <button class="mbtn" id="mSave" type="button" aria-label="Guardar la emisora en memoria">MEM</button>
+          <button class="mbtn" id="mAuto" type="button" aria-label="Búsqueda automática">AUTO</button>
+        </div>
+        <div class="volrow">
+          <span class="vlab">VOL</span>
+          <input type="range" id="vol" min="0" max="1" step="0.01" value="1" aria-label="Volumen">
+          <button class="mbtn" id="eqBtn" type="button" aria-expanded="false" aria-controls="eqPanel">EQ</button>
+        </div>
+        <p class="vhint" id="vHint" hidden>En el iPhone el volumen se cambia con los botones laterales, salvo con el ecualizador encendido.</p>
+        <div class="eqpanel off" id="eqPanel" hidden>
+          <label class="eqsw"><input type="checkbox" id="eqOn"> Ecualizador</label>
+          <div class="eqbands" id="eqBands"></div>
+          <div class="eqpre" id="eqPre"></div>
+          <p class="vhint">Si una emisora no lo permite, suena igual pero sin ecualizador.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<nav class="tabsbar">
+  <div class="wrap tabs" role="tablist">
+    <button class="tab" role="tab" id="tEs" aria-selected="true" data-v="vEs">España</button>
+    <button class="tab" role="tab" id="tMu" aria-selected="false" data-v="vMu">Mundo</button>
+    <button class="tab" role="tab" id="tFa" aria-selected="false" data-v="vFa">Favoritas</button>
+    <button class="tab" role="tab" id="tGr" aria-selected="false" data-v="vGr">Grabadas</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <!-- ESPAÑA -->
+  <section id="vEs">
+    <div class="tools">
+      <input class="field" id="qEs" type="search" placeholder="Buscar emisora, ciudad o provincia (ej. Alicante)" autocomplete="off">
+    </div>
+    <div id="esOut"><p class="msg">Cargando emisoras de España…</p></div>
+  </section>
+
+  <!-- MUNDO -->
+  <section id="vMu" hidden>
+    <div class="tools">
+      <label class="flabel" for="pais">País</label>
+      <select class="field" id="pais"><option value="">🌍 Todos los países</option></select>
+      <input class="field" id="qMu" type="search" placeholder="Buscar emisora por nombre" autocomplete="off">
+      <div class="chips" id="tags"></div>
+    </div>
+    <div id="muOut"><p class="msg">Cargando…</p></div>
+  </section>
+
+  <!-- FAVORITAS -->
+  <section id="vFa" hidden>
+    <div id="faOut"></div>
+  </section>
+
+  <!-- GRABACIONES -->
+  <section id="vGr" hidden>
+    <div id="grOut"></div>
+  </section>
+</main>
+
+<div class="player">
+  <div class="wrap row">
+    <div class="logo" id="pLogo">♪</div>
+    <div class="info">
+      <div class="name" id="pName">Elige una emisora</div>
+      <div class="status" id="pStatus">Toca cualquier emisora para escucharla</div>
+    </div>
+    <button class="pbtn" id="pBtn" type="button" aria-label="Reproducir" disabled>
+      <svg viewBox="0 0 24 24" id="pIcon"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+  </div>
+  <div class="wrap row2">
+    <button class="timer" id="pTimer" type="button" aria-label="Temporizador de apagado">Apagar</button>
+    <button class="rec" id="pRec" type="button"><span class="dot"></span><span id="pRecTxt">Grabar</span></button>
+    <div class="recinfo" id="pRecInfo"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- Servicio de emisoras (Radio Browser, gratuito y abierto) ---------- */
+const SERVERS = ['https://de1.api.radio-browser.info','https://de2.api.radio-browser.info','https://fi1.api.radio-browser.info'];
+let srv = 0;
+async function api(path){
+  for (let i = 0; i < SERVERS.length; i++){
+    const s = SERVERS[(srv + i) % SERVERS.length];
+    try{
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 9000);
+      const r = await fetch(s + path, {signal: ctl.signal});
+      clearTimeout(t);
+      if (!r.ok) throw new Error(r.status);
+      srv = (srv + i) % SERVERS.length;
+      return await r.json();
+    }catch(e){ /* probamos el siguiente servidor */ }
+  }
+  throw new Error('sin conexión');
+}
+const HTTPS = location.protocol === 'https:';
+const streamUrl = s => s.url_resolved || s.url;
+const usable = s => { const u = streamUrl(s); return !!u && (!HTTPS || u.startsWith('https:')); };
+/* Calidad: muchas emisoras aparecen varias veces con distinta calidad.
+   Nos quedamos con la mejor (o con la más ligera en modo ahorro). */
+let calidad = 'alta';
+try { calidad = localStorage.getItem('radio.calidad') || 'alta'; } catch(e){}
+const nk = s => s.name.trim().toLowerCase().replace(/\s+/g,' ');
+function score(s){
+  const b = s.bitrate || 96, c = (s.codec || '').toUpperCase();
+  if (c.includes('AAC')) return b * 1.5;              // AAC suena mejor que MP3 con los mismos kbps
+  if (c.includes('OGG') || c.includes('OPUS')) return b * 1.3;
+  return b;
+}
+const better = (a, b) => calidad === 'alta' ? score(b) > score(a) : (score(b) < score(a) && (b.bitrate || 96) >= 48);
+function dedupe(arr){
+  const map = new Map();
+  for (const s of arr){
+    if (!usable(s)) continue;
+    const k = nk(s), a = map.get(k);
+    if (!a || better(a, s)) map.set(k, s);
+  }
+  return [...map.values()];
+}
+let regionES;
+try { regionES = new Intl.DisplayNames(['es'], {type:'region'}); } catch(e){}
+const pais = cc => { try { return cc ? (regionES ? regionES.of(cc) : cc) : ''; } catch(e){ return cc; } };
+const $ = id => document.getElementById(id);
+
+/* ---------- Emisoras destacadas de España ---------- */
+const ESPANA = [
+  {t:'RNE · Radio Nacional de España', nat:true, items:[
+    ['Radio Nacional', [/^(rne ?1?|radio nacional( de espa[ñn]a)?)$/i, /^rne radio nacional|^radio nacional/i, /radio nacional|rne ?1\b/i], /radio ?5|noticias|cl[aá]sica|radio ?3|exterior/i],
+    ['Radio Clásica', /cl[aá]sica/i],
+    ['Radio 3', /(radio|rne) ?3\b/i],
+    ['Radio 5', [/^(rne )?radio ?5( todo noticias)?$/i, /(radio|rne) ?5\b/i]],
+    ['Ràdio 4', /(r[aà]dio|rne) ?4\b/i]]},
+  {t:'Generalistas y deportes', nat:true, items:[
+    ['Cadena SER', [/^cadena ser$/i, /^cadena ser (espa[ñn]a|nacional)/i, /cadena ser\b|^ser\b/i]],
+    ['COPE', [/^(cadena )?cope$/i, /^(cadena )?cope (espa[ñn]a|nacional|madrid)/i, /^(cadena )?cope\b/i]],
+    ['Onda Cero', [/^onda cero$/i, /^onda cero (espa[ñn]a|nacional)/i, /onda cero/i]],
+    ['esRadio', /^es ?radio\b/i],
+    ['Radio Marca', /radio marca/i]]},
+  {t:'Musicales', nat:true, items:[
+    ['LOS40', /^los ?40$|^los ?40 (españa|spain|principales)/i],
+    ['LOS40 Classic', /los ?40 classic/i],
+    ['Cadena 100', /cadena ?100/i],
+    ['Cadena Dial', /cadena dial/i],
+    ['Europa FM', /europa ?fm/i],
+    ['Rock FM', /rock ?fm/i],
+    ['Kiss FM', /kiss ?fm/i],
+    ['Melodía FM', /melod[ií]a ?fm/i],
+    ['Hit FM', /hit ?fm/i]]},
+  {t:'Autonómicas', items:[
+    ['À Punt Ràdio', /punt/i],
+    ['Canal Sur Radio', /canal sur/i],
+    ['Catalunya Ràdio', /catalunya r[aà]dio/i],
+    ['RAC1', /rac ?1\b/i],
+    ['Radio Euskadi', /radio euskadi/i],
+    ['Radio Galega', /galega/i],
+    ['Onda Madrid', /onda madrid/i],
+    ['Aragón Radio', /arag[oó]n radio/i]]}
+];
+
+/* ---------- Favoritas (se guardan en el propio iPhone) ---------- */
+function loadFavs(){ try { return JSON.parse(localStorage.getItem('radio.favs')) || []; } catch(e){ return []; } }
+function saveFavs(){ try { localStorage.setItem('radio.favs', JSON.stringify(favs)); } catch(e){} }
+let favs = loadFavs();
+const isFav = id => favs.some(f => f.stationuuid === id);
+function slim(s){
+  const {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label} = s;
+  return {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label};
+}
+function toggleFav(s){
+  if (isFav(s.stationuuid)) favs = favs.filter(f => f.stationuuid !== s.stationuuid);
+  else favs.push(slim(s));
+  saveFavs();
+  document.querySelectorAll('.star').forEach(b => b.setAttribute('aria-pressed', isFav(b.dataset.id)));
+  if (!$('vFa').hidden) renderFavs();
+}
+
+/* ---------- Dibujar una fila de emisora ---------- */
+function initials(name){ return name.replace(/[^\p{L}\p{N} ]/gu,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || '♪'; }
+function logoEl(s){
+  const fallback = () => { const d = document.createElement('div'); d.className='logo'; d.textContent = initials(s._label || s.name); return d; };
+  if (!s.favicon) return fallback();
+  const img = document.createElement('img');
+  img.className = 'logo'; img.alt = ''; img.loading = 'lazy'; img.referrerPolicy = 'no-referrer';
+  img.src = s.favicon;
+  img.onerror = () => { const f = fallback(); if (img.id) f.id = img.id; img.replaceWith(f); };   // conserva el nombre (id)
+  return img;
+}
+function subText(s, mode){
+  const where = mode === 'es' ? (s.state || 'España') : [s.state, pais(s.countrycode)].filter(Boolean).join(', ');
+  const q = [s.codec, s.bitrate ? s.bitrate + ' kbps' : ''].filter(Boolean).join(' ');
+  const extra = s._label && s._label.toLowerCase() !== s.name.toLowerCase() ? s.name : '';
+  return [extra, where, q].filter(Boolean).join(' · ');
+}
+function row(s, mode){
+  const li = document.createElement('li');
+  li.className = 'st' + (cur && cur.stationuuid === s.stationuuid ? ' on' : '');
+  li.dataset.id = s.stationuuid;
+  const main = document.createElement('button');
+  main.type = 'button'; main.className = 'st-main';
+  const info = document.createElement('div'); info.className = 'info';
+  const n = document.createElement('div'); n.className = 'name'; n.textContent = s._label || s.name.trim();
+  const sub = document.createElement('div'); sub.className = 'sub'; sub.textContent = subText(s, mode);
+  info.append(n, sub);
+  main.append(logoEl(s), info);
+  main.onclick = () => play(s);
+  const star = document.createElement('button');
+  star.type = 'button'; star.className = 'star'; star.dataset.id = s.stationuuid;
+  star.setAttribute('aria-label', 'Favorita'); star.setAttribute('aria-pressed', isFav(s.stationuuid));
+  star.textContent = '★';
+  star.onclick = () => toggleFav(s);
+  li.append(main, star);
+  return li;
+}
+function listEl(arr, mode){ const ul = document.createElement('ul'); ul.className = 'list'; arr.forEach(s => ul.append(row(s, mode))); return ul; }
+function heading(t){ const h = document.createElement('h2'); h.textContent = t; return h; }
+function message(box, text, retry){
+  box.replaceChildren();
+  const p = document.createElement('p'); p.className = 'msg'; p.textContent = text;
+  if (retry){ const b = document.createElement('button'); b.className='btn'; b.type='button'; b.textContent='Reintentar'; b.onclick = retry; p.append(document.createElement('br'), b); }
+  box.append(p);
+}
+function pagedList(box, arr, mode, step = 60){
+  let shown = 0;
+  const ul = document.createElement('ul'); ul.className = 'list';
+  const more = document.createElement('button'); more.type='button'; more.className='btn more';
+  const add = () => {
+    arr.slice(shown, shown + step).forEach(s => ul.append(row(s, mode)));
+    shown += step;
+    more.hidden = shown >= arr.length;
+    more.textContent = `Ver más (${arr.length - shown} restantes)`;
+  };
+  more.onclick = add;
+  box.append(ul, more);
+  add();
+}
+
+/* ---------- Pestaña España ---------- */
+let esAll = [], curated = [], usedIds = new Set();
+// Para las cadenas nacionales evitamos las desconexiones locales (SER Granada, COPE Sevilla...)
+const PLACES = /\b(a ?coru[ñn]a|[aá]lava|albacete|alcoy|alcoi|algeciras|alicante|almer[ií]a|andaluc[ií]a|arag[oó]n|asturias|[aá]vila|badajoz|baleares|barcelona|benidorm|bilbao|bizkaia|burgos|c[aá]ceres|c[aá]diz|canarias|cantabria|cartagena|castell[oó]n|castilla|catalu[ñn]a|ceuta|ciudad real|c[oó]rdoba|cuenca|denia|donostia|elche|euskadi|extremadura|galicia|gand[ií]a|gij[oó]n|gipuzkoa|girona|gerona|granada|guadalajara|huelva|huesca|ibiza|ja[eé]n|jerez|las palmas|le[oó]n|lleida|l[eé]rida|logro[ñn]o|lugo|m[aá]laga|mallorca|marbella|melilla|menorca|murcia|navarra|ourense|oviedo|palencia|pamplona|pontevedra|rioja|salamanca|san sebasti[aá]n|santander|segovia|sevilla|soria|tarragona|tenerife|teruel|toledo|torrevieja|valencia|valladolid|vigo|vitoria|vizcaya|zamora|zaragoza)\b/i;
+function localidad(x){
+  if (PLACES.test(x.name)) return 2;                       // ciudad en el nombre: desconexión local
+  if (x.state && !/^(madrid|espa[ñn]a|spain|national|nacional)$/i.test(x.state.trim())) return 1;
+  return 0;
+}
+// Busca entre todas las que encajan con los patrones y elige la mejor:
+// primero la menos "local", luego el patrón más exacto, luego la más votada.
+function matchStation(list, re, not, nat){
+  const res = Array.isArray(re) ? re : [re];
+  let best = null, bestScore = Infinity;
+  list.forEach((x, pos) => {
+    if (usedIds.has(nk(x)) || (not && not.test(x.name))) return;
+    const ri = res.findIndex(r => r.test(x.name.trim()));
+    if (ri < 0) return;
+    const sc = (nat ? localidad(x) * 100 : 0) + ri * 10 + pos / 10000;
+    if (sc < bestScore){ bestScore = sc; best = x; }
+  });
+  return best;
+}
+// Misma emisora (mismo nombre y misma ubicación) en distintas calidades
+const sameStation = f => x => nk(x) === nk(f) && (x.state || '') === (f.state || '');
+async function loadEspana(){
+  const box = $('esOut');
+  message(box, 'Cargando emisoras de España…');
+  try{
+    const all = await api('/json/stations/search?countrycode=ES&hidebroken=true&order=votes&reverse=true&limit=800');
+    esAll = all.filter(usable);
+    usedIds = new Set();
+    curated = [];
+    const missing = [];
+    for (const g of ESPANA){
+      const list = [];
+      for (const [label, re, not] of g.items){
+        const f = matchStation(esAll, re, not, g.nat);
+        if (f){ const s = dedupe(esAll.filter(sameStation(f)))[0] || f; usedIds.add(nk(f)); list.push({...s, _label: label}); }
+        else { const m = {_label: label, _re: re, _not: not, _nat: g.nat, _missing: true}; list.push(m); missing.push(m); }
+      }
+      curated.push({t: g.t, list});
+    }
+    // Las que no aparecen entre las más votadas se buscan por su nombre
+    await Promise.all(missing.map(async m => {
+      try{
+        const r = (await api('/json/stations/search?countrycode=ES&hidebroken=true&order=votes&reverse=true&limit=10&name=' + encodeURIComponent(m._label))).filter(usable);
+        const f = matchStation(r, m._re, m._not, m._nat);
+        if (f){ const s = dedupe(r.filter(sameStation(f)))[0] || f; usedIds.add(nk(f)); Object.assign(m, s, {_missing: false}); }
+      }catch(e){}
+    }));
+    renderEspana();
+  }catch(e){
+    message(box, 'No hay conexión con el servicio de emisoras. Comprueba que tienes Internet.', loadEspana);
+  }
+}
+function renderEspana(){
+  const box = $('esOut');
+  const q = $('qEs').value.trim().toLowerCase();
+  box.replaceChildren();
+  if (q){ searchEspana(q); return; }
+  curated.forEach(g => {
+    const ok = g.list.filter(s => !s._missing);
+    if (!ok.length) return;
+    box.append(heading(g.t), listEl(ok, 'es'));
+  });
+  const rest = dedupe(esAll.filter(s => !usedIds.has(nk(s))));
+  box.append(heading('Más emisoras de España'));
+  pagedList(box, rest, 'es');
+  setBand('vEs', [...curated.flatMap(g => g.list.filter(s => !s._missing)), ...rest]);
+}
+let esTimer, esSeq = 0;
+async function searchEspana(q){
+  const box = $('esOut');
+  const seq = ++esSeq;
+  const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const nq = norm(q);
+  const local = esAll.filter(s => norm(s.name).includes(nq) || norm(s.state).includes(nq) || norm(s.tags).includes(nq));
+  let remote = [];
+  try { remote = await api('/json/stations/search?countrycode=ES&hidebroken=true&order=votes&reverse=true&limit=100&name=' + encodeURIComponent(q)); } catch(e){}
+  if (seq !== esSeq) return;
+  const res = dedupe([...local, ...remote]);
+  setBand('vEs', res);
+  box.replaceChildren();
+  if (!res.length){ message(box, `No he encontrado emisoras con «${q}».`); return; }
+  box.append(heading(`${res.length} resultados`));
+  pagedList(box, res, 'es');
+}
+$('qEs').addEventListener('input', () => { clearTimeout(esTimer); esTimer = setTimeout(renderEspana, 400); });
+
+/* ---------- Pestaña Mundo ---------- */
+const TAGS = [['','Todas'],['#oc','Onda corta'],['#atc','Aviación'],['news','Noticias'],['pop','Pop'],['rock','Rock'],['classical','Clásica'],['jazz','Jazz'],
+  ['80s','Años 80'],['oldies','Oldies'],['flamenco','Flamenco'],['latin','Latina'],['dance','Dance'],['country','Country'],['blues','Blues']];
+let tag = '', muLoaded = false, muSeq = 0, muTimer;
+TAGS.forEach(([v, l]) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip'; b.textContent = l; b.setAttribute('aria-pressed', v === tag);
+  b.onclick = () => { tag = v; document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b)); loadMundo(); };
+  $('tags').append(b);
+});
+// Bandera a partir del código del país (ES → 🇪🇸): cada letra se convierte en su "letra-bandera"
+const bandera = cc => /^[A-Z]{2}$/i.test(cc) ? String.fromCodePoint(...[...cc.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) : '';
+const HABITUALES = ['ES', 'PT', 'FR', 'IT', 'DE', 'GB', 'IE', 'AD', 'MA', 'US', 'MX', 'AR', 'CO', 'CU', 'VE', 'CL', 'PE', 'UY', 'BR'];
+function opcion(cc, extra){ const o = document.createElement('option'); o.value = cc; o.textContent = `${bandera(cc)} ${pais(cc)}${extra || ''}`; return o; }
+// Los habituales aparecen enseguida, aunque el servicio tarde en responder
+const grupoHab = document.createElement('optgroup'); grupoHab.label = 'Más habituales';
+HABITUALES.forEach(cc => grupoHab.append(opcion(cc)));
+$('pais').append(grupoHab);
+async function loadCountries(){
+  try{
+    const cs = await api('/json/countries?hidebroken=true');
+    const cuenta = new Map(cs.filter(c => c.iso_3166_1).map(c => [c.iso_3166_1.toUpperCase(), c.stationcount]));
+    grupoHab.querySelectorAll('option').forEach(o => { const k = cuenta.get(o.value); if (k) o.textContent += ` (${k})`; });
+    const grupo = document.createElement('optgroup'); grupo.label = 'Todos los países (A-Z)';
+    cs.filter(c => c.stationcount > 0 && /^[A-Z]{2}$/i.test(c.iso_3166_1 || ''))
+      .map(c => ({cc: c.iso_3166_1.toUpperCase(), n: pais(c.iso_3166_1) || c.name, k: c.stationcount}))
+      .sort((a, b) => a.n.localeCompare(b.n, 'es'))
+      .forEach(c => grupo.append(opcion(c.cc, ` (${c.k})`)));
+    $('pais').append(grupo);
+  }catch(e){}
+}
+async function loadMundo(){
+  const box = $('muOut');
+  const seq = ++muSeq;
+  message(box, 'Buscando emisoras…');
+  if (tag === '#oc' || tag === '#atc') return loadEspecial(tag, seq);
+  const p = new URLSearchParams({hidebroken:'true', order:'votes', reverse:'true', limit:'200'});
+  const cc = $('pais').value, q = $('qMu').value.trim();
+  if (cc) p.set('countrycode', cc);
+  if (q) p.set('name', q);
+  if (tag) p.set('tag', tag);
+  try{
+    const res = dedupe(await api('/json/stations/search?' + p));
+    if (seq !== muSeq) return;
+    setBand('vMu', res);
+    box.replaceChildren();
+    if (!res.length){ message(box, 'No hay emisoras con esos filtros. Prueba a quitar alguno.'); return; }
+    const title = cc ? pais(cc) : 'Las más escuchadas del mundo';
+    box.append(heading(title));
+    pagedList(box, res, 'mu');
+  }catch(e){
+    if (seq === muSeq) message(box, 'No hay conexión con el servicio de emisoras.', loadMundo);
+  }
+}
+$('pais').addEventListener('change', loadMundo);
+$('qMu').addEventListener('input', () => { clearTimeout(muTimer); muTimer = setTimeout(loadMundo, 450); });
+
+/* ---------- Onda corta y aviación ---------- */
+const ONDA_CORTA = [
+  ['Radio Exterior de España', 'radio exterior'],
+  ['BBC World Service', 'bbc world service'],
+  ['Radio Vaticana', 'vatican'],
+  ['RFI', 'rfi espa'],
+  ['Deutsche Welle', 'deutsche welle'],
+  ['Radio Habana Cuba', 'radio habana'],
+  ['NHK World', 'nhk world'],
+  ['Radio Rumanía Internacional', 'radio romania international'],
+  ['China Radio International', 'china radio international'],
+  ['Radio Taiwan International', 'radio taiwan international'],
+  ['Voice of America', 'voice of america']
+];
+function linksBox(items){
+  const d = document.createElement('div'); d.className = 'links';
+  items.forEach(([t, u, desc]) => {
+    const a = document.createElement('a');
+    a.href = u; a.target = '_blank'; a.rel = 'noopener'; a.className = 'lnk';
+    const b = document.createElement('strong'); b.textContent = t;
+    const sp = document.createElement('span'); sp.textContent = desc;
+    a.append(b, sp); d.append(a);
+  });
+  return d;
+}
+function note(text){ const p = document.createElement('p'); p.className = 'note'; p.textContent = text; return p; }
+const qs = 'hidebroken=true&order=votes&reverse=true';
+async function loadEspecial(kind, seq){
+  const box = $('muOut');
+  if (kind === '#oc'){
+    const found = await Promise.all(ONDA_CORTA.map(async ([label, q]) => {
+      try { const r = dedupe(await api(`/json/stations/search?${qs}&limit=5&name=` + encodeURIComponent(q))); return r[0] ? {...r[0], _label: label} : null; }
+      catch(e){ return null; }
+    }));
+    if (seq !== muSeq) return;
+    box.replaceChildren();
+    box.append(heading('Emisoras internacionales de onda corta'),
+      note('Estas emisoras emiten en onda corta y también por Internet. Aquí las oyes por Internet, sin ruidos ni desvanecimientos.'));
+    const ok = found.filter(Boolean);
+    setBand('vMu', ok);
+    box.append(ok.length ? listEl(ok, 'mu') : note('No se han podido cargar ahora. Prueba más tarde.'));
+    box.append(heading('Onda corta de verdad'),
+      note('Receptores reales conectados a Internet: mueves el dial y oyes lo que capta su antena. Se abren en Safari.'),
+      linksBox([
+        ['WebSDR de la Universidad de Twente', 'http://websdr.ewi.utwente.nl:8901/', 'Receptor en Holanda que cubre toda la onda corta. Tiene modos AM, banda lateral (LSB/USB) y CW: elige el modo, pulsa en una señal del dibujo y afina.'],
+        ['Mapa de receptores KiwiSDR', 'http://rx.linkfanel.net/', 'Cientos de receptores de aficionados en todo el mundo, también en España. Modos AM, LSB/USB y CW, con decodificadores de Morse y RTTY (extensión FSK).']
+      ]));
+  } else {
+    const [a, b] = await Promise.all([
+      api(`/json/stations/search?${qs}&limit=100&tag=atc`).catch(() => []),
+      api(`/json/stations/search?${qs}&limit=100&tag=` + encodeURIComponent('air traffic control')).catch(() => [])
+    ]);
+    if (seq !== muSeq) return;
+    const r = dedupe([...a, ...b]);
+    setBand('vMu', r);
+    box.replaceChildren();
+    box.append(heading('Control aéreo por Internet'));
+    if (r.length) pagedList(box, r, 'mu');
+    else box.append(note('Ahora mismo el catálogo no tiene emisiones de control aéreo.'));
+    box.append(heading('Más aeropuertos'), linksBox([
+      ['LiveATC.net', 'https://www.liveatc.net/', 'Torres de control de aeropuertos de todo el mundo. Busca por el código del aeropuerto, por ejemplo LEAL para Alicante-Elche.']
+    ]));
+  }
+}
+
+/* ---------- Pestaña Favoritas ---------- */
+function renderFavs(){
+  const box = $('faOut');
+  box.replaceChildren();
+  if (!favs.length){ message(box, 'Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'); return; }
+  box.append(heading('Mis favoritas'), listEl(favs, 'mu'));
+  setBand('vFa', favs);
+}
+
+/* ---------- Pestañas ---------- */
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => { x.setAttribute('aria-selected', x === t); $(x.dataset.v).hidden = x !== t; });
+  if (t.dataset.v === 'vMu' && !muLoaded){ muLoaded = true; loadCountries(); loadMundo(); }
+  if (t.dataset.v === 'vFa') renderFavs();
+  if (t.dataset.v === 'vGr') renderGrab();
+  else { activeBand = t.dataset.v; tuneIdx = -1; refreshDial(); }
+  const nav = document.querySelector('.tabsbar');
+  if (window.scrollY > nav.offsetTop) window.scrollTo(0, nav.offsetTop);
+});
+
+/* ---------- Reproductor ---------- */
+const audioNormal = new Audio();
+audioNormal.preload = 'none';
+let audioEq = null;            // segundo reproductor, conectado al ecualizador (se crea al usarlo)
+let audio = audioNormal;       // el reproductor que está en uso
+const noCors = new Set();      // emisoras que no permiten ecualizador
+// Los avisos (sonando, error...) se apuntan aquí para poder ponérselos a los dos reproductores
+const avisos = [];
+function attach(el, ev, fn){ el.addEventListener(ev, e => { if (el === audio) fn(e); }); }
+function wire(ev, fn){ avisos.push([ev, fn]); attach(audioNormal, ev, fn); }
+let cur = null, switching = false, playingRec = false;
+const ICON_PLAY = 'M8 5v14l11-7z', ICON_PAUSE = 'M6 5h4v14H6zm8 0h4v14h-4z';
+function setStatus(t, cls = ''){ const el = $('pStatus'); el.textContent = t; el.className = 'status ' + cls; }
+function setPlaying(on){ $('pIcon').firstElementChild.setAttribute('d', on ? ICON_PAUSE : ICON_PLAY); $('pBtn').setAttribute('aria-label', on ? 'Pausa' : 'Reproducir'); }
+
+function showStation(s){
+  $('pName').textContent = s._label || s.name.trim();
+  const old = $('pLogo'), nuevo = logoEl(s);
+  nuevo.id = 'pLogo';
+  if (old) old.replaceWith(nuevo);
+  $('pBtn').disabled = false;
+  document.querySelectorAll('.st').forEach(li => li.classList.toggle('on', li.dataset.id === s.stationuuid));
+  showLCD(s);
+}
+function play(s){
+  cur = s;
+  playingRec = false;
+  ensureAudioCtx(); staticOn(); cab.classList.add('tuning');
+  showStation(s);
+  try { localStorage.setItem('radio.last', JSON.stringify(slim(s))); } catch(e){}
+  setStatus('Sintonizando…');
+  pickPlayer(s);
+  switching = true;
+  audio.src = streamUrl(s);
+  audio.play().catch(() => {});
+  fetch(SERVERS[srv] + '/json/url/' + s.stationuuid).catch(() => {}); // cuenta la escucha
+  if ('mediaSession' in navigator) try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: s._label || s.name.trim(),
+      artist: [s.state, pais(s.countrycode)].filter(Boolean).join(', ') || 'Radio en directo',
+      album: 'Mi Radio',
+      artwork: s.favicon ? [{src: s.favicon, sizes: '256x256'}] : []
+    });
+  } catch(e){ /* un logo con dirección rara no debe parar la radio */ }
+}
+function toggle(){
+  if (playingRec){ audio.paused ? audio.play() : audio.pause(); return; }
+  if (!cur) return;
+  if (audio.paused){ play(cur); }      // al reanudar volvemos a conectar para oír el directo
+  else { audio.pause(); }
+}
+$('pBtn').onclick = toggle;
+wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? 'Escuchando grabación' : 'En directo', 'live'); setPlaying(true); });
+wire('waiting', () => setStatus('Cargando…'));
+wire('pause', () => { if (!switching){ staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); } setPlaying(false); if (!switching && !audio.error) setStatus('En pausa'); });
+wire('error', () => {
+  // Con ecualizador falló: seguramente la emisora no lo permite. Se reintenta sin él.
+  if (audio === audioEq && cur && !playingRec && !noCors.has(cur.stationuuid)){ noCors.add(cur.stationuuid); play(cur); return; }
+  switching = false; staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); setPlaying(false); if (cur && !playingRec){ setStatus('Esta emisora no responde ahora mismo. Prueba otra.', 'err'); $('lRT').textContent = 'Sin señal · prueba otra emisora'; } });
+if ('mediaSession' in navigator){
+  navigator.mediaSession.setActionHandler('play', () => cur && play(cur));
+  navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+  try { navigator.mediaSession.setActionHandler('stop', () => audio.pause()); } catch(e){}
+}
+
+/* ---------- Volumen y ecualizador ---------- */
+const EQ_BANDAS = [[60, 'lowshelf', '60'], [230, 'peaking', '230'], [910, 'peaking', '910'], [3600, 'peaking', '3,6k'], [14000, 'highshelf', '14k']];
+const EQ_PRESETS = {Plano: [0, 0, 0, 0, 0], Voz: [-4, -1, 3, 4, 1], 'Música': [3, 1, 0, 1, 3], Graves: [7, 4, 0, -1, -1], 'Clásica': [2, 0, -1, 1, 3]};
+function loadEq(){
+  const d = {on: false, g: [0, 0, 0, 0, 0], vol: 1};
+  try { return Object.assign(d, JSON.parse(localStorage.getItem('radio.eq')) || {}); } catch(e){ return d; }
+}
+function saveEq(){ try { localStorage.setItem('radio.eq', JSON.stringify(eq)); } catch(e){} }
+let eq = loadEq(), eqFiltros = [], eqGanancia = null;
+// ¿Deja el navegador cambiar el volumen? (el iPhone no)
+const volFijo = (() => { const a = new Audio(); a.volume = .5; return a.volume !== .5; })();
+
+function usePlayer(el){
+  if (el === audio) return;
+  const viejo = audio;
+  audio = el;
+  viejo.pause(); viejo.removeAttribute('src'); viejo.load();   // corta la descarga del otro
+  updHint();
+}
+function getEqPlayer(){
+  try{
+    ensureAudioCtx();
+    if (!actx) return null;
+    if (!audioEq){
+      const el = new Audio();
+      el.crossOrigin = 'anonymous';       // pide permiso a la emisora para "leer" el sonido
+      el.preload = 'none';
+      let nodo = actx.createMediaElementSource(el);
+      EQ_BANDAS.forEach(([f, tipo], i) => {
+        const b = actx.createBiquadFilter();
+        b.type = tipo; b.frequency.value = f; b.Q.value = 1; b.gain.value = eq.g[i];
+        nodo.connect(b); nodo = b; eqFiltros.push(b);
+      });
+      eqGanancia = actx.createGain(); eqGanancia.gain.value = eq.vol;
+      nodo.connect(eqGanancia).connect(actx.destination);
+      avisos.forEach(([ev, fn]) => attach(el, ev, fn));
+      audioEq = el;
+    }
+    return audioEq;
+  }catch(e){ return null; }
+}
+function pickPlayer(s){
+  const quiero = (eq.on && !noCors.has(s.stationuuid) && getEqPlayer()) || audioNormal;
+  usePlayer(quiero);
+}
+function aplicarVolumen(){
+  audioNormal.volume = eq.vol;
+  if (eqGanancia) eqGanancia.gain.value = eq.vol;
+}
+function updHint(){ $('vHint').hidden = !(volFijo && audio !== audioEq); }
+
+$('vol').value = eq.vol;
+aplicarVolumen();
+$('vol').addEventListener('input', e => { eq.vol = +e.target.value; aplicarVolumen(); saveEq(); });
+
+// Panel del ecualizador
+$('eqBtn').onclick = () => {
+  const p = $('eqPanel'); p.hidden = !p.hidden;
+  $('eqBtn').setAttribute('aria-expanded', !p.hidden);
+};
+EQ_BANDAS.forEach(([, , etiqueta], i) => {
+  const d = document.createElement('div'); d.className = 'band';
+  const val = document.createElement('span'); val.id = 'eqv' + i;
+  const r = document.createElement('input');
+  r.type = 'range'; r.min = -12; r.max = 12; r.step = 1; r.value = eq.g[i]; r.id = 'eq' + i;
+  r.setAttribute('aria-label', `Banda ${etiqueta} Hz`);
+  const l = document.createElement('span'); l.textContent = etiqueta;
+  r.addEventListener('input', () => setBanda(i, +r.value));
+  d.append(val, r, l); $('eqBands').append(d);
+});
+function setBanda(i, v){
+  eq.g[i] = v;
+  $('eq' + i).value = v;
+  $('eqv' + i).textContent = (v > 0 ? '+' : '') + v;
+  if (eqFiltros[i]) eqFiltros[i].gain.value = v;
+  saveEq(); marcarPreset();
+}
+Object.keys(EQ_PRESETS).forEach(n => {
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.dataset.p = n;
+  b.onclick = () => EQ_PRESETS[n].forEach((v, i) => setBanda(i, v));
+  $('eqPre').append(b);
+});
+function marcarPreset(){
+  document.querySelectorAll('#eqPre button').forEach(b => b.setAttribute('aria-pressed', EQ_PRESETS[b.dataset.p].every((v, i) => v === eq.g[i])));
+}
+eq.g.forEach((v, i) => setBanda(i, v));
+$('eqOn').checked = eq.on;
+$('eqPanel').classList.toggle('off', !eq.on);
+$('eqOn').addEventListener('change', e => {
+  eq.on = e.target.checked; saveEq();
+  $('eqPanel').classList.toggle('off', !eq.on);
+  if (cur && !playingRec && !audio.paused) play(cur);   // reconecta la emisora con o sin ecualizador
+  updHint();
+});
+updHint();
+
+/* ---------- Temporizador de apagado ---------- */
+const STEPS = [0, 15, 30, 60, 90];
+let stepIdx = 0, offAt = 0, offTimer, tick;
+function updTimer(){
+  const b = $('pTimer');
+  if (!offAt){ b.textContent = 'Apagar'; b.classList.remove('act'); return; }
+  const min = Math.max(1, Math.ceil((offAt - Date.now()) / 60000));
+  b.textContent = `${min} min`; b.classList.add('act');
+}
+$('pTimer').onclick = () => {
+  stepIdx = (stepIdx + 1) % STEPS.length;
+  clearTimeout(offTimer); clearInterval(tick);
+  const m = STEPS[stepIdx];
+  offAt = m ? Date.now() + m * 60000 : 0;
+  if (m){
+    offTimer = setTimeout(() => { audio.pause(); offAt = 0; stepIdx = 0; clearInterval(tick); updTimer(); setStatus('Apagada por el temporizador'); }, m * 60000);
+    tick = setInterval(updTimer, 20000);
+  }
+  updTimer();
+};
+
+/* ---------- Grabaciones ---------- */
+// Se guardan en el iPhone con IndexedDB (un almacén para archivos grandes).
+let dbp;
+function db(){
+  return dbp ||= new Promise((res, rej) => {
+    const q = indexedDB.open('miradio', 1);
+    q.onupgradeneeded = () => q.result.createObjectStore('grab', {keyPath: 'id'});
+    q.onsuccess = () => res(q.result);
+    q.onerror = () => rej(q.error);
+  });
+}
+async function dbTx(mode, fn){
+  const d = await db();
+  return new Promise((res, rej) => {
+    const t = d.transaction('grab', mode);
+    const r = fn(t.objectStore('grab'));
+    t.oncomplete = () => res(r && r.result);
+    t.onerror = () => rej(t.error);
+  });
+}
+const dbPut = it => dbTx('readwrite', st => st.put(it));
+const dbAll = () => dbTx('readonly', st => st.getAll());
+const dbDel = id => dbTx('readwrite', st => st.delete(id));
+
+function fmtTime(sec){
+  sec = Math.floor(sec);
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s2 = sec % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s2).padStart(2, '0');
+}
+const fmtMB = b => (b / 1048576).toLocaleString('es-ES', {maximumFractionDigits: 1}) + ' MB';
+function extFor(type, codec){
+  const t = (type + ' ' + (codec || '')).toLowerCase();
+  if (t.includes('aac') || t.includes('mp4')) return 'aac';
+  if (t.includes('ogg') || t.includes('opus')) return 'ogg';
+  return 'mp3';
+}
+let rec = null, lastRec = null;
+function recMsg(t){ $('pRecInfo').textContent = t; }
+function updRec(){
+  const b = $('pRec');
+  if (!rec){ b.classList.remove('act'); $('pRecTxt').textContent = 'Grabar'; $('iREC').classList.remove('on'); recMsg(''); return; }
+  b.classList.add('act'); $('pRecTxt').textContent = 'Parar'; $('iREC').classList.add('on');
+  recMsg(`${fmtTime((Date.now() - rec.start) / 1000)} · ${fmtMB(rec.bytes)} · ${(rec.st._label || rec.st.name).trim()}`);
+}
+async function startRec(){
+  if (!cur || playingRec){ recMsg('Elige primero una emisora.'); return; }
+  const st = cur, url = streamUrl(st);
+  if (/\.m3u8(\?|$)/i.test(url)){ recMsg('Esta emisora no se puede grabar.'); return; }
+  const R = {ctl: new AbortController(), chunks: [], bytes: 0, start: Date.now(), st, type: 'audio/mpeg', done: false};
+  rec = R;
+  R.tick = setInterval(updRec, 1000);
+  updRec();
+  if (audio.paused) play(st);
+  try{
+    // Pedimos el mismo sonido que se está oyendo y guardamos los trozos tal cual llegan (sin perder calidad)
+    const r = await fetch(url, {signal: R.ctl.signal});
+    if (!r.ok || !r.body) throw new Error('sin datos');
+    const type = (r.headers.get('content-type') || 'audio/mpeg').split(';')[0].trim();
+    if (/mpegurl|text|html/i.test(type)) throw new Error('no es audio');
+    R.type = type;
+    const reader = r.body.getReader();
+    while (true){
+      const {done, value} = await reader.read();
+      if (done) break;
+      R.chunks.push(value); R.bytes += value.length;
+    }
+    finishRec(R);                       // la emisora cortó la emisión
+  }catch(e){
+    if (R.ctl.signal.aborted) return;   // la paró el usuario: ya se guardó
+    if (R.bytes > 0) finishRec(R);
+    else {
+      R.done = true; clearInterval(R.tick);
+      if (rec === R) rec = null;
+      updRec();
+      recMsg('Esta emisora no permite grabar desde el móvil. Prueba otra.');
+    }
+  }
+}
+async function finishRec(R){
+  if (R.done) return;
+  R.done = true; clearInterval(R.tick);
+  if (rec === R) rec = null;
+  updRec();
+  if (!R.bytes) return;
+  const d = new Date(R.start);
+  const name = `${(R.st._label || R.st.name).trim()} · ${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}`;
+  const item = {
+    id: R.start, name, type: R.type,
+    file: name.replace(/[\/\\:*?"<>|·]/g, '-').replace(/\s+/g, ' ') + '.' + extFor(R.type, R.st.codec),
+    dur: Math.round((Date.now() - R.start) / 1000), size: R.bytes,
+    blob: new Blob(R.chunks, {type: R.type})
+  };
+  try { await dbPut(item); recMsg('Guardada en «Grabadas».'); }
+  catch(e){ lastRec = item; recMsg('Grabación lista en «Grabadas» (solo hasta cerrar la app).'); }
+  if (!$('vGr').hidden) renderGrab();
+}
+function stopRec(){ if (!rec) return; const R = rec; R.ctl.abort(); finishRec(R); }
+$('pRec').onclick = () => rec ? stopRec() : startRec();
+
+function playRec(it){
+  playingRec = true; switching = true;
+  usePlayer(audioNormal);
+  audio.src = URL.createObjectURL(it.blob);
+  audio.play().catch(() => {});
+  $('pName').textContent = it.name;
+  $('pBtn').disabled = false;
+  $('lFreq').textContent = 'REC'; $('lMhz').textContent = ''; setPS('GRABADA'); $('lRT').textContent = it.name;
+  document.querySelectorAll('.st').forEach(li => li.classList.remove('on'));
+  setStatus('Cargando grabación…');
+}
+async function saveRec(it){
+  const file = new File([it.blob], it.file, {type: it.type});
+  if (navigator.canShare && navigator.canShare({files: [file]})){
+    try { await navigator.share({files: [file], title: it.name}); } catch(e){}
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = it.file;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+function miniBtn(text, label, cls, fn){
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'mini ' + cls; b.textContent = text; b.setAttribute('aria-label', label); b.onclick = fn;
+  return b;
+}
+async function renderGrab(){
+  const box = $('grOut');
+  let items = [];
+  try { items = (await dbAll()).sort((a, b) => b.id - a.id); } catch(e){}
+  if (lastRec && !items.some(i => i.id === lastRec.id)) items.unshift(lastRec);
+  box.replaceChildren();
+  if (!items.length){ message(box, 'No tienes grabaciones. Mientras escuchas una emisora, toca «● Grabar» en el reproductor.'); return; }
+  box.append(heading('Mis grabaciones'));
+  const ul = document.createElement('ul'); ul.className = 'list';
+  for (const it of items){
+    const li = document.createElement('li'); li.className = 'st';
+    const info = document.createElement('div'); info.className = 'gr-info';
+    const n = document.createElement('div'); n.className = 'name'; n.textContent = it.name;
+    const sub = document.createElement('div'); sub.className = 'sub'; sub.textContent = `${fmtTime(it.dur)} · ${fmtMB(it.size)} · ${it.file.split('.').pop().toUpperCase()}`;
+    info.append(n, sub);
+    const btns = document.createElement('div'); btns.className = 'rbtns';
+    let armed = 0;
+    const del = miniBtn('Borrar', 'Borrar grabación', '', async () => {
+      if (!armed){ armed = setTimeout(() => { armed = 0; del.textContent = 'Borrar'; del.classList.remove('warn'); }, 4000); del.textContent = '¿Seguro?'; del.classList.add('warn'); return; }
+      clearTimeout(armed);
+      if (lastRec && lastRec.id === it.id) lastRec = null;
+      try { await dbDel(it.id); } catch(e){}
+      renderGrab();
+    });
+    btns.append(miniBtn('▶', 'Escuchar', 'play', () => playRec(it)), miniBtn('Guardar', 'Guardar en Archivos', '', () => saveRec(it)), del);
+    li.append(info, btns);
+    ul.append(li);
+  }
+  box.append(ul);
+}
+
+/* ---------- Botón de calidad ---------- */
+function updQ(){ const b = $('qBtn'); b.textContent = calidad === 'alta' ? 'Calidad alta' : 'Ahorro datos'; b.classList.toggle('eco', calidad !== 'alta'); }
+$('qBtn').onclick = () => {
+  calidad = calidad === 'alta' ? 'ahorro' : 'alta';
+  try { localStorage.setItem('radio.calidad', calidad); } catch(e){}
+  updQ();
+  loadEspana();
+  if (muLoaded) loadMundo();
+};
+updQ();
+
+/* ---------- Dial, pantalla RDS y rueda de sintonía ---------- */
+const cab = $('cab');
+const bands = {vEs: [], vMu: [], vFa: []};       // emisoras colocadas en el dial de cada pestaña
+const bandFreq = {vEs: new Map(), vMu: new Map(), vFa: new Map()};
+let activeBand = 'vEs', tuneIdx = -1, tuneTimer;
+// Reparte hasta 100 emisoras entre 88 y 108 MHz (cada 0,2, 0,4 u 0,8 MHz)
+function setBand(tab, list){
+  const b = list.filter(x => x && x.stationuuid).slice(0, 100);
+  const step = b.length <= 25 ? 8 : b.length <= 50 ? 4 : 2;     // en décimas de MHz
+  bands[tab] = b;
+  bandFreq[tab] = new Map(b.map((x, i) => [x.stationuuid, (880 + i * step) / 10]));
+  if (tab === activeBand){ tuneIdx = -1; refreshDial(); }
+}
+const freqOf = s => s ? bandFreq[activeBand].get(s.stationuuid) : undefined;
+const posOf = f => 6 + (f - 88) / 20 * 88;                       // % de la escala
+function refreshDial(){
+  const m = $('marks'); m.replaceChildren();
+  bandFreq[activeBand].forEach(f => { const d = document.createElement('i'); d.className = 'mk'; d.style.left = posOf(f) + '%'; m.append(d); });
+  if (cur && !playingRec) showLCD(cur);
+}
+function rtText(s){ return [s.state, pais(s.countrycode)].filter(Boolean).join(', ') + (s.bitrate ? ` · ${s.codec || ''} ${s.bitrate} kbps` : ''); }
+function showLCD(s, tuning){
+  const f = freqOf(s) ?? s._mf;
+  if (f){ $('lFreq').textContent = f.toFixed(1); $('lMhz').textContent = 'MHz'; $('needle').style.setProperty('--pos', posOf(f) + '%'); }
+  else { $('lFreq').textContent = 'NET'; $('lMhz').textContent = ''; }
+  $('iRDS').classList.add('on');
+  setPS(s._label || s.name);
+  $('lRT').textContent = tuning ? 'Sintonizando…' : rtText(s);
+}
+// RDS: el nombre se muestra en bloques de 8 letras que van cambiando, como en las radios de verdad
+let psTimer;
+function setPS(text){
+  clearInterval(psTimer);
+  const t = text.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const parts = [];
+  let curp = '';
+  for (let w of t.split(/\s+/)){
+    while (w.length > 8){ if (curp){ parts.push(curp); curp = ''; } parts.push(w.slice(0, 8)); w = w.slice(8); }
+    if (!w) continue;
+    if ((curp ? curp.length + 1 : 0) + w.length <= 8) curp = curp ? curp + ' ' + w : w;
+    else { parts.push(curp); curp = w; }
+  }
+  if (curp) parts.push(curp);
+  const center = p => { const pad = 8 - p.length; return ' '.repeat(Math.floor(pad / 2)) + p + ' '.repeat(Math.ceil(pad / 2)); };
+  let i = 0;
+  $('lPS').textContent = center(parts[0] || '');
+  if (parts.length > 1) psTimer = setInterval(() => { i = (i + 1) % parts.length; $('lPS').textContent = center(parts[i]); }, 1500);
+}
+
+// Sonidos: estática entre emisoras y el "clic" de la rueda (Web Audio)
+let actx = null, noiseGain = null;
+function ensureAudioCtx(){
+  try{
+    if (actx){ if (actx.state === 'suspended') actx.resume(); return; }
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    const len = actx.sampleRate * 2, buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;           // ruido blanco
+    const src = actx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const filtro = actx.createBiquadFilter(); filtro.type = 'bandpass'; filtro.frequency.value = 2200; filtro.Q.value = .5;
+    noiseGain = actx.createGain(); noiseGain.gain.value = 0;
+    src.connect(filtro).connect(noiseGain).connect(actx.destination);
+    src.start();
+  }catch(e){ actx = null; }
+}
+function staticOn(){ if (noiseGain) noiseGain.gain.setTargetAtTime(.05, actx.currentTime, .04); }
+function staticOff(){ if (noiseGain) noiseGain.gain.setTargetAtTime(0, actx.currentTime, .2); }
+function clic(){
+  if (!actx) return;
+  const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.frequency.value = 1900; g.gain.setValueAtTime(.04, t); g.gain.exponentialRampToValueAtTime(.0001, t + .03);
+  o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .04);
+}
+
+// Mover la sintonía una emisora adelante (+1) o atrás (-1)
+let knobRot = 0;
+function step(dir){
+  const b = bands[activeBand];
+  if (!b.length || scanning) return;
+  ensureAudioCtx();
+  if (tuneIdx < 0) tuneIdx = cur ? b.findIndex(x => x.stationuuid === cur.stationuuid) : -1;
+  tuneIdx = tuneIdx < 0 ? (dir > 0 ? 0 : b.length - 1) : (tuneIdx + dir + b.length) % b.length;
+  const s = b[tuneIdx];
+  clic(); staticOn();
+  cab.classList.add('tuning');
+  showLCD(s, true);
+  clearTimeout(tuneTimer);
+  tuneTimer = setTimeout(() => play(s), 700);        // cuando dejas de girar, suena la emisora
+}
+function rotateKnob(deg){ knobRot += deg; $('knobRot').style.setProperty('--rot', knobRot + 'deg'); }
+
+// Girar la rueda con el dedo
+const knob = $('knob');
+let lastAng = null, acc = 0;
+const angle = e => { const r = knob.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI; };
+knob.addEventListener('pointerdown', e => { knob.setPointerCapture(e.pointerId); lastAng = angle(e); ensureAudioCtx(); });
+knob.addEventListener('pointermove', e => {
+  if (lastAng === null) return;
+  const a = angle(e);
+  let d = a - lastAng;
+  if (d > 180) d -= 360;
+  if (d < -180) d += 360;
+  lastAng = a;
+  rotateKnob(d);
+  acc += d;
+  while (acc >= 25){ acc -= 25; step(1); }           // cada 25 grados, una emisora
+  while (acc <= -25){ acc += 25; step(-1); }
+});
+['pointerup', 'pointercancel'].forEach(ev => knob.addEventListener(ev, () => { lastAng = null; }));
+knob.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp'){ e.preventDefault(); rotateKnob(25); step(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowDown'){ e.preventDefault(); rotateKnob(-25); step(-1); }
+});
+$('sNext').onclick = () => { rotateKnob(25); step(1); };
+$('sPrev').onclick = () => { rotateKnob(-25); step(-1); };
+
+/* ---------- Lámparas que se mueven como un ecualizador ---------- */
+const tubes = [...document.querySelectorAll('.tube')];
+const lv = tubes.map(() => .12), objetivo = tubes.map(() => .5);
+const quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let eqUltimo = 0;
+function eqLoop(t){
+  requestAnimationFrame(eqLoop);
+  if (t - eqUltimo < 70) return;                       // unas 14 veces por segundo
+  eqUltimo = t;
+  const on = cab.classList.contains('on');
+  tubes.forEach((tb, i) => {
+    const grave = tb.classList.contains('big');        // las grandes = graves, más lentas
+    if (on && !quieto){
+      if (Math.random() < (grave ? .18 : .4)) objetivo[i] = .3 + Math.random() * .7;
+      lv[i] += (objetivo[i] - lv[i]) * (grave ? .25 : .5);
+    } else lv[i] += ((on ? 1 : .12) - lv[i]) * .15;     // apagada: se enfría poco a poco
+    tb.style.setProperty('--lv', lv[i].toFixed(3));
+    tb.style.setProperty('--sy', (.55 + lv[i] * .45).toFixed(3));
+  });
+}
+requestAnimationFrame(eqLoop);
+
+/* ---------- Memorias y búsqueda automática ---------- */
+function loadMems(){ try { return JSON.parse(localStorage.getItem('radio.mem')) || []; } catch(e){ return []; } }
+const MAXMEM = 30;   // memorias en total: 20 de AUTO + huecos para las tuyas
+let mems = loadMems(), scanning = false;
+function saveMems(){ try { localStorage.setItem('radio.mem', JSON.stringify(mems)); } catch(e){} renderMems(); }
+function renderMems(){
+  const sel = $('mem');
+  sel.replaceChildren();
+  const o0 = document.createElement('option');
+  o0.value = ''; o0.textContent = mems.length ? `Memorias (${mems.length})` : 'Memorias vacías';
+  sel.append(o0);
+  mems.forEach((m, i) => {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = `M${i + 1}  ${m._mf ? m._mf.toFixed(1) : 'NET '}  ${(m._label || m.name).trim()}`;
+    sel.append(o);
+  });
+}
+$('mem').onchange = e => {
+  const m = mems[e.target.value];
+  e.target.value = '';
+  if (m && !scanning){ ensureAudioCtx(); play(m); }
+};
+$('mSave').onclick = () => {
+  if (!cur || playingRec){ $('lRT').textContent = 'Sintoniza primero una emisora'; return; }
+  const i = mems.findIndex(m => m.stationuuid === cur.stationuuid);
+  if (i >= 0){ $('lRT').textContent = `Ya está guardada en M${i + 1}`; return; }
+  if (mems.length >= MAXMEM){ $('lRT').textContent = `Memoria llena (${MAXMEM} emisoras)`; return; }
+  mems.push({...slim(cur), _mf: freqOf(cur) ?? cur._mf, _man: true});   // _man = guardada a mano
+  saveMems();
+  $('lRT').textContent = `Guardada en M${mems.length}`;
+};
+const espera = ms => new Promise(r => setTimeout(r, ms));
+async function autoScan(){
+  const b = bands[activeBand], fmap = bandFreq[activeBand];
+  if (scanning) return;
+  if (!b.length){ $('lRT').textContent = 'No hay emisoras en esta banda'; return; }
+  scanning = true; $('mAuto').setAttribute('aria-busy', 'true');
+  ensureAudioCtx(); clearTimeout(tuneTimer);
+  if (!audio.paused) audio.pause();
+  // Las de "mejor tono": funcionan (lastcheckok) y tienen más calidad. Hasta 20.
+  const mejores = b.filter(s => s.lastcheckok !== 0 && (s.bitrate || 96) >= 64)
+    .sort((x, y) => score(y) - score(x)).slice(0, 20)
+    .sort((x, y) => fmap.get(x.stationuuid) - fmap.get(y.stationuuid));
+  const paradas = mejores.map(s => fmap.get(s.stationuuid));
+  cab.classList.add('tuning'); staticOn();
+  $('iRDS').classList.remove('on'); setPS('AUTO'); $('lRT').textContent = 'Búsqueda automática…';
+  const needle = $('needle'); needle.style.transition = 'none';
+  let f = 87.9, j = 0;
+  while (f < 108){
+    f = Math.round((f + .1) * 10) / 10;               // la aguja avanza de 0,1 en 0,1 MHz
+    $('lFreq').textContent = f.toFixed(1); $('lMhz').textContent = 'MHz';
+    needle.style.setProperty('--pos', posOf(f) + '%');
+    if (j < paradas.length && Math.abs(paradas[j] - f) < .05){
+      clic(); staticOff();                            // ¡emisora encontrada! se para un momento
+      $('iRDS').classList.add('on'); setPS(mejores[j]._label || mejores[j].name);
+      await espera(650);
+      staticOn(); $('iRDS').classList.remove('on'); setPS('AUTO');
+      j++;
+    } else await espera(18);
+  }
+  needle.style.transition = '';
+  staticOff(); cab.classList.remove('tuning');
+  const manuales = mems.filter(m => m._man);
+  const ids = new Set(manuales.map(m => m.stationuuid));
+  mems = [...manuales, ...mejores.filter(s => !ids.has(s.stationuuid)).map(s => ({...slim(s), _mf: fmap.get(s.stationuuid)}))].slice(0, MAXMEM);
+  saveMems();
+  scanning = false; $('mAuto').removeAttribute('aria-busy');
+  if (!mejores.length){ setPS('NADA'); $('lRT').textContent = 'No he encontrado emisoras con buen sonido'; return; }
+  setPS('MEMORIA'); $('lRT').textContent = `${mejores.length} emisoras guardadas en memoria`;
+  await espera(1200);
+  play(mems[manuales.length] || mems[0]);
+}
+$('mAuto').onclick = autoScan;
+renderMems();
+
+/* ---------- Arranque ---------- */
+try {
+  const last = JSON.parse(localStorage.getItem('radio.last'));
+  if (last && last.stationuuid){ cur = last; showStation(last); setStatus('Última emisora · toca ▶ para escucharla'); }
+} catch(e){}
+loadEspana();
+</script>
+</body>
+</html>
