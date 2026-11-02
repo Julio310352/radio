@@ -643,6 +643,14 @@ $('pais').addEventListener('change', loadMundo);
 $('qMu').addEventListener('input', () => { clearTimeout(muTimer); muTimer = setTimeout(loadMundo, 450); });
 
 /* ---------- Onda corta y aviación ---------- */
+// ¿Es de verdad una emisión de control aéreo y no música?
+const MUSICA = /\b(music|musica|lofi|lo-fi|chill|ambient|relax|pop|rock|jazz|dance|house|hits|beats|lounge|electronic|classical|country|oldies|radio show)\b/i;
+const AVIACION = /\b(atc|tower|torre|approach|aproximaci[oó]n|ground|rodadura|departure|arrival|center|centre|control|clearance|delivery|atis|airport|aeropuerto|airfield|aerodromo|aeródromo|[A-Z]{4})\b/;
+function esControlAereo(x){
+  const etiquetas = (x.tags || '').toLowerCase();
+  if (MUSICA.test(etiquetas) || MUSICA.test(x.name)) return false;          // fuera la música
+  return AVIACION.test(x.name) || /\b(atc|air traffic control|tower|approach)\b/.test(etiquetas);
+}
 const ONDA_CORTA = [
   ['Radio Exterior de España', 'radio exterior'],
   ['BBC World Service', 'bbc world service'],
@@ -690,12 +698,14 @@ async function loadEspecial(kind, seq){
         ['Mapa de receptores KiwiSDR', 'http://rx.linkfanel.net/', 'Cientos de receptores de aficionados en todo el mundo, también en España. Modos AM, LSB/USB y CW, con decodificadores de Morse y RTTY (extensión FSK).']
       ]));
   } else {
-    const [a, b] = await Promise.all([
-      api(`/json/stations/search?${qs}&limit=100&tag=atc`).catch(() => []),
-      api(`/json/stations/search?${qs}&limit=100&tag=` + encodeURIComponent('air traffic control')).catch(() => [])
+    // tagExact=true: la etiqueta tiene que ser exactamente esa, no un trozo de otra palabra
+    const [a, b, c] = await Promise.all([
+      api(`/json/stations/search?${qs}&limit=200&tagExact=true&tag=atc`).catch(() => []),
+      api(`/json/stations/search?${qs}&limit=200&tagExact=true&tag=` + encodeURIComponent('air traffic control')).catch(() => []),
+      api(`/json/stations/search?${qs}&limit=200&tagExact=true&tag=aviation`).catch(() => [])
     ]);
     if (seq !== muSeq) return;
-    const r = dedupe([...a, ...b]);
+    const r = dedupe([...a, ...b, ...c]).filter(esControlAereo);
     setBand('vMu', r);
     box.replaceChildren();
     box.append(heading('Control aéreo por Internet'));
