@@ -13,7 +13,7 @@
 <link rel="icon" href="icono.png">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=VT323&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
 <style>
 /* Aspecto: radio antigua de madera con dial ámbar iluminado. Lista arriba, reproductor fijo abajo. */
 :root{
@@ -29,6 +29,7 @@
   --lcd-bg:#170f08;
   --brass:#c9a46a;   /* latón de los mandos */
   --f-lcd:"VT323","Courier New",monospace;
+  --f-script:"Dancing Script","Brush Script MT",cursive;
   --cab1:#3d2817; --cab2:#28190e;      /* mueble */
   --knob1:#7d5c3a; --knob2:#3a2717;    /* rueda */
   --ink:#2a1b10;                       /* texto sobre los mandos */
@@ -99,7 +100,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .mbtn:active{transform:translateY(1px)}
 .mbtn[aria-busy="true"]{opacity:.6}
 .volrow{display:flex;align-items:center;gap:10px;margin-top:12px}
-.vlab{font-family:var(--f-display);font-weight:700;letter-spacing:.12em;color:var(--brass);font-size:14px}
+.vlab{font-family:var(--f-display);font-weight:700;letter-spacing:.12em;color:color-mix(in srgb,var(--brass),var(--text) 45%);font-size:14px}
 input[type=range]{accent-color:var(--dial)}
 #vol{flex:1;min-width:0;height:32px}
 .vhint{font-size:12px;color:var(--muted);margin:6px 0 0;line-height:1.4}
@@ -125,7 +126,19 @@ input[type=range]{accent-color:var(--dial)}
 .ajustes{width:100%;min-height:70px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px;font-family:ui-monospace,monospace;font-size:12px;word-break:break-all}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px}
 .btnrow .btn{margin-top:6px}
-.knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin-top:6px}
+.placa{position:relative;margin:18px auto 0;max-width:420px;padding:12px 26px 13px;border-radius:6px;text-align:center;color:var(--ink);
+  background:linear-gradient(180deg,var(--brass-hi),var(--brass) 55%,var(--brass-lo));
+  box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.25)}
+.placa::before,.placa::after{content:"";position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,var(--brass-hi),var(--brass-lo));box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.placa::before{left:9px}.placa::after{right:9px}
+.placa .ded1{display:block;font-family:var(--f-script);font-weight:700;font-size:24px;line-height:1.15;
+  text-shadow:0 1px 0 rgba(255,255,255,.45)}
+.placa .ded2{display:block;font-family:var(--f-script);font-weight:600;font-size:18px;line-height:1.2;margin-top:2px;
+  text-shadow:0 1px 0 rgba(255,255,255,.45)}
+.placa .corazon{color:var(--needle)}
+.version{margin:8px 0 0;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);opacity:.8}
+.knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .topbtns{display:flex;gap:8px;min-width:0}
@@ -275,6 +288,11 @@ img.logo{background:#f3e7d3}
         </div>
       </div>
     </div>
+    <div class="placa" role="note" aria-label="Dedicatoria">
+      <span class="ded1">Para nuestros nietos</span>
+      <span class="ded2">con cariño de sus abuelos <span class="corazon">♥</span></span>
+    </div>
+    <p class="version" id="version"></p>
   </div>
 </header>
 <nav class="tabsbar">
@@ -752,6 +770,7 @@ let silencio = false;          // true mientras suena el silencio que mantiene d
 function attach(el, ev, fn){ el.addEventListener(ev, e => { if (el === audio && !silencio) fn(e); }); }
 function wire(ev, fn){ avisos.push([ev, fn]); attach(audioNormal, ev, fn); }
 let cur = null, switching = false, playingRec = false;
+let quiereSonar = false;        // true si el usuario quiere oír la radio (para reconectar si se corta)
 const ICON_PLAY = 'M8 5v14l11-7z', ICON_PAUSE = 'M6 5h4v14H6zm8 0h4v14h-4z';
 function setStatus(t, cls = ''){ const el = $('pStatus'); el.textContent = t; el.className = 'status ' + cls; }
 function setPlaying(on){ $('pIcon').firstElementChild.setAttribute('d', on ? ICON_PAUSE : ICON_PLAY); $('pBtn').setAttribute('aria-label', on ? 'Pausa' : 'Reproducir'); }
@@ -766,7 +785,9 @@ function showStation(s){
   showLCD(s);
 }
 function play(s, opt = {}){
+  if (cur !== s && !opt.reintento){ probadas = new Set(); }
   cur = s;
+  quiereSonar = true;
   playingRec = false;
   silencio = false; audioNormal.loop = false;
   ensureAudioCtx();
@@ -794,7 +815,7 @@ function toggle(){
   if (playingRec){ audio.paused ? audio.play() : audio.pause(); return; }
   if (!cur) return;
   if (audio.paused){ play(cur); }      // al reanudar volvemos a conectar para oír el directo
-  else { audio.pause(); }
+  else { quiereSonar = false; audio.pause(); }
 }
 $('pBtn').onclick = toggle;
 wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? 'Escuchando grabación' : 'En directo', 'live'); setPlaying(true); });
@@ -804,10 +825,39 @@ wire('pause', () => {
 wire('error', () => {
   // Con ecualizador falló: seguramente la emisora no lo permite. Se reintenta sin él.
   if (audio === audioEq && cur && !playingRec && !noCors.has(cur.stationuuid)){ noCors.add(cur.stationuuid); play(cur); return; }
-  switching = false; staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); setPlaying(false); if (cur && !playingRec){ setStatus('Esta emisora no responde ahora mismo. Prueba otra.', 'err'); $('lRT').textContent = 'Sin señal · prueba otra emisora'; } });
+  // Antes de rendirse, prueba otra versión de la misma emisora
+  if (cur && !playingRec && quiereSonar){ buscarAlternativa(cur); return; }
+  sinSenal(); });
+function sinSenal(){
+  switching = false; staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); setPlaying(false);
+  quiereSonar = false;
+  if (cur && !playingRec){ setStatus('Esta emisora no responde ahora mismo. Prueba otra.', 'err'); $('lRT').textContent = 'Sin señal · prueba otra emisora'; }
+}
+let probadas = new Set();      // direcciones ya probadas de la emisora actual
+async function buscarAlternativa(s){
+  probadas.add(streamUrl(s));
+  if (probadas.size > 4){ sinSenal(); return; }
+  setStatus('Buscando otra señal…');
+  try{
+    const r = (await api('/json/stations/search?hidebroken=true&order=votes&reverse=true&limit=20&name=' + encodeURIComponent(s.name.trim())))
+      .filter(x => usable(x) && nk(x) === nk(s) && !probadas.has(streamUrl(x)));
+    if (cur !== s) return;                          // el usuario ya ha cambiado de emisora
+    if (!r.length){ sinSenal(); return; }
+    const alt = {...r.sort((a, b) => score(b) - score(a))[0], _label: s._label, _mf: s._mf};
+    play(alt, {reintento: true});
+  }catch(e){ sinSenal(); }
+}
+// Si la emisora corta la emisión o se queda cargando mucho rato, se vuelve a conectar sola
+let vigia = null;
+wire('waiting', () => {
+  clearTimeout(vigia);
+  vigia = setTimeout(() => { if (quiereSonar && cur && !playingRec && !audio.paused){ setStatus('Reconectando…'); play(cur, {reintento: true}); } }, 15000);
+});
+wire('playing', () => clearTimeout(vigia));
+wire('ended', () => { if (quiereSonar && cur && !playingRec) setTimeout(() => { if (quiereSonar) { setStatus('Reconectando…'); play(cur, {reintento: true}); } }, 2000); });
 if ('mediaSession' in navigator){
   navigator.mediaSession.setActionHandler('play', () => cur && play(cur));
-  navigator.mediaSession.setActionHandler('pause', () => audio.pause());
+  navigator.mediaSession.setActionHandler('pause', () => { quiereSonar = false; audio.pause(); });
   try { navigator.mediaSession.setActionHandler('stop', () => audio.pause()); } catch(e){}
   // Botones ⏮ ⏭ de la pantalla de bloqueo y de los auriculares
   try { navigator.mediaSession.setActionHandler('nexttrack', () => saltar(1)); } catch(e){}
@@ -1415,6 +1465,20 @@ function dibujaOnda(){
 }
 requestAnimationFrame(dibujaOnda);
 
+/* ---------- Versión ---------- */
+const VERSION = '16', FECHA_VERSION = '2-11-2026';   // cambiar en cada versión nueva
+$('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
+
+/* ---------- Teclas (ordenador) ---------- */
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, select, textarea, [role="slider"]') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === ' '){ e.preventDefault(); toggle(); }
+  else if (e.key === 'ArrowRight'){ e.preventDefault(); rotateKnob(25); step(1); }
+  else if (e.key === 'ArrowLeft'){ e.preventDefault(); rotateKnob(-25); step(-1); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); saltar(1); }
+  else if (e.key === 'ArrowDown'){ e.preventDefault(); saltar(-1); }
+});
+
 /* ---------- Historial ---------- */
 let hist = [];
 try { hist = JSON.parse(localStorage.getItem('radio.hist')) || []; } catch(e){}
@@ -1451,7 +1515,7 @@ function zumbido(){
 
 /* ---------- Apagado suave (temporizador) ---------- */
 function apagadoSuave(){
-  const fin = () => { audio.pause(); aplicarVolumen(); setStatus('Apagada por el temporizador'); };
+  const fin = () => { quiereSonar = false; audio.pause(); aplicarVolumen(); setStatus('Apagada por el temporizador'); };
   if (audio === audioEq && eqGanancia && actx){
     eqGanancia.gain.setTargetAtTime(0, actx.currentTime, 8);   // baja durante unos 30 segundos
     setTimeout(fin, 30000);
@@ -1466,8 +1530,18 @@ const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DO
 const DIAS_C = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const hoyIdx = d => (d.getDay() + 6) % 7;                      // getDay(): domingo = 0 → lo pasamos a lunes = 0
 let psReloj = '';
+// Al abrir la radio: saludo a los nietos en la pantalla durante unos segundos
+const saludoHasta = Date.now() + 7000;
+setTimeout(() => {
+  if (cab.classList.contains('on')) return;
+  $('lFreq').textContent = '♥'; $('lMhz').textContent = '';
+  $('iRDS').classList.add('on');
+  setPS('PARA NUESTROS NIETOS');
+  $('lRT').textContent = 'Con cariño de sus abuelos';
+}, 300);
 setInterval(() => {
   if (cab.classList.contains('on') || cab.classList.contains('tuning') || scanning || switching) { psReloj = ''; return; }
+  if (Date.now() < saludoHasta) return;                         // dejamos ver el saludo a los nietos
   const d = new Date();
   $('lFreq').textContent = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
   $('lMhz').textContent = '';
