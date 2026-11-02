@@ -76,6 +76,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .lcd-top{display:flex;gap:12px;font-size:17px;letter-spacing:.06em}
 .ind{opacity:.16;transition:opacity .3s}
 .ind.on{opacity:1}
+.sig{display:inline-flex;align-items:flex-end;gap:2px;height:14px;margin-left:auto;align-self:center}
+.sig i{width:4px;background:currentColor;opacity:.16;border-radius:1px}
+.sig i:nth-child(1){height:25%}.sig i:nth-child(2){height:50%}.sig i:nth-child(3){height:75%}.sig i:nth-child(4){height:100%}
+.sig.l1 i:nth-child(-n+1),.sig.l2 i:nth-child(-n+2),.sig.l3 i:nth-child(-n+3),.sig.l4 i:nth-child(-n+4){opacity:1}
 .ind.recl.on{color:var(--needle);text-shadow:0 0 7px var(--needle)}
 .lcd-main{display:flex;align-items:baseline;gap:8px}
 .freq{font-size:60px;line-height:.95;font-variant-numeric:tabular-nums}
@@ -183,8 +187,19 @@ img.logo{background:#f3e7d3}
 .info{min-width:0}
 .name{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.st.on .name{color:var(--dial)}
-.st.on .name::before{content:"● ";color:var(--needle)}
+.st{transition:background .3s}
+.st.on{background:color-mix(in srgb,var(--dial) 16%,transparent);box-shadow:inset 4px 0 0 var(--dial);border-radius:8px;padding-left:10px;border-bottom-color:transparent}
+.st.on .name{color:var(--dial);font-weight:700}
+.st.on .logo{box-shadow:0 0 0 2px var(--dial)}
+.vivo{display:none;align-items:flex-end;gap:2px;height:14px;margin-left:6px;vertical-align:-1px}
+.st.on .vivo{display:inline-flex}
+.vivo i{width:3px;height:30%;background:var(--needle);border-radius:1px}
+body.sonando .st.on .vivo i{animation:barra .9s ease-in-out infinite alternate}
+.vivo i:nth-child(2){animation-delay:-.3s!important}.vivo i:nth-child(3){animation-delay:-.6s!important}
+@keyframes barra{from{height:20%}to{height:100%}}
+@media (prefers-reduced-motion:reduce){body.sonando .st.on .vivo i{animation:none;height:70%}}
+.st.on .sub::before{content:"EN ANTENA · ";color:var(--dial);font-weight:700;letter-spacing:.06em}
+#pName{cursor:pointer}
 .star{flex:none;width:44px;height:44px;background:none;border:0;font-size:22px;color:var(--muted)}
 .star[aria-pressed="true"]{color:var(--dial)}
 .msg{color:var(--muted);padding:24px 0;text-align:center;line-height:1.5}
@@ -210,6 +225,9 @@ img.logo{background:#f3e7d3}
 .pbtn svg{width:24px;height:24px;fill:currentColor}
 .timer{flex:none;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--muted);min-width:58px}
 .timer.act{color:var(--dial);border-color:var(--dial)}
+.player .row2{flex-wrap:wrap}
+#nocheVelo{position:fixed;inset:0;z-index:20;pointer-events:none;background:#000;opacity:0;transition:opacity 1.2s}
+body.noche #nocheVelo{opacity:.5}
 .player .row2{display:flex;align-items:center;gap:8px;margin-top:8px}
 .rec{flex:none;display:flex;align-items:center;gap:6px;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--muted)}
 .rec .dot{width:10px;height:10px;border-radius:50%;background:var(--needle)}
@@ -248,7 +266,7 @@ img.logo{background:#f3e7d3}
     </div>
     <div class="face">
       <div class="lcd" aria-live="polite">
-        <div class="lcd-top"><span class="ind on">FM</span><span class="ind" id="iRDS">RDS</span><span class="ind" id="iST">ST</span><span class="ind recl" id="iREC">REC</span><span class="ind" id="iALM">ALM</span></div>
+        <div class="lcd-top"><span class="ind on">FM</span><span class="ind" id="iRDS">RDS</span><span class="ind" id="iST">ST</span><span class="ind recl" id="iREC">REC</span><span class="ind" id="iALM">ALM</span><span class="sig" id="iSig" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
         <div class="lcd-main"><span class="freq" id="lFreq">--.-</span><span class="mhz" id="lMhz">MHz</span></div>
         <div class="ps" id="lPS">MI RADIO</div>
         <canvas class="osc" id="osc" aria-hidden="true"></canvas>
@@ -335,6 +353,7 @@ img.logo{background:#f3e7d3}
   </section>
 </main>
 
+<div id="nocheVelo" aria-hidden="true"></div>
 <div class="player">
   <div class="wrap row">
     <div class="logo" id="pLogo">♪</div>
@@ -349,6 +368,8 @@ img.logo{background:#f3e7d3}
   <div class="wrap row2">
     <button class="timer" id="pTimer" type="button" aria-label="Temporizador de apagado">Apagar</button>
     <button class="rec" id="pRec" type="button"><span class="dot"></span><span id="pRecTxt">Grabar</span></button>
+    <button class="timer" id="pAzar" type="button" aria-label="Emisora al azar">Sorpresa</button>
+    <button class="timer" id="pNoche" type="button" aria-label="Modo noche">Noche</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -478,6 +499,7 @@ function row(s, mode){
   main.type = 'button'; main.className = 'st-main';
   const info = document.createElement('div'); info.className = 'info';
   const n = document.createElement('div'); n.className = 'name'; n.textContent = s._label || s.name.trim();
+  const vivo = document.createElement('span'); vivo.className = 'vivo'; vivo.setAttribute('aria-hidden', 'true'); vivo.innerHTML = '<i></i><i></i><i></i>'; n.append(vivo);
   const sub = document.createElement('div'); sub.className = 'sub'; sub.textContent = subText(s, mode);
   info.append(n, sub);
   main.append(logoEl(s), info);
@@ -604,7 +626,7 @@ async function searchEspana(q){
 $('qEs').addEventListener('input', () => { clearTimeout(esTimer); esTimer = setTimeout(renderEspana, 400); });
 
 /* ---------- Pestaña Mundo ---------- */
-const TAGS = [['','Todas'],['#oc','Onda corta'],['#atc','Aviación'],['news','Noticias'],['pop','Pop'],['rock','Rock'],['classical','Clásica'],['jazz','Jazz'],
+const TAGS = [['','Todas'],['#oc','Onda corta'],['news','Noticias'],['pop','Pop'],['rock','Rock'],['classical','Clásica'],['jazz','Jazz'],
   ['80s','Años 80'],['oldies','Oldies'],['flamenco','Flamenco'],['latin','Latina'],['dance','Dance'],['country','Country'],['blues','Blues']];
 let tag = '', muLoaded = false, muSeq = 0, muTimer;
 TAGS.forEach(([v, l]) => {
@@ -638,7 +660,7 @@ async function loadMundo(){
   const box = $('muOut');
   const seq = ++muSeq;
   message(box, 'Buscando emisoras…');
-  if (tag === '#oc' || tag === '#atc') return loadEspecial(tag, seq);
+  if (tag === '#oc') return loadEspecial(tag, seq);
   const p = new URLSearchParams({hidebroken:'true', order:'votes', reverse:'true', limit:'200'});
   const cc = $('pais').value, q = $('qMu').value.trim();
   if (cc) p.set('countrycode', cc);
@@ -661,14 +683,6 @@ $('pais').addEventListener('change', loadMundo);
 $('qMu').addEventListener('input', () => { clearTimeout(muTimer); muTimer = setTimeout(loadMundo, 450); });
 
 /* ---------- Onda corta y aviación ---------- */
-// ¿Es de verdad una emisión de control aéreo y no música?
-const MUSICA = /\b(music|musica|lofi|lo-fi|chill|ambient|relax|pop|rock|jazz|dance|house|hits|beats|lounge|electronic|classical|country|oldies|radio show)\b/i;
-const AVIACION = /\b(atc|tower|torre|approach|aproximaci[oó]n|ground|rodadura|departure|arrival|center|centre|control|clearance|delivery|atis|airport|aeropuerto|airfield|aerodromo|aeródromo|[A-Z]{4})\b/;
-function esControlAereo(x){
-  const etiquetas = (x.tags || '').toLowerCase();
-  if (MUSICA.test(etiquetas) || MUSICA.test(x.name)) return false;          // fuera la música
-  return AVIACION.test(x.name) || /\b(atc|air traffic control|tower|approach)\b/.test(etiquetas);
-}
 const ONDA_CORTA = [
   ['Radio Exterior de España', 'radio exterior'],
   ['BBC World Service', 'bbc world service'],
@@ -715,23 +729,6 @@ async function loadEspecial(kind, seq){
         ['WebSDR de la Universidad de Twente', 'http://websdr.ewi.utwente.nl:8901/', 'Receptor en Holanda que cubre toda la onda corta. Tiene modos AM, banda lateral (LSB/USB) y CW: elige el modo, pulsa en una señal del dibujo y afina.'],
         ['Mapa de receptores KiwiSDR', 'http://rx.linkfanel.net/', 'Cientos de receptores de aficionados en todo el mundo, también en España. Modos AM, LSB/USB y CW, con decodificadores de Morse y RTTY (extensión FSK).']
       ]));
-  } else {
-    // tagExact=true: la etiqueta tiene que ser exactamente esa, no un trozo de otra palabra
-    const [a, b, c] = await Promise.all([
-      api(`/json/stations/search?${qs}&limit=200&tagExact=true&tag=atc`).catch(() => []),
-      api(`/json/stations/search?${qs}&limit=200&tagExact=true&tag=` + encodeURIComponent('air traffic control')).catch(() => []),
-      api(`/json/stations/search?${qs}&limit=200&tagExact=true&tag=aviation`).catch(() => [])
-    ]);
-    if (seq !== muSeq) return;
-    const r = dedupe([...a, ...b, ...c]).filter(esControlAereo);
-    setBand('vMu', r);
-    box.replaceChildren();
-    box.append(heading('Control aéreo por Internet'));
-    if (r.length) pagedList(box, r, 'mu');
-    else box.append(note('Ahora mismo el catálogo no tiene emisiones de control aéreo.'));
-    box.append(heading('Más aeropuertos'), linksBox([
-      ['LiveATC.net', 'https://www.liveatc.net/', 'Torres de control de aeropuertos de todo el mundo. Busca por el código del aeropuerto, por ejemplo LEAL para Alicante-Elche.']
-    ]));
   }
 }
 
@@ -1466,8 +1463,72 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '16', FECHA_VERSION = '2-11-2026';   // cambiar en cada versión nueva
+const VERSION = '17', FECHA_VERSION = '2-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
+
+/* ---------- Resaltado de la emisora que suena ---------- */
+// Toca el nombre del reproductor y la lista va hasta la emisora que suena
+$('pName').onclick = () => {
+  const vista = document.querySelector('main section:not([hidden])');
+  const fila = vista && vista.querySelector('.st.on');
+  if (fila) fila.scrollIntoView({behavior: 'smooth', block: 'center'});
+  else if (cur) $('lRT').textContent = 'No está en esta lista';
+};
+
+/* ---------- Barras de señal ---------- */
+function barrasSenal(){
+  const el = $('iSig');
+  let n = 0;
+  if (cab.classList.contains('tuning')) n = 1 + Math.floor(Math.random() * 3);   // buscando: la señal baila
+  else if (cab.classList.contains('on') && cur && !playingRec){
+    const b = cur.bitrate || 96;
+    n = b >= 128 ? 4 : b >= 96 ? 3 : b >= 64 ? 2 : 1;                           // más calidad, más barras
+  }
+  el.className = 'sig' + (n ? ' l' + n : '');
+  document.body.classList.toggle('sonando', cab.classList.contains('on'));
+}
+setInterval(barrasSenal, 400);
+
+/* ---------- Sorpresa: una emisora al azar ---------- */
+$('pAzar').onclick = async () => {
+  ensureAudioCtx();
+  let s2 = null;
+  if (activeBand === 'vMu' || !bands[activeBand].length){
+    // En Mundo: cualquier emisora del planeta con buen sonido
+    $('lRT').textContent = 'Buscando una sorpresa…';
+    try {
+      const r = dedupe(await api('/json/stations/search?hidebroken=true&order=random&limit=40'))
+        .filter(x => (x.bitrate || 96) >= 64 && x.lastcheckok !== 0);
+      s2 = r[0];
+    } catch(e){}
+  } else {
+    const b = bands[activeBand].filter(x => !cur || x.stationuuid !== cur.stationuuid);
+    s2 = b[Math.floor(Math.random() * b.length)];
+  }
+  if (s2){ play(s2); $('lRT').textContent = '¡Sorpresa! · ' + rtText(s2); }
+  else $('lRT').textContent = 'No he encontrado ninguna. Prueba otra vez.';
+};
+
+/* ---------- Modo noche: oscurece la pantalla ---------- */
+const MODOS_NOCHE = [['auto', 'Noche: auto'], ['on', 'Noche: sí'], ['off', 'Noche: no']];
+let modoNoche = 'auto';
+try { modoNoche = localStorage.getItem('radio.noche') || 'auto'; } catch(e){}
+function aplicaNoche(){
+  const h = new Date().getHours();
+  const oscuro = modoNoche === 'on' || (modoNoche === 'auto' && (h >= 21 || h < 7));   // auto: de 21:00 a 7:00
+  document.body.classList.toggle('noche', oscuro);
+  const b = $('pNoche');
+  b.textContent = MODOS_NOCHE.find(m => m[0] === modoNoche)[1];
+  b.classList.toggle('act', oscuro);
+}
+$('pNoche').onclick = () => {
+  const i = MODOS_NOCHE.findIndex(m => m[0] === modoNoche);
+  modoNoche = MODOS_NOCHE[(i + 1) % MODOS_NOCHE.length][0];
+  try { localStorage.setItem('radio.noche', modoNoche); } catch(e){}
+  aplicaNoche();
+};
+aplicaNoche();
+setInterval(aplicaNoche, 60000);
 
 /* ---------- Teclas (ordenador) ---------- */
 document.addEventListener('keydown', e => {
