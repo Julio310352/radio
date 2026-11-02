@@ -107,6 +107,18 @@ input[type=range]{accent-color:var(--dial)}
 .eqpre{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .eqpre button{background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted)}
 .eqpre button[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
+.alpanel .dias{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 16px;margin-top:8px}
+.dia{display:flex;align-items:center;gap:8px;font-family:var(--f-lcd);font-size:20px;color:var(--lcd)}
+.dia input[type=checkbox]{width:20px;height:20px;accent-color:var(--dial)}
+.dia span{width:3em}
+.dia input[type=time]{flex:1;min-width:120px;max-width:170px;background:transparent;color:var(--lcd);border:1px solid #4a3522;border-radius:6px;padding:3px 6px;font-family:var(--f-lcd);font-size:20px}
+.alrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-family:var(--f-lcd);font-size:19px;color:var(--lcd)}
+.alrow select{flex:1;min-width:0;background:transparent;color:var(--lcd);border:1px solid #4a3522;border-radius:6px;padding:4px 6px;font-family:var(--f-lcd);font-size:19px}
+.alarm-go{width:100%;margin-top:10px;min-height:44px}
+.alarm-go.armed{background:linear-gradient(180deg,#ffcf7a,var(--dial) 60%,#b77a1c)}
+.ajustes{width:100%;min-height:70px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px;font-family:ui-monospace,monospace;font-size:12px;word-break:break-all}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.btnrow .btn{margin-top:6px}
 .knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
@@ -210,7 +222,7 @@ img.logo{background:#f3e7d3}
     </div>
     <div class="face">
       <div class="lcd" aria-live="polite">
-        <div class="lcd-top"><span class="ind on">FM</span><span class="ind" id="iRDS">RDS</span><span class="ind" id="iST">ST</span><span class="ind recl" id="iREC">REC</span></div>
+        <div class="lcd-top"><span class="ind on">FM</span><span class="ind" id="iRDS">RDS</span><span class="ind" id="iST">ST</span><span class="ind recl" id="iREC">REC</span><span class="ind" id="iALM">ALM</span></div>
         <div class="lcd-main"><span class="freq" id="lFreq">--.-</span><span class="mhz" id="lMhz">MHz</span></div>
         <div class="ps" id="lPS">MI RADIO</div>
         <div class="rt" id="lRT">Gira la rueda para buscar emisoras</div>
@@ -231,6 +243,7 @@ img.logo{background:#f3e7d3}
           <span class="vlab">VOL</span>
           <input type="range" id="vol" min="0" max="1" step="0.01" value="1" aria-label="Volumen">
           <button class="mbtn" id="eqBtn" type="button" aria-expanded="false" aria-controls="eqPanel">EQ</button>
+          <button class="mbtn" id="alBtn" type="button" aria-expanded="false" aria-controls="alPanel">DESP</button>
         </div>
         <p class="vhint" id="vHint" hidden>En el iPhone el volumen se cambia con los botones laterales, salvo con el ecualizador encendido.</p>
         <div class="eqpanel off" id="eqPanel" hidden>
@@ -238,6 +251,13 @@ img.logo{background:#f3e7d3}
           <div class="eqbands" id="eqBands"></div>
           <div class="eqpre" id="eqPre"></div>
           <p class="vhint">Si una emisora no lo permite, suena igual pero sin ecualizador.</p>
+        </div>
+        <div class="eqpanel alpanel" id="alPanel" hidden>
+          <div class="eqsw">Despertador</div>
+          <div class="dias" id="alDias"></div>
+          <div class="alrow"><label for="alSt">Emisora:</label><select id="alSt"></select></div>
+          <button class="mbtn alarm-go" id="alGo" type="button">ACTIVAR DESPERTADOR</button>
+          <p class="vhint">Antes de dormir: pulsa Activar, deja Mi Radio abierta y el iPhone cargando. Puedes bloquear la pantalla. Si cierras la app, el despertador no sonará.</p>
         </div>
       </div>
     </div>
@@ -677,9 +697,12 @@ async function loadEspecial(kind, seq){
 function renderFavs(){
   const box = $('faOut');
   box.replaceChildren();
-  if (!favs.length){ message(box, 'Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'); return; }
-  box.append(heading('Mis favoritas'), listEl(favs, 'mu'));
+  box.append(heading('Mis favoritas'));
+  if (favs.length) box.append(listEl(favs, 'mu'));
+  else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
   setBand('vFa', favs);
+  if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
+  box.append(panelAjustes());
 }
 
 /* ---------- Pestañas ---------- */
@@ -701,7 +724,8 @@ let audio = audioNormal;       // el reproductor que está en uso
 const noCors = new Set();      // emisoras que no permiten ecualizador
 // Los avisos (sonando, error...) se apuntan aquí para poder ponérselos a los dos reproductores
 const avisos = [];
-function attach(el, ev, fn){ el.addEventListener(ev, e => { if (el === audio) fn(e); }); }
+let silencio = false;          // true mientras suena el silencio que mantiene despierta la app
+function attach(el, ev, fn){ el.addEventListener(ev, e => { if (el === audio && !silencio) fn(e); }); }
 function wire(ev, fn){ avisos.push([ev, fn]); attach(audioNormal, ev, fn); }
 let cur = null, switching = false, playingRec = false;
 const ICON_PLAY = 'M8 5v14l11-7z', ICON_PAUSE = 'M6 5h4v14H6zm8 0h4v14h-4z';
@@ -717,14 +741,18 @@ function showStation(s){
   document.querySelectorAll('.st').forEach(li => li.classList.toggle('on', li.dataset.id === s.stationuuid));
   showLCD(s);
 }
-function play(s){
+function play(s, opt = {}){
   cur = s;
   playingRec = false;
-  ensureAudioCtx(); staticOn(); cab.classList.add('tuning');
+  silencio = false; audioNormal.loop = false;
+  ensureAudioCtx();
+  if (!cab.classList.contains('on')) zumbido();        // las lámparas se calientan
+  staticOn(); cab.classList.add('tuning');
+  addHist(s);
   showStation(s);
   try { localStorage.setItem('radio.last', JSON.stringify(slim(s))); } catch(e){}
   setStatus('Sintonizando…');
-  pickPlayer(s);
+  if (opt.normal) usePlayer(audioNormal); else pickPlayer(s);
   switching = true;
   audio.src = streamUrl(s);
   audio.play().catch(() => {});
@@ -747,7 +775,8 @@ function toggle(){
 $('pBtn').onclick = toggle;
 wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? 'Escuchando grabación' : 'En directo', 'live'); setPlaying(true); });
 wire('waiting', () => setStatus('Cargando…'));
-wire('pause', () => { if (!switching){ staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); } setPlaying(false); if (!switching && !audio.error) setStatus('En pausa'); });
+wire('pause', () => {
+  if (alarma.armado && !switching) setTimeout(() => { if (audio.paused && !switching) modoSilencio(); }, 400); if (!switching){ staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); } setPlaying(false); if (!switching && !audio.error) setStatus('En pausa'); });
 wire('error', () => {
   // Con ecualizador falló: seguramente la emisora no lo permite. Se reintenta sin él.
   if (audio === audioEq && cur && !playingRec && !noCors.has(cur.stationuuid)){ noCors.add(cur.stationuuid); play(cur); return; }
@@ -756,6 +785,9 @@ if ('mediaSession' in navigator){
   navigator.mediaSession.setActionHandler('play', () => cur && play(cur));
   navigator.mediaSession.setActionHandler('pause', () => audio.pause());
   try { navigator.mediaSession.setActionHandler('stop', () => audio.pause()); } catch(e){}
+  // Botones ⏮ ⏭ de la pantalla de bloqueo y de los auriculares
+  try { navigator.mediaSession.setActionHandler('nexttrack', () => saltar(1)); } catch(e){}
+  try { navigator.mediaSession.setActionHandler('previoustrack', () => saltar(-1)); } catch(e){}
 }
 
 /* ---------- Volumen y ecualizador ---------- */
@@ -869,7 +901,7 @@ $('pTimer').onclick = () => {
   const m = STEPS[stepIdx];
   offAt = m ? Date.now() + m * 60000 : 0;
   if (m){
-    offTimer = setTimeout(() => { audio.pause(); offAt = 0; stepIdx = 0; clearInterval(tick); updTimer(); setStatus('Apagada por el temporizador'); }, m * 60000);
+    offTimer = setTimeout(() => { offAt = 0; stepIdx = 0; clearInterval(tick); updTimer(); apagadoSuave(); }, m * 60000);
     tick = setInterval(updTimer, 20000);
   }
   updTimer();
@@ -1255,6 +1287,223 @@ async function autoScan(){
 }
 $('mAuto').onclick = autoScan;
 renderMems();
+
+/* ---------- Historial ---------- */
+let hist = [];
+try { hist = JSON.parse(localStorage.getItem('radio.hist')) || []; } catch(e){}
+function addHist(s){
+  hist = [slim(s), ...hist.filter(h => h.stationuuid !== s.stationuuid)].slice(0, 20);   // la última, arriba
+  try { localStorage.setItem('radio.hist', JSON.stringify(hist)); } catch(e){}
+}
+
+/* ---------- ⏮ ⏭: memoria anterior / siguiente ---------- */
+function saltar(dir){
+  const lista = mems.length ? mems : bands[activeBand];
+  if (!lista.length) return;
+  let i = cur ? lista.findIndex(x => x.stationuuid === cur.stationuuid) : -1;
+  i = i < 0 ? 0 : (i + dir + lista.length) % lista.length;
+  play(lista[i]);
+}
+
+/* ---------- Zumbido de las lámparas al encender ---------- */
+function zumbido(){
+  if (!actx) return;
+  try{
+    const t = actx.currentTime, g = actx.createGain();
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.exponentialRampToValueAtTime(.035, t + .4);          // sube...
+    g.gain.exponentialRampToValueAtTime(.0001, t + 2);          // ...y se apaga al calentar
+    g.connect(actx.destination);
+    [50, 100, 150].forEach((f, k) => {                          // zumbido de la red eléctrica (50 Hz y armónicos)
+      const o = actx.createOscillator(), og = actx.createGain();
+      o.frequency.value = f; og.gain.value = [1, .5, .25][k];
+      o.connect(og).connect(g); o.start(t); o.stop(t + 2.1);
+    });
+  }catch(e){}
+}
+
+/* ---------- Apagado suave (temporizador) ---------- */
+function apagadoSuave(){
+  const fin = () => { audio.pause(); aplicarVolumen(); setStatus('Apagada por el temporizador'); };
+  if (audio === audioEq && eqGanancia && actx){
+    eqGanancia.gain.setTargetAtTime(0, actx.currentTime, 8);   // baja durante unos 30 segundos
+    setTimeout(fin, 30000);
+  } else if (!volFijo){
+    const v0 = audio.volume; let n = 0;
+    const iv = setInterval(() => { n++; audio.volume = Math.max(0, v0 * (1 - n / 30)); if (n >= 30){ clearInterval(iv); fin(); } }, 1000);
+  } else fin();                                                // iPhone sin ecualizador: Apple no deja bajar el volumen
+}
+
+/* ---------- Reloj en la pantalla ---------- */
+const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+const DIAS_C = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const hoyIdx = d => (d.getDay() + 6) % 7;                      // getDay(): domingo = 0 → lo pasamos a lunes = 0
+let psReloj = '';
+setInterval(() => {
+  if (cab.classList.contains('on') || cab.classList.contains('tuning') || scanning || switching) { psReloj = ''; return; }
+  const d = new Date();
+  $('lFreq').textContent = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+  $('lMhz').textContent = '';
+  $('iRDS').classList.remove('on');
+  const dia = DIAS[hoyIdx(d)];
+  if (psReloj !== dia){ psReloj = dia; setPS(dia); }
+  const prox = proximaAlarma();
+  $('lRT').textContent = prox ? `Despertador: ${prox}` : d.toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'});
+}, 1000);
+
+/* ---------- Despertador ---------- */
+let alarma = {dias: DIAS_C.map(() => ({on: false, h: '07:00'})), st: 'last', armado: false, hecho: ''};
+try { Object.assign(alarma, JSON.parse(localStorage.getItem('radio.alarma')) || {}); } catch(e){}
+alarma.armado = false;                                         // hay que activarlo cada noche (lo pide el iPhone)
+function saveAlarma(){ try { localStorage.setItem('radio.alarma', JSON.stringify({...alarma, armado: false})); } catch(e){} }
+function proximaAlarma(){
+  const ahora = new Date();
+  for (let k = 0; k < 8; k++){
+    const d = new Date(ahora); d.setDate(d.getDate() + k);
+    const a = alarma.dias[hoyIdx(d)];
+    if (!a.on) continue;
+    const [h, m] = a.h.split(':').map(Number);
+    d.setHours(h, m, 0, 0);
+    if (d > ahora) return (k === 0 ? 'hoy' : k === 1 ? 'mañana' : d.toLocaleDateString('es-ES', {weekday: 'long'})) + ' ' + a.h;
+  }
+  return '';
+}
+// Construye el panel: un renglón por día
+DIAS_C.forEach((c, i) => {
+  const row = document.createElement('label'); row.className = 'dia';
+  const chk = document.createElement('input'); chk.type = 'checkbox'; chk.id = 'alOn' + i; chk.checked = alarma.dias[i].on;
+  const nom = document.createElement('span'); nom.textContent = DIAS[i].slice(0, 3);
+  const hora = document.createElement('input'); hora.type = 'time'; hora.id = 'alH' + i; hora.value = alarma.dias[i].h;
+  hora.setAttribute('aria-label', 'Hora del ' + DIAS[i].toLowerCase());
+  chk.onchange = () => { alarma.dias[i].on = chk.checked; saveAlarma(); };
+  hora.onchange = () => { if (hora.value){ alarma.dias[i].h = hora.value; alarma.dias[i].on = true; chk.checked = true; saveAlarma(); } };
+  row.append(chk, nom, hora); $('alDias').append(row);
+});
+function rellenaEmisoras(){
+  const sel = $('alSt'); sel.replaceChildren();
+  const o = document.createElement('option'); o.value = 'last'; o.textContent = 'La última que escuché'; sel.append(o);
+  mems.forEach((m, i) => { const op = document.createElement('option'); op.value = 'm' + m.stationuuid; op.textContent = `M${i + 1} ${(m._label || m.name).trim()}`; sel.append(op); });
+  sel.value = [...sel.options].some(x => x.value === alarma.st) ? alarma.st : 'last';
+}
+$('alSt').onchange = e => { alarma.st = e.target.value; saveAlarma(); };
+$('alBtn').onclick = () => {
+  const p = $('alPanel'); p.hidden = !p.hidden; $('alBtn').setAttribute('aria-expanded', !p.hidden);
+  if (!p.hidden) rellenaEmisoras();
+};
+
+// Un segundo de silencio en formato WAV, fabricado aquí mismo
+const SILENCIO = (() => {
+  const n = 8000, b = new Uint8Array(44 + n), v = new DataView(b.buffer);
+  const txt = (o, t) => [...t].forEach((c, i) => b[o + i] = c.charCodeAt(0));
+  txt(0, 'RIFF'); v.setUint32(4, 36 + n, true); txt(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+  txt(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
+  let bin = ''; b.forEach(x => bin += String.fromCharCode(x));
+  return 'data:audio/wav;base64,' + btoa(bin);
+})();
+function modoSilencio(){
+  if (!alarma.armado) return;
+  silencio = true; switching = false;
+  usePlayer(audioNormal);
+  audioNormal.loop = true; audioNormal.src = SILENCIO;
+  audioNormal.play().catch(() => {});
+  cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on');
+  setPlaying(false); setStatus('Despertador activo · ' + proximaAlarma());
+}
+let wakeLock = null;
+async function pantallaEncendida(){
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } } catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if (alarma.armado && document.visibilityState === 'visible') pantallaEncendida(); });
+function updAlarmaUI(){
+  $('alGo').textContent = alarma.armado ? 'DESACTIVAR DESPERTADOR' : 'ACTIVAR DESPERTADOR';
+  $('alGo').classList.toggle('armed', alarma.armado);
+  $('iALM').classList.toggle('on', alarma.armado);
+}
+$('alGo').onclick = () => {
+  if (!alarma.armado){
+    if (!alarma.dias.some(d => d.on)){ $('lRT').textContent = 'Marca al menos un día'; return; }
+    alarma.armado = true;
+    ensureAudioCtx();
+    // Este toque "desbloquea" el reproductor: así podrá sonar solo a la hora elegida
+    if (audio.paused || playingRec) modoSilencio();
+    pantallaEncendida();
+    $('lRT').textContent = 'Despertador: ' + proximaAlarma();
+  } else {
+    alarma.armado = false;
+    if (silencio){ audioNormal.pause(); audioNormal.loop = false; audioNormal.removeAttribute('src'); silencio = false; setStatus('Despertador desactivado'); }
+    if (wakeLock){ wakeLock.release().catch(() => {}); wakeLock = null; }
+  }
+  updAlarmaUI();
+};
+function sonarAlarma(){
+  let st = null;
+  if (alarma.st.startsWith('m')) st = mems.find(m => 'm' + m.stationuuid === alarma.st);
+  if (!st){ try { st = JSON.parse(localStorage.getItem('radio.last')); } catch(e){} }
+  st = st || cur || mems[0] || bands.vEs[0];
+  if (!st) return;
+  play(st, {normal: true});
+  // Volumen que sube poco a poco (donde el navegador lo permite)
+  if (!volFijo){
+    let n = 0; audioNormal.volume = .05;
+    const iv = setInterval(() => { n++; audioNormal.volume = Math.min(eq.vol, .05 + eq.vol * n / 40); if (n >= 40 || audio !== audioNormal) clearInterval(iv); }, 1500);
+  }
+  setTimeout(() => { $('lRT').textContent = '¡Buenos días! · ' + rtText(st); }, 3000);
+}
+// Cada 15 segundos mira si toca sonar. Si la app estuvo dormida, aún suena si no han pasado 10 minutos.
+setInterval(() => {
+  if (!alarma.armado) return;
+  const ahora = new Date(), a = alarma.dias[hoyIdx(ahora)];
+  if (!a.on) return;
+  const [h, m] = a.h.split(':').map(Number);
+  const t = new Date(ahora); t.setHours(h, m, 0, 0);
+  const clave = ahora.toDateString() + ' ' + a.h;
+  if (ahora >= t && ahora - t < 10 * 60000 && alarma.hecho !== clave){
+    alarma.hecho = clave; saveAlarma();
+    sonarAlarma();
+  }
+}, 15000);
+updAlarmaUI();
+
+/* ---------- Pasar ajustes a otro aparato ---------- */
+function panelAjustes(){
+  const d = document.createElement('div');
+  d.append(heading('Pasar ajustes a otro aparato'),
+    note('Copia tus favoritas, memorias, ecualizador y despertador en un código. Pégalo en Mi Radio del otro aparato (por ejemplo, del ordenador al iPhone) y pulsa Cargar.'));
+  const ta = document.createElement('textarea'); ta.className = 'ajustes'; ta.id = 'ajTxt';
+  ta.placeholder = 'Aquí aparece el código, o pega aquí el código del otro aparato';
+  const fila = document.createElement('div'); fila.className = 'btnrow';
+  const bC = document.createElement('button'); bC.type = 'button'; bC.className = 'btn'; bC.textContent = 'Copiar mis ajustes';
+  const bL = document.createElement('button'); bL.type = 'button'; bL.className = 'btn'; bL.textContent = 'Cargar ajustes';
+  const msg = document.createElement('p'); msg.className = 'note';
+  bC.onclick = () => {
+    const datos = {v: 1, favs, mems, eq, alarma: {...alarma, armado: false}};
+    ta.value = btoa(unescape(encodeURIComponent(JSON.stringify(datos))));   // texto → base64 (admite tildes)
+    ta.select();
+    const ok = () => msg.textContent = 'Código copiado. Pégalo en el otro aparato.';
+    const no = () => msg.textContent = 'Código seleccionado: cópialo con Copiar del menú.';
+    if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(ok, no); else no();
+  };
+  let armado = 0;
+  bL.onclick = () => {
+    let datos;
+    try { datos = JSON.parse(decodeURIComponent(escape(atob(ta.value.trim())))); } catch(e){ msg.textContent = 'El código no es válido. Pégalo entero.'; return; }
+    if (!armado){ armado = setTimeout(() => { armado = 0; bL.textContent = 'Cargar ajustes'; }, 4000); bL.textContent = '¿Sustituir los de aquí?'; return; }
+    clearTimeout(armado); armado = 0; bL.textContent = 'Cargar ajustes';
+    try {
+      if (datos.favs) localStorage.setItem('radio.favs', JSON.stringify(datos.favs));
+      if (datos.mems) localStorage.setItem('radio.mem', JSON.stringify(datos.mems));
+      if (datos.eq) localStorage.setItem('radio.eq', JSON.stringify(datos.eq));
+      if (datos.alarma) localStorage.setItem('radio.alarma', JSON.stringify(datos.alarma));
+    } catch(e){ msg.textContent = 'No se han podido guardar en este aparato.'; return; }
+    msg.textContent = 'Ajustes cargados. Reiniciando…';
+    setTimeout(() => location.reload(), 1200);
+  };
+  fila.append(bC, bL);
+  d.append(ta, fila, msg);
+  return d;
+}
 
 /* ---------- Arranque ---------- */
 try {
