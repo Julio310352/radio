@@ -142,6 +142,17 @@ input[type=range]{accent-color:var(--dial)}
   text-shadow:0 1px 0 rgba(255,255,255,.45)}
 .placa .corazon{color:var(--needle)}
 .version{margin:8px 0 0;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);opacity:.8}
+.memfila{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line);padding:6px 0}
+.memfila .mnum{flex:none;width:2.4em;font-family:var(--f-lcd);font-size:20px;color:var(--dial)}
+.memfila input{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px;font-size:15px;color:var(--text)}
+.memfila input:focus{border-color:var(--line);background:var(--panel)}
+.memfila .mini{min-width:40px}
+.prog{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;display:grid;gap:8px}
+.prog .fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.prog label{font-size:14px;color:var(--muted);min-width:5.5em}
+.prog select,.prog input{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:15px}
+.estad{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0;font-size:15px}
+.estad span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
@@ -252,6 +263,7 @@ body.noche #nocheVelo{opacity:.5}
       <div class="topbtns">
         <select class="skinsel" id="skin" aria-label="Color de la radio"></select>
         <button class="qbtn" id="qBtn" type="button">Calidad alta</button>
+        <button class="qbtn" id="tamBtn" type="button" aria-label="Tamaño de letra">A</button>
       </div>
     </div>
     <div class="tubes" aria-hidden="true">
@@ -349,6 +361,17 @@ body.noche #nocheVelo{opacity:.5}
 
   <!-- GRABACIONES -->
   <section id="vGr" hidden>
+    <h2>Programar una grabación</h2>
+    <div class="prog">
+      <div class="fila"><label for="pgSt">Emisora</label><select id="pgSt"></select></div>
+      <div class="fila"><label for="pgIni">Empieza</label><input type="datetime-local" id="pgIni"></div>
+      <div class="fila"><label for="pgDur">Duración</label><select id="pgDur">
+        <option value="15">15 minutos</option><option value="30">30 minutos</option><option value="60" selected>1 hora</option>
+        <option value="90">1 h 30 min</option><option value="120">2 horas</option><option value="180">3 horas</option></select></div>
+      <button class="btn" id="pgOk" type="button">Programar grabación</button>
+      <p class="vhint" id="pgMsg">Deja Mi Radio abierta (puedes bloquear la pantalla) y el iPhone cargando.</p>
+      <ul class="list" id="pgLista"></ul>
+    </div>
     <div id="grOut"></div>
   </section>
 </main>
@@ -741,7 +764,7 @@ function renderFavs(){
   else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
   setBand('vFa', favs);
   if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
-  box.append(panelAjustes());
+  box.append(panelMemorias(), panelEstadisticas(), panelAjustes());
 }
 
 /* ---------- Pestañas ---------- */
@@ -749,7 +772,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => { x.setAttribute('aria-selected', x === t); $(x.dataset.v).hidden = x !== t; });
   if (t.dataset.v === 'vMu' && !muLoaded){ muLoaded = true; loadCountries(); loadMundo(); }
   if (t.dataset.v === 'vFa') renderFavs();
-  if (t.dataset.v === 'vGr') renderGrab();
+  if (t.dataset.v === 'vGr'){ renderGrab(); rellenaProg(); }
   else { activeBand = t.dataset.v; tuneIdx = -1; refreshDial(); }
   const nav = document.querySelector('.tabsbar');
   if (window.scrollY > nav.offsetTop) window.scrollTo(0, nav.offsetTop);
@@ -818,7 +841,7 @@ $('pBtn').onclick = toggle;
 wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? 'Escuchando grabación' : 'En directo', 'live'); setPlaying(true); });
 wire('waiting', () => setStatus('Cargando…'));
 wire('pause', () => {
-  if (alarma.armado && !switching) setTimeout(() => { if (audio.paused && !switching) modoSilencio(); }, 400); if (!switching){ staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); } setPlaying(false); if (!switching && !audio.error) setStatus('En pausa'); });
+  if (necesitaVigilia() && !switching) setTimeout(() => { if (audio.paused && !switching) modoSilencio(); }, 400); if (!switching){ staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); } setPlaying(false); if (!switching && !audio.error) setStatus('En pausa'); });
 wire('error', () => {
   // Con ecualizador falló: seguramente la emisora no lo permite. Se reintenta sin él.
   if (audio === audioEq && cur && !playingRec && !noCors.has(cur.stationuuid)){ noCors.add(cur.stationuuid); play(cur); return; }
@@ -1463,7 +1486,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '17', FECHA_VERSION = '2-11-2026';   // cambiar en cada versión nueva
+const VERSION = '18', FECHA_VERSION = '5-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -1529,6 +1552,142 @@ $('pNoche').onclick = () => {
 };
 aplicaNoche();
 setInterval(aplicaNoche, 60000);
+
+/* ---------- Tamaño de letra ---------- */
+const TAMANOS = [['A', 1], ['A+', 1.15], ['A++', 1.3]];
+let tam = 0;
+try { tam = +(localStorage.getItem('radio.tam') || 0) % TAMANOS.length; } catch(e){}
+function aplicaTam(){
+  document.documentElement.style.zoom = TAMANOS[tam][1];      // agranda toda la app
+  $('tamBtn').textContent = TAMANOS[tam][0];
+}
+$('tamBtn').onclick = () => { tam = (tam + 1) % TAMANOS.length; try { localStorage.setItem('radio.tam', tam); } catch(e){} aplicaTam(); };
+aplicaTam();
+
+/* ---------- Ordenar, renombrar y borrar memorias ---------- */
+function panelMemorias(){
+  const d = document.createElement('div');
+  d.append(heading('Mis memorias'));
+  if (!mems.length){ d.append(note('Aún no hay memorias. Pulsa AUTO o MEM en la radio.')); return d; }
+  d.append(note('Toca un nombre para cambiarlo. Usa ↑ ↓ para ordenarlas.'));
+  mems.forEach((m, i) => {
+    const f = document.createElement('div'); f.className = 'memfila';
+    const num = document.createElement('span'); num.className = 'mnum'; num.textContent = 'M' + (i + 1);
+    const nombre = document.createElement('input'); nombre.type = 'text'; nombre.id = 'mn' + i;
+    nombre.value = (m._label || m.name).trim(); nombre.setAttribute('aria-label', 'Nombre de la memoria ' + (i + 1));
+    nombre.onchange = () => { m._label = nombre.value.trim() || m.name; saveMems(); };
+    const mover = (dir) => () => {
+      const j = i + dir; if (j < 0 || j >= mems.length) return;
+      [mems[i], mems[j]] = [mems[j], mems[i]];                  // intercambia las dos memorias
+      saveMems(); renderFavs();
+    };
+    let armado = 0;
+    const borrar = miniBtn('✕', 'Borrar memoria', '', () => {
+      if (!armado){ armado = setTimeout(() => { armado = 0; borrar.textContent = '✕'; borrar.classList.remove('warn'); }, 4000); borrar.textContent = '¿Seguro?'; borrar.classList.add('warn'); return; }
+      clearTimeout(armado); mems.splice(i, 1); saveMems(); renderFavs();
+    });
+    f.append(num, nombre, miniBtn('▶', 'Escuchar', 'play', () => play(m)), miniBtn('↑', 'Subir', '', mover(-1)), miniBtn('↓', 'Bajar', '', mover(1)), borrar);
+    d.append(f);
+  });
+  return d;
+}
+
+/* ---------- Tiempo escuchado por emisora ---------- */
+let estad = {};
+try { estad = JSON.parse(localStorage.getItem('radio.estad')) || {}; } catch(e){}
+let estadSucio = 0;
+setInterval(() => {
+  if (!cab.classList.contains('on') || !cur || playingRec || silencio) return;
+  const e = estad[cur.stationuuid] || (estad[cur.stationuuid] = {s: slim(cur), t: 0});
+  e.t += 10; e.s = slim(cur);                                   // suma 10 segundos
+  if (++estadSucio >= 3){ estadSucio = 0; try { localStorage.setItem('radio.estad', JSON.stringify(estad)); } catch(err){} }
+}, 10000);
+function fmtHoras(seg){
+  const h = Math.floor(seg / 3600), m = Math.floor(seg % 3600 / 60);
+  return h ? `${h} h ${m} min` : `${m} min`;
+}
+function panelEstadisticas(){
+  const d = document.createElement('div');
+  const top = Object.values(estad).filter(e => e.t >= 60).sort((a, b) => b.t - a.t).slice(0, 10);
+  if (!top.length) return d;
+  const total = Object.values(estad).reduce((a, e) => a + e.t, 0);
+  d.append(heading('Mis más escuchadas'), note(`En total has escuchado ${fmtHoras(total)} de radio.`));
+  top.forEach((e, i) => {
+    const f = document.createElement('div'); f.className = 'estad';
+    const n = document.createElement('span'); n.textContent = `${i + 1}. ${(e.s._label || e.s.name).trim()}`;
+    const t = document.createElement('span'); t.textContent = fmtHoras(e.t);
+    f.append(n, t); f.style.cursor = 'pointer'; f.onclick = () => play(e.s);
+    d.append(f);
+  });
+  return d;
+}
+
+/* ---------- Grabación programada ---------- */
+let progs = [];
+try { progs = JSON.parse(localStorage.getItem('radio.prog')) || []; } catch(e){}
+const guardaProgs = () => { try { localStorage.setItem('radio.prog', JSON.stringify(progs)); } catch(e){} };
+function necesitaVigilia(){
+  return alarma.armado || progs.some(p => !p.hecho && p.ini + p.dur * 60000 > Date.now()) || !!grabProg;
+}
+function rellenaProg(){
+  const sel = $('pgSt'); sel.replaceChildren();
+  const opciones = [];
+  if (cur && !playingRec) opciones.push(['cur', 'La que suena: ' + (cur._label || cur.name).trim(), cur]);
+  mems.forEach((m, i) => opciones.push(['m' + i, `M${i + 1} ${(m._label || m.name).trim()}`, m]));
+  favs.forEach((f, i) => opciones.push(['f' + i, '★ ' + (f._label || f.name).trim(), f]));
+  opciones.forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.append(o); });
+  sel._ops = opciones;
+  if (!$('pgIni').value){                                     // por defecto: dentro de 10 minutos
+    const d = new Date(Date.now() + 10 * 60000), z = n => String(n).padStart(2, '0');
+    $('pgIni').value = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`;
+  }
+  pintaProgs();
+}
+function pintaProgs(){
+  const ul = $('pgLista'); ul.replaceChildren();
+  progs.filter(p => !p.hecho).forEach(p => {
+    const li = document.createElement('li'); li.className = 'st';
+    const info = document.createElement('div'); info.className = 'gr-info';
+    const n = document.createElement('div'); n.className = 'name'; n.textContent = (p.s._label || p.s.name).trim();
+    const sub = document.createElement('div'); sub.className = 'sub';
+    sub.textContent = new Date(p.ini).toLocaleString('es-ES', {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) + ` · ${p.dur} min` + (grabProg === p ? ' · GRABANDO' : '');
+    info.append(n, sub);
+    const quitar = miniBtn('Quitar', 'Quitar grabación programada', '', () => { progs = progs.filter(x => x !== p); guardaProgs(); pintaProgs(); });
+    li.append(info, quitar); ul.append(li);
+  });
+}
+$('pgOk').onclick = () => {
+  const sel = $('pgSt'), op = (sel._ops || []).find(o => o[0] === sel.value);
+  if (!op){ $('pgMsg').textContent = 'Elige una emisora (pon una, o guarda memorias o favoritas).'; return; }
+  const ini = new Date($('pgIni').value).getTime();
+  if (!ini || ini < Date.now() - 60000){ $('pgMsg').textContent = 'Elige una fecha y hora que no haya pasado.'; return; }
+  const p = {id: Date.now(), s: slim(op[2]), ini, dur: +$('pgDur').value, hecho: false};
+  progs.push(p); progs.sort((a, b) => a.ini - b.ini); guardaProgs();
+  ensureAudioCtx();
+  if (audio.paused) modoSilencio();                           // este toque deja la app lista para grabar sola
+  pantallaEncendida();
+  $('pgMsg').textContent = 'Programada. Deja Mi Radio abierta y el iPhone cargando.';
+  pintaProgs();
+};
+let grabProg = null;
+setInterval(() => {
+  const ahora = Date.now();
+  if (grabProg) return;
+  const p = progs.find(x => !x.hecho && ahora >= x.ini && ahora < x.ini + x.dur * 60000);
+  if (!p) return;
+  grabProg = p; p.hecho = true; guardaProgs();
+  play(p.s, {normal: true});
+  setTimeout(() => { if (!rec) startRec(); }, 1500);          // empieza a grabar cuando ya suena
+  const resto = p.ini + p.dur * 60000 - ahora;
+  setTimeout(() => {
+    stopRec();
+    grabProg = null;
+    quiereSonar = false; audio.pause();
+    $('lRT').textContent = 'Grabación programada terminada';
+    if (!$('vGr').hidden){ renderGrab(); pintaProgs(); }
+  }, resto);
+  if (!$('vGr').hidden) pintaProgs();
+}, 15000);
 
 /* ---------- Teclas (ordenador) ---------- */
 document.addEventListener('keydown', e => {
@@ -1665,13 +1824,16 @@ const SILENCIO = (() => {
   return 'data:audio/wav;base64,' + btoa(bin);
 })();
 function modoSilencio(){
-  if (!alarma.armado) return;
+  if (!necesitaVigilia()) return;
   silencio = true; switching = false;
   usePlayer(audioNormal);
   audioNormal.loop = true; audioNormal.src = SILENCIO;
   audioNormal.play().catch(() => {});
   cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on');
-  setPlaying(false); setStatus('Despertador activo · ' + proximaAlarma());
+  setPlaying(false);
+  const pp = progs.find(x => !x.hecho);
+  if (alarma.armado) setStatus('Despertador activo · ' + proximaAlarma());
+  else if (pp) setStatus('Grabación programada · ' + new Date(pp.ini).toLocaleString('es-ES', {weekday: 'short', hour: '2-digit', minute: '2-digit'}));
 }
 let wakeLock = null;
 async function pantallaEncendida(){
