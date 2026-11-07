@@ -180,6 +180,35 @@ input[type=range]{accent-color:var(--dial)}
 .ajustesPan .not-cab{background:var(--bg)}
 .ajustesPan .not-cab h2{color:var(--dial)}
 .ajustesPan .not-cerrar{color:var(--dial);border-color:var(--dial)}
+.meteo .not-cab h2{font-size:24px;line-height:1.1}
+.mt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px;margin-top:6px}
+.mt-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.mt-card h3{margin:0 0 8px;font-family:var(--f-display);font-weight:600;letter-spacing:.12em;text-transform:uppercase;font-size:15px;color:var(--dial)}
+.mt-big{font-family:var(--f-lcd);font-size:72px;line-height:.95;color:var(--text)}
+.mt-big2{font-family:var(--f-lcd);font-size:40px;line-height:1;color:var(--text)}
+.mt-mid{font-size:18px;margin-top:4px}
+.mt-sub{color:var(--muted);font-size:14px;margin-top:4px}
+.mt-n3,.mt-n2{color:var(--needle);font-weight:600}
+.mt-bars{display:flex;align-items:flex-end;gap:3px;height:80px;margin-top:10px;border-bottom:1px solid var(--line)}
+.mt-bars i{flex:1;background:color-mix(in srgb,var(--dial) 70%,transparent);border-radius:2px 2px 0 0}
+.mt-bars i.alta{background:var(--needle)}
+.mt-blab{display:flex;gap:3px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mt-blab span{flex:1;white-space:nowrap}
+.mt-fila{display:flex;align-items:center;gap:16px}
+.mt-brujula{position:relative;flex:none;width:104px;height:104px;border-radius:50%;border:2px solid var(--line);background:var(--bg)}
+.mt-brujula span{position:absolute;font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--muted)}
+.mt-brujula .n{top:3px;left:50%;transform:translateX(-50%);color:var(--needle)}.mt-brujula .s{bottom:3px;left:50%;transform:translateX(-50%)}
+.mt-brujula .e{right:6px;top:50%;transform:translateY(-50%)}.mt-brujula .o{left:6px;top:50%;transform:translateY(-50%)}
+.mt-brujula i{position:absolute;left:50%;top:14px;bottom:14px;width:0;margin-left:-1px;border-left:3px solid var(--dial);transform-origin:50% 50%}
+.mt-brujula i::after{content:"";position:absolute;top:-2px;left:-8px;border:7px solid transparent;border-bottom:12px solid var(--dial);border-top:0}
+.mt-medidor{height:10px;border-radius:5px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin-top:8px}
+.mt-medidor i{display:block;height:100%;background:var(--dial)}
+.mt-medidor i.p0{background:#4caf50}.mt-medidor i.p1{background:#e0b030}.mt-medidor i.p2{background:#e67e22}.mt-medidor i.p3{background:#d0392b}
+.mt-pol{display:grid;grid-template-columns:6.5em minmax(0,1fr) 5.5em;gap:8px;align-items:center;margin-top:6px;font-size:15px}
+.mt-pol .mt-medidor{margin-top:0}
+.mt-pn{text-align:right;font-weight:600}
+.mt-baro{display:block;margin:0 auto 6px;max-width:100%}
+.mt-fuente{color:var(--muted);font-size:12px;margin-top:14px}
 .not-fuente{font-family:var(--f-body);font-size:13px;opacity:.6;margin-top:22px}
 .d-saludo{font-size:40px;margin-bottom:24px}
 .d-btn{width:min(90vw,420px);min-height:64px;margin-top:12px;border-radius:14px;border:2px solid var(--lcd);background:transparent;color:var(--lcd);font-family:var(--f-display);font-weight:700;font-size:24px;letter-spacing:.06em;text-transform:uppercase}
@@ -443,6 +472,10 @@ body.noche #nocheVelo{opacity:.5}
   <div class="mesa-nietos">Adrián · Héctor · Laura · Carla · Oliver · Sara</div>
   <p class="mesa-ayuda">Toca la pantalla para salir</p>
 </div>
+<div class="noticias ajustesPan meteo" id="meteo" hidden role="dialog" aria-label="Estación meteorológica">
+  <div class="not-cab"><h2 id="mtTit">Estación meteorológica</h2><button class="d-btn not-cerrar" id="mtCerrar" type="button">Cerrar</button></div>
+  <div id="mtOut"></div>
+</div>
 <div class="noticias ajustesPan" id="ajPan" hidden role="dialog" aria-label="Ajustes">
   <div class="not-cab"><h2>⚙ Ajustes</h2><button class="d-btn not-cerrar" id="ajCerrar" type="button">Cerrar</button></div>
   <div id="ajOut"></div>
@@ -476,6 +509,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="timer" id="pNoche" type="button" aria-label="Modo noche">Noche</button>
     <button class="timer" id="pMesa" type="button" aria-label="Modo mesilla">Mesilla</button>
     <button class="timer" id="pEnviar" type="button" aria-label="Enviar emisora">Enviar</button>
+    <button class="timer" id="pMeteo" type="button" aria-label="Estación meteorológica">Tiempo</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -1722,7 +1756,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '25', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '26', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2384,6 +2418,195 @@ $('ajBtn').onclick = () => { $('ajOut').replaceChildren(panelOpciones()); $('ajP
 $('ajCerrar').onclick = () => { $('ajPan').hidden = true; if (!$('vFa').hidden) renderFavs(); };
 // Cada 30 minutos, titulares nuevos
 setInterval(() => { teleIdioma = ''; teletipo(cur && cur.countrycode); }, 30 * 60000);
+
+/* ---------- Estación meteorológica (Open-Meteo, gratuito y sin registro) ---------- */
+const z2 = n => String(n).padStart(2, '0');
+const horaDe = iso => iso.slice(11, 16);                      // "2026-11-07T18:45" → "18:45"
+const PUNTOS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+const rumbo = g => PUNTOS[Math.round(((g % 360) + 360) % 360 / 45) % 8];
+function fuerzaViento(k){
+  return k < 2 ? 'Calma' : k < 12 ? 'Flojo' : k < 29 ? 'Moderado' : k < 50 ? 'Fuerte' : k < 75 ? 'Muy fuerte' : 'Temporal';
+}
+// Niveles de polen (granos por m³). Las gramíneas dan alergia con menos cantidad.
+const POLENES = [
+  ['grass_pollen', 'Gramíneas', [5, 25, 100]], ['olive_pollen', 'Olivo', [10, 50, 200]],
+  ['birch_pollen', 'Abedul', [10, 50, 200]], ['alder_pollen', 'Aliso', [10, 50, 200]],
+  ['mugwort_pollen', 'Artemisa', [5, 25, 100]], ['ragweed_pollen', 'Ambrosía', [5, 25, 100]]
+];
+const NIVEL = ['Bajo', 'Moderado', 'Alto', 'Muy alto'];
+let meteoIv = 0;
+
+async function cargaMeteo(){
+  const base = `latitude=${ajustes.lat}&longitude=${ajustes.lon}&timezone=auto`;
+  const f = await (await fetch(`https://api.open-meteo.com/v1/forecast?${base}` +
+    '&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl,dew_point_2m' +
+    '&hourly=precipitation_probability,precipitation,pressure_msl&past_hours=3&forecast_hours=13' +
+    '&minutely_15=precipitation&forecast_minutely_15=8&wind_speed_unit=kmh')).json();
+  let q = null;
+  try {
+    q = await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${base}&current=` + POLENES.map(p => p[0]).join(','))).json();
+  } catch(e){}
+  return {f, q};
+}
+
+// ¿Va a llover? Primero los próximos 15 minutos a 2 horas; luego la probabilidad hora a hora.
+function analizaLluvia(f){
+  const ahora = f.current.time;
+  if (f.current.precipitation > 0.1) return {txt: 'Está lloviendo ahora', nivel: 3};
+  const m = f.minutely_15 || {};
+  for (let i = 0; i < (m.time || []).length; i++){
+    if (m.precipitation[i] > 0.1) return {txt: `Empezará a llover hacia las ${horaDe(m.time[i])}`, nivel: 3};
+  }
+  const h = f.hourly, desde = h.time.findIndex(t => t >= ahora.slice(0, 13));
+  let max = 0;
+  for (let i = Math.max(0, desde); i < h.time.length; i++){
+    const p = h.precipitation_probability[i] || 0;
+    if (p >= 50) return {txt: `Probable lluvia hacia las ${horaDe(h.time[i])} (${p} %)`, nivel: 2};
+    max = Math.max(max, p);
+  }
+  return {txt: max >= 20 ? `Poco probable que llueva (máximo ${max} %)` : 'No se espera lluvia en las próximas 12 horas', nivel: max >= 20 ? 1 : 0};
+}
+
+// Barómetro de aguja, dibujado en un lienzo
+function dibujaBarometro(cv, hpa, hpaAntes){
+  const dpr = window.devicePixelRatio || 1, W = 240, H = 240;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const css = getComputedStyle(document.documentElement), col = k => css.getPropertyValue(k).trim();
+  const cx = W / 2, cy = H / 2, R = 108;
+  const MIN = 950, MAX = 1050, A0 = Math.PI * .75, A1 = Math.PI * 2.25;       // 270 grados de escala
+  const ang = v => A0 + (Math.max(MIN, Math.min(MAX, v)) - MIN) / (MAX - MIN) * (A1 - A0);
+  // esfera de latón
+  const g = c.createRadialGradient(cx - 30, cy - 30, 10, cx, cy, R + 10);
+  g.addColorStop(0, col('--brass-hi')); g.addColorStop(.7, col('--brass')); g.addColorStop(1, col('--brass-lo'));
+  c.fillStyle = g; c.beginPath(); c.arc(cx, cy, R + 8, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#f6efdf'; c.beginPath(); c.arc(cx, cy, R - 4, 0, Math.PI * 2); c.fill();
+  // marcas cada 5 hPa
+  c.strokeStyle = '#3a2a1a'; c.fillStyle = '#3a2a1a'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  for (let v = MIN; v <= MAX; v += 5){
+    const a = ang(v), largo = v % 10 === 0 ? 12 : 6;
+    c.lineWidth = v % 10 === 0 ? 1.6 : 1;
+    c.beginPath(); c.moveTo(cx + Math.cos(a) * (R - 8), cy + Math.sin(a) * (R - 8));
+    c.lineTo(cx + Math.cos(a) * (R - 8 - largo), cy + Math.sin(a) * (R - 8 - largo)); c.stroke();
+    if (v % 20 === 0){
+      c.font = '600 11px ' + col('--f-display');
+      c.fillText(v, cx + Math.cos(a) * (R - 30), cy + Math.sin(a) * (R - 30));
+    }
+  }
+  // palabras de los barómetros de siempre
+  c.font = 'italic 11px Georgia, serif'; c.fillStyle = '#6b4a2a';
+  // las palabras van entre los números, más hacia el centro, para que no se monten
+  [[970, 'Tormenta'], [990, 'Lluvia'], [1010, 'Variable'], [1030, 'Buen tiempo'], [1046, 'Seco']].forEach(([v, t]) => {
+    const a = ang(v); c.fillText(t, cx + Math.cos(a) * (R - 60), cy + Math.sin(a) * (R - 60));
+  });
+  // aguja de referencia (hace 3 horas), hueca
+  if (hpaAntes){
+    const a = ang(hpaAntes);
+    c.strokeStyle = 'rgba(160,120,60,.8)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * (R - 22), cy + Math.sin(a) * (R - 22)); c.stroke();
+  }
+  // aguja principal
+  const a = ang(hpa);
+  c.strokeStyle = '#1e140c'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(cx - Math.cos(a) * 16, cy - Math.sin(a) * 16); c.lineTo(cx + Math.cos(a) * (R - 16), cy + Math.sin(a) * (R - 16)); c.stroke();
+  c.fillStyle = col('--brass-lo'); c.beginPath(); c.arc(cx, cy, 7, 0, Math.PI * 2); c.fill();
+}
+
+function tarjeta(titulo){
+  const d = document.createElement('section'); d.className = 'mt-card';
+  const h = document.createElement('h3'); h.textContent = titulo; d.append(h);
+  return d;
+}
+function texto(cls, t){ const e = document.createElement('div'); e.className = cls; e.textContent = t; return e; }
+
+async function pintaMeteo(){
+  const out = $('mtOut');
+  if (ajustes.lat == null){
+    out.replaceChildren(texto('mt-sub', 'Primero escribe tu ciudad en ⚙ Ajustes → Mi ciudad y pulsa Guardar ciudad.'));
+    return;
+  }
+  if (!out.firstChild) out.replaceChildren(texto('mt-sub', 'Leyendo la estación…'));
+  let d;
+  try { d = await cargaMeteo(); } catch(e){ out.replaceChildren(texto('mt-sub', 'No hay conexión con el servicio del tiempo. Prueba dentro de un rato.')); return; }
+  const f = d.f, cu = f.current;
+  $('mtTit').textContent = 'Tiempo en ' + ajustes.ciudad;
+  const grid = document.createElement('div'); grid.className = 'mt-grid';
+
+  // Ahora
+  const t1 = tarjeta('Ahora · ' + horaDe(cu.time));
+  t1.append(texto('mt-big', Math.round(cu.temperature_2m) + '°'),
+            texto('mt-mid', CIELO[cu.weather_code] || ''),
+            texto('mt-sub', `Sensación de ${Math.round(cu.apparent_temperature)}°`));
+  // Lluvia
+  const ll = analizaLluvia(f);
+  const t2 = tarjeta('¿Va a llover?');
+  const av = texto('mt-mid mt-n' + ll.nivel, (ll.nivel >= 2 ? '☔ ' : ll.nivel === 0 ? '☀ ' : '⛅ ') + ll.txt);
+  const barras = document.createElement('div'); barras.className = 'mt-bars';
+  const etiq = document.createElement('div'); etiq.className = 'mt-blab';
+  const h = f.hourly, desde = Math.max(0, h.time.findIndex(t => t >= cu.time.slice(0, 13)));
+  h.time.slice(desde, desde + 12).forEach((t, i) => {
+    const p = h.precipitation_probability[desde + i] || 0;
+    const b = document.createElement('i'); b.style.height = Math.max(3, p) + '%'; b.title = `${horaDe(t)}: ${p} %`;
+    if (p >= 50) b.className = 'alta';
+    barras.append(b);
+    const l = document.createElement('span'); l.textContent = i % 3 === 0 ? horaDe(t).slice(0, 2) + 'h' : ''; etiq.append(l);
+  });
+  t2.append(av, barras, etiq, texto('mt-sub', 'Probabilidad de lluvia en las próximas 12 horas'));
+  // Viento
+  const t3 = tarjeta('Viento');
+  const fila = document.createElement('div'); fila.className = 'mt-fila';
+  const brujula = document.createElement('div'); brujula.className = 'mt-brujula';
+  brujula.innerHTML = '<span class="n">N</span><span class="e">E</span><span class="s">S</span><span class="o">O</span><i></i>';
+  brujula.querySelector('i').style.transform = `rotate(${cu.wind_direction_10m + 180}deg)`;   // la flecha apunta hacia donde va el viento
+  const vt = document.createElement('div');
+  vt.append(texto('mt-big2', Math.round(cu.wind_speed_10m) + ' km/h'),
+            texto('mt-mid', `${fuerzaViento(cu.wind_speed_10m)} del ${rumbo(cu.wind_direction_10m)}`),
+            texto('mt-sub', `Rachas de ${Math.round(cu.wind_gusts_10m)} km/h`));
+  fila.append(brujula, vt); t3.append(fila);
+  // Humedad
+  const t4 = tarjeta('Humedad');
+  const hu = cu.relative_humidity_2m;
+  const medidor = document.createElement('div'); medidor.className = 'mt-medidor'; const rel = document.createElement('i'); rel.style.width = hu + '%'; medidor.append(rel);
+  t4.append(texto('mt-big2', hu + ' %'), medidor,
+            texto('mt-mid', hu < 30 ? 'Ambiente seco' : hu < 60 ? 'Agradable' : hu < 80 ? 'Húmedo' : 'Muy húmedo'),
+            texto('mt-sub', `Punto de rocío ${Math.round(cu.dew_point_2m)}°`));
+  // Barómetro
+  const t5 = tarjeta('Barómetro');
+  const iAh = Math.max(0, h.time.findIndex(t => t >= cu.time.slice(0, 13)));
+  const antes = h.pressure_msl[Math.max(0, iAh - 3)];
+  const dif = cu.pressure_msl - antes;
+  const cv = document.createElement('canvas'); cv.className = 'mt-baro';
+  t5.append(cv, texto('mt-big2', Math.round(cu.pressure_msl) + ' hPa'),
+            texto('mt-mid', dif > 1 ? '↑ Subiendo: tiende a mejorar' : dif < -1 ? '↓ Bajando: tiende a empeorar' : '→ Estable'),
+            texto('mt-sub', `Hace 3 horas: ${Math.round(antes)} hPa (aguja clara)`));
+  // Polen
+  const t6 = tarjeta('Polen');
+  const qc = d.q && d.q.current;
+  if (!qc) t6.append(texto('mt-sub', 'No hay datos de polen ahora mismo.'));
+  else {
+    POLENES.forEach(([k, nombre, cortes]) => {
+      const v = qc[k];
+      if (v == null) return;
+      const n = v < cortes[0] ? 0 : v < cortes[1] ? 1 : v < cortes[2] ? 2 : 3;
+      const fp = document.createElement('div'); fp.className = 'mt-pol';
+      const pista = document.createElement('div'); pista.className = 'mt-medidor'; const r = document.createElement('i');
+      r.style.width = (12 + n * 29) + '%'; r.className = 'p' + n; pista.append(r);
+      fp.append(texto('', nombre), pista, texto('mt-pn p' + n, NIVEL[n]));
+      t6.append(fp);
+    });
+    t6.append(texto('mt-sub', 'Granos por m³ de aire. En invierno casi siempre sale bajo.'));
+  }
+  grid.append(t1, t2, t3, t4, t5, t6);
+  out.replaceChildren(grid, texto('mt-fuente', 'Datos: Open-Meteo (servicios meteorológicos europeos y Copernicus). Se actualiza cada 15 minutos.'));
+  dibujaBarometro(cv, cu.pressure_msl, antes);
+}
+function abreMeteo(){
+  $('meteo').hidden = false;
+  pintaMeteo();
+  clearInterval(meteoIv); meteoIv = setInterval(pintaMeteo, 15 * 60000);
+}
+$('pMeteo').onclick = abreMeteo;
+$('mtCerrar').onclick = () => { $('meteo').hidden = true; clearInterval(meteoIv); };
 
 // Panel de ajustes (en la pestaña Favoritas)
 function panelOpciones(){
