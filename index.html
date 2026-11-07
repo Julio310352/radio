@@ -239,6 +239,11 @@ input[type=range]{accent-color:var(--dial)}
 .ap-ver{font-size:16px;max-width:30ch;min-height:1.4em;margin:0}
 .ap-ver.nueva{color:#f2b34a;font-weight:600}
 .ap-nietos{font-family:var(--f-script);font-size:20px;opacity:.45;margin-top:30px}
+.subs{margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(0,0,0,.45);border:1px solid color-mix(in srgb,var(--lcd) 35%,transparent);font-family:var(--f-body);font-size:19px;line-height:1.35;color:#fff;text-shadow:none}
+.subs-tag{font-family:var(--f-lcd);font-size:15px;color:var(--lcd);margin-bottom:2px}
+#subsTxt div{margin-top:2px}
+#subsTxt div:not(:last-child){opacity:.6}
+.subs-int{opacity:.55;font-style:italic;min-height:1.35em}
 .knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
@@ -373,6 +378,7 @@ body.noche #nocheVelo{opacity:.5}
         <canvas class="osc" id="osc" aria-hidden="true"></canvas>
         <div class="tele" id="tele" hidden role="button" tabindex="0" aria-label="Ver las noticias del teletipo"><span class="tele-tag" id="teleTag">TELETIPO</span><div class="tele-pista"><span id="teleTxt"></span></div></div>
         <div class="rt" id="lRT">Gira la rueda para buscar emisoras</div>
+        <div class="subs" id="subs" hidden aria-live="polite"><div class="subs-tag" id="subsTag">SUBTÍTULOS</div><div id="subsTxt"></div><div class="subs-int" id="subsInt"></div></div>
       </div>
       <div>
         <div class="controls">
@@ -527,6 +533,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="timer" id="pMesa" type="button" aria-label="Modo mesilla">Mesilla</button>
     <button class="timer" id="pEnviar" type="button" aria-label="Enviar emisora">Enviar</button>
     <button class="timer" id="pMeteo" type="button" aria-label="Estación meteorológica">Tiempo</button>
+    <button class="timer" id="pSubs" type="button" aria-label="Subtítulos traducidos">Subtítulos</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -1773,7 +1780,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '27', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '28', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -1997,6 +2004,64 @@ setInterval(() => {
   if (!$('vGr').hidden) pintaProgs();
 }, 15000);
 
+/* ---------- Subtítulos traducidos (prueba): micrófono + reconocimiento de voz + traductor ---------- */
+// Idioma que se reconoce, según el país de la emisora
+const VOZ_PAIS = {ES: 'es-ES', MX: 'es-MX', AR: 'es-AR', GB: 'en-GB', IE: 'en-IE', US: 'en-US', CA: 'en-US', AU: 'en-AU', NZ: 'en-NZ',
+  FR: 'fr-FR', BE: 'fr-FR', DE: 'de-DE', AT: 'de-DE', CH: 'de-DE', IT: 'it-IT', PT: 'pt-PT', BR: 'pt-BR', NL: 'nl-NL',
+  PL: 'pl-PL', SE: 'sv-SE', NO: 'nb-NO', DK: 'da-DK', FI: 'fi-FI', RU: 'ru-RU', GR: 'el-GR', TR: 'tr-TR', JP: 'ja-JP'};
+let sr = null, subsOn = false, subsLang = 'es-ES', subsLineas = [];
+function ponSubtitulo(t){
+  subsLineas.push(t); subsLineas = subsLineas.slice(-3);        // se ven las 3 últimas frases
+  const box = $('subsTxt'); box.replaceChildren();
+  subsLineas.forEach(l => { const d = document.createElement('div'); d.textContent = l; box.append(d); });
+}
+function arrancaVoz(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  sr = new SR();
+  sr.lang = subsLang; sr.continuous = true; sr.interimResults = true;
+  sr.onresult = async e => {
+    let provisional = '';
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const r = e.results[i];
+      if (r.isFinal){
+        const frase = r[0].transcript.trim();
+        if (!frase) continue;
+        const de = subsLang.slice(0, 2);
+        ponSubtitulo(de === 'es' ? frase : await traduce(frase, de));   // traduce solo las frases ya terminadas
+      } else provisional += r[0].transcript;
+    }
+    $('subsInt').textContent = provisional;
+  };
+  sr.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+      paraSubtitulos('El iPhone no deja usar el micrófono aquí. Usa la versión de GitHub (https) y permite el micrófono.');
+    }
+  };
+  sr.onend = () => { if (subsOn) try { sr.start(); } catch(err){} };   // el iPhone lo corta cada poco: se vuelve a poner
+  sr.start();
+}
+function paraSubtitulos(msg){
+  subsOn = false;
+  try { if (sr) sr.stop(); } catch(e){}
+  sr = null;
+  $('pSubs').classList.remove('act');
+  if (msg){ $('subsTxt').textContent = msg; $('subsInt').textContent = ''; setTimeout(() => { if (!subsOn) $('subs').hidden = true; }, 8000); }
+  else $('subs').hidden = true;
+}
+$('pSubs').onclick = () => {
+  if (subsOn){ paraSubtitulos(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  $('subs').hidden = false; subsLineas = []; $('subsInt').textContent = '';
+  if (!window.isSecureContext){ $('subsTxt').textContent = 'Los subtítulos solo funcionan en la versión de GitHub (https://tato1952.github.io/radio/).'; setTimeout(() => $('subs').hidden = true, 8000); return; }
+  if (!SR){ $('subsTxt').textContent = 'Este navegador no permite reconocer la voz. En el ordenador, usa los Subtítulos automáticos de Chrome.'; setTimeout(() => $('subs').hidden = true, 8000); return; }
+  subsLang = VOZ_PAIS[((cur && cur.countrycode) || 'ES').toUpperCase()] || 'en-GB';
+  const de = subsLang.slice(0, 2);
+  $('subsTag').textContent = de === 'es' ? 'SUBTÍTULOS' : `SUBTÍTULOS · ${de.toUpperCase()}→ES`;
+  $('subsTxt').textContent = 'Escuchando… (sube el volumen del altavoz)';
+  subsOn = true; $('pSubs').classList.add('act');
+  try { arrancaVoz(); } catch(e){ paraSubtitulos('No se ha podido encender el reconocimiento de voz.'); }
+};
+
 /* ---------- Botón de encendido ---------- */
 function sonidoApagar(){
   if (!actx) return;
@@ -2021,6 +2086,7 @@ async function comprobarVersion(){
 }
 $('pwr').onclick = () => {
   if (rec) stopRec();                                          // lo grabado se guarda
+  if (subsOn) paraSubtitulos();
   quiereSonar = false; boletin = null;
   alarma.armado = false; updAlarmaUI();
   silencio = false; switching = false;
