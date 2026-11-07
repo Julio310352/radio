@@ -148,6 +148,7 @@ input[type=range]{accent-color:var(--dial)}
 .memfila input{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px;font-size:15px;color:var(--text)}
 .memfila input:focus{border-color:var(--line);background:var(--panel)}
 .memfila .mini{min-width:40px}
+.memfila .mini.warn{min-width:76px}
 .prog{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;display:grid;gap:8px}
 .prog .fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .prog label{font-size:14px;color:var(--muted);min-width:5.5em}
@@ -1402,6 +1403,7 @@ requestAnimationFrame(eqLoop);
 function loadMems(){ try { return JSON.parse(localStorage.getItem('radio.mem')) || []; } catch(e){ return []; } }
 const MAXMEM = 30;   // memorias en total: 20 de AUTO + huecos para las tuyas
 let mems = loadMems(), scanning = false;
+let memQuitar = null, memQuitarT = 0;     // para quitar una memoria con dos toques de MEM
 function saveMems(){ try { localStorage.setItem('radio.mem', JSON.stringify(mems)); } catch(e){} renderMems(); }
 function renderMems(){
   const sel = $('mem');
@@ -1424,7 +1426,19 @@ $('mem').onchange = e => {
 $('mSave').onclick = () => {
   if (!cur || playingRec){ $('lRT').textContent = 'Sintoniza primero una emisora'; return; }
   const i = mems.findIndex(m => m.stationuuid === cur.stationuuid);
-  if (i >= 0){ $('lRT').textContent = `Ya está guardada en M${i + 1}`; return; }
+  if (i >= 0){
+    if (memQuitar === cur.stationuuid){                         // segundo toque: quitarla
+      clearTimeout(memQuitarT); memQuitar = null;
+      mems.splice(i, 1); saveMems();
+      $('lRT').textContent = `Quitada de la memoria M${i + 1}`;
+      if (!$('vFa').hidden) renderFavs();
+      return;
+    }
+    memQuitar = cur.stationuuid;
+    clearTimeout(memQuitarT); memQuitarT = setTimeout(() => memQuitar = null, 5000);
+    $('lRT').textContent = `Está en M${i + 1} · pulsa MEM otra vez para quitarla`;
+    return;
+  }
   if (mems.length >= MAXMEM){ $('lRT').textContent = `Memoria llena (${MAXMEM} emisoras)`; return; }
   mems.push({...slim(cur), _mf: freqOf(cur) ?? cur._mf, _man: true});   // _man = guardada a mano
   saveMems();
@@ -1602,7 +1616,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '21', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '22', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -1698,13 +1712,20 @@ function panelMemorias(){
       saveMems(); renderFavs();
     };
     let armado = 0;
-    const borrar = miniBtn('✕', 'Borrar memoria', '', () => {
-      if (!armado){ armado = setTimeout(() => { armado = 0; borrar.textContent = '✕'; borrar.classList.remove('warn'); }, 4000); borrar.textContent = '¿Seguro?'; borrar.classList.add('warn'); return; }
+    const borrar = miniBtn('Borrar', 'Borrar memoria', '', () => {
+      if (!armado){ armado = setTimeout(() => { armado = 0; borrar.textContent = 'Borrar'; borrar.classList.remove('warn'); }, 6000); borrar.textContent = '¿Seguro?'; borrar.classList.add('warn'); return; }
       clearTimeout(armado); mems.splice(i, 1); saveMems(); renderFavs();
     });
     f.append(num, nombre, miniBtn('▶', 'Escuchar', 'play', () => play(m)), miniBtn('↑', 'Subir', '', mover(-1)), miniBtn('↓', 'Bajar', '', mover(1)), borrar);
     d.append(f);
   });
+  let todas = 0;
+  const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn'; bt.textContent = 'Borrar todas las memorias';
+  bt.onclick = () => {
+    if (!todas){ todas = setTimeout(() => { todas = 0; bt.textContent = 'Borrar todas las memorias'; }, 6000); bt.textContent = '¿Seguro? Toca otra vez para borrar las ' + mems.length; return; }
+    clearTimeout(todas); mems = []; saveMems(); renderFavs();
+  };
+  d.append(bt);
   return d;
 }
 
