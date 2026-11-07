@@ -141,6 +141,7 @@ input[type=range]{accent-color:var(--dial)}
 .placa .ded2{display:block;font-family:var(--f-script);font-weight:600;font-size:18px;line-height:1.2;margin-top:2px;
   text-shadow:0 1px 0 rgba(255,255,255,.45)}
 .placa .corazon{color:var(--needle)}
+.placa .ded3{display:block;font-family:var(--f-script);font-weight:700;font-size:20px;line-height:1.25;margin-top:2px;text-shadow:0 1px 0 rgba(255,255,255,.45)}
 .version{margin:8px 0 0;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);opacity:.8}
 .memfila{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line);padding:6px 0}
 .memfila .mnum{flex:none;width:2.4em;font-family:var(--f-lcd);font-size:20px;color:var(--dial)}
@@ -159,7 +160,7 @@ input[type=range]{accent-color:var(--dial)}
 .topbtns{display:flex;gap:8px;min-width:0}
 .skinsel{max-width:150px;min-width:0;background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--dial)}
 .skinsel option{color:#222;background:#fff;text-transform:none}
-.osc{display:block;width:100%;height:38px;margin:2px 0 1px}
+.osc{display:block;width:100%;height:44px;margin:2px 0 1px}
 h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.04em;text-transform:uppercase}
 h1 span{color:var(--dial)}
 .qbtn{background:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--dial)}
@@ -320,6 +321,7 @@ body.noche #nocheVelo{opacity:.5}
     </div>
     <div class="placa" role="note" aria-label="Dedicatoria">
       <span class="ded1">Para nuestros nietos</span>
+      <span class="ded3">Adrián · Héctor · Laura · Carla · Oliver · Sara</span>
       <span class="ded2">con cariño de sus abuelos <span class="corazon">♥</span></span>
     </div>
     <p class="version" id="version"></p>
@@ -1176,12 +1178,14 @@ const cab = $('cab');
 const bands = {vEs: [], vMu: [], vFa: []};       // emisoras colocadas en el dial de cada pestaña
 const bandFreq = {vEs: new Map(), vMu: new Map(), vFa: new Map()};
 let activeBand = 'vEs', tuneIdx = -1, tuneTimer;
+const bandStep = {vEs: .8, vMu: .8, vFa: .8};
 // Reparte hasta 100 emisoras entre 88 y 108 MHz (cada 0,2, 0,4 u 0,8 MHz)
 function setBand(tab, list){
   const b = list.filter(x => x && x.stationuuid).slice(0, 100);
   const step = b.length <= 25 ? 8 : b.length <= 50 ? 4 : 2;     // en décimas de MHz
   bands[tab] = b;
   bandFreq[tab] = new Map(b.map((x, i) => [x.stationuuid, (880 + i * step) / 10]));
+  bandStep[tab] = step / 10;                                     // separación entre emisoras, en MHz
   if (tab === activeBand){ tuneIdx = -1; refreshDial(); }
 }
 const freqOf = s => s ? bandFreq[activeBand].get(s.stationuuid) : undefined;
@@ -1194,7 +1198,7 @@ function refreshDial(){
 function rtText(s){ return [s.state, pais(s.countrycode)].filter(Boolean).join(', ') + (s.bitrate ? ` · ${s.codec || ''} ${s.bitrate} kbps` : ''); }
 function showLCD(s, tuning){
   const f = freqOf(s) ?? s._mf;
-  if (f){ $('lFreq').textContent = f.toFixed(1); $('lMhz').textContent = 'MHz'; $('needle').style.setProperty('--pos', posOf(f) + '%'); }
+  if (f){ fDial = f; $('lFreq').textContent = f.toFixed(1); $('lMhz').textContent = 'MHz'; $('needle').style.setProperty('--pos', posOf(f) + '%'); }
   else { $('lFreq').textContent = 'NET'; $('lMhz').textContent = ''; }
   $('iRDS').classList.add('on');
   setPS(s._label || s.name);
@@ -1246,18 +1250,88 @@ function clic(){
 
 // Mover la sintonía una emisora adelante (+1) o atrás (-1)
 let knobRot = 0;
+// ---- Sintonía como una radio de verdad ----
+// fDial es la frecuencia donde está la aguja. Entre emisoras se oye ruido; al acercarte,
+// el ruido baja y aparece el nombre. Al soltar la rueda, el "AFC" afina solo la emisora más cercana.
+let fDial = 88, desafino = 1, barrasSint = 0, psSint = '', afinando = null;
+function cercana(f){
+  let mejor = null;
+  bandFreq[activeBand].forEach((fs, id) => {
+    const d = Math.abs(fs - f);
+    if (!mejor || d < mejor.d) mejor = {id, f: fs, d};
+  });
+  if (mejor) mejor.s = bands[activeBand].find(x => x.stationuuid === mejor.id);
+  return mejor;
+}
+function pintaDial(){
+  const st = bandStep[activeBand], c = cercana(fDial);
+  const zona = st * .35;                                       // a esta distancia ya "se oye" la emisora
+  desafino = c ? Math.min(1, c.d / (st / 2)) : 1;               // 0 = afinada, 1 = entre dos emisoras
+  $('needle').style.setProperty('--pos', posOf(fDial) + '%');
+  $('lFreq').textContent = fDial.toFixed(2); $('lMhz').textContent = 'MHz';
+  if (noiseGain) noiseGain.gain.setTargetAtTime(c && c.d < zona * .25 ? .006 : .012 + desafino * .06, actx.currentTime, .03);
+  if (c && c.d < zona){
+    const nombre = (c.s._label || c.s.name).trim();
+    if (psSint !== nombre){ psSint = nombre; setPS(nombre); clic(); }
+    $('iRDS').classList.toggle('on', c.d < zona * .45);
+    barrasSint = c.d < zona * .25 ? 4 : c.d < zona * .5 ? 3 : 2;
+    $('lRT').textContent = c.d < zona * .25 ? 'Afinada' : 'Afina un poco más…';
+  } else {
+    if (psSint !== '-'){ psSint = '-'; setPS('- - - -'); }
+    $('iRDS').classList.remove('on');
+    barrasSint = 1;
+    $('lRT').textContent = 'Sin emisora · sigue girando';
+  }
+}
+function moverDial(mhz){
+  const b = bands[activeBand];
+  if (!b.length || scanning) return;
+  ensureAudioCtx();
+  if (!cab.classList.contains('tuning')){ cab.classList.add('tuning'); staticOn(); }
+  cancelAnimationFrame(afinando);
+  const ultima = 88 + (b.length - 1) * bandStep[activeBand];
+  fDial = Math.max(87.5, Math.min(Math.max(108, ultima + .5), fDial + mhz));
+  pintaDial();
+  clearTimeout(tuneTimer);
+  tuneTimer = setTimeout(afc, 650);                             // al dejar de girar, afina sola
+}
+// Lleva la aguja suavemente hasta una frecuencia y, al llegar, pone la emisora
+function deslizaA(destino, s2, ms){
+  cancelAnimationFrame(afinando);
+  const ini = fDial, t0 = performance.now();
+  const paso = t => {
+    const k = Math.min(1, (t - t0) / ms), suave = k * k * (3 - 2 * k);   // empieza y acaba despacio
+    fDial = ini + (destino - ini) * suave;
+    pintaDial();
+    if (k < 1) afinando = requestAnimationFrame(paso);
+    else {
+      fDial = destino; psSint = '';
+      if (cur && cur.stationuuid === s2.stationuuid && !audio.paused){ staticOff(); cab.classList.remove('tuning'); showLCD(cur); }
+      else play(s2);
+    }
+  };
+  afinando = requestAnimationFrame(paso);
+}
+function afc(){
+  const c = cercana(fDial);
+  if (!c || c.d > bandStep[activeBand] * .9){                   // más allá de la última emisora: solo ruido
+    setTimeout(() => { if (cab.classList.contains('tuning') && !scanning){ staticOff(); cab.classList.remove('tuning'); } }, 1500);
+    return;
+  }
+  deslizaA(c.f, c.s, 250);
+}
+// Buscar la emisora siguiente o anterior (botones ◀◀ ▶▶ y flechas)
 function step(dir){
   const b = bands[activeBand];
   if (!b.length || scanning) return;
   ensureAudioCtx();
-  if (tuneIdx < 0) tuneIdx = cur ? b.findIndex(x => x.stationuuid === cur.stationuuid) : -1;
-  tuneIdx = tuneIdx < 0 ? (dir > 0 ? 0 : b.length - 1) : (tuneIdx + dir + b.length) % b.length;
-  const s = b[tuneIdx];
-  clic(); staticOn();
-  cab.classList.add('tuning');
-  showLCD(s, true);
+  const lista = [...bandFreq[activeBand].entries()].sort((x, y) => x[1] - y[1]);
+  let sig = dir > 0 ? lista.find(([, f]) => f > fDial + .01) : [...lista].reverse().find(([, f]) => f < fDial - .01);
+  if (!sig) sig = dir > 0 ? lista[0] : lista[lista.length - 1];  // al llegar al final, vuelve a empezar
+  const s2 = b.find(x => x.stationuuid === sig[0]);
   clearTimeout(tuneTimer);
-  tuneTimer = setTimeout(() => play(s), 700);        // cuando dejas de girar, suena la emisora
+  cab.classList.add('tuning'); staticOn();
+  deslizaA(sig[1], s2, Math.min(900, 250 + Math.abs(sig[1] - fDial) * 60));
 }
 function rotateKnob(deg){ knobRot += deg; $('knobRot').style.setProperty('--rot', knobRot + 'deg'); }
 
@@ -1274,9 +1348,7 @@ knob.addEventListener('pointermove', e => {
   if (d < -180) d += 360;
   lastAng = a;
   rotateKnob(d);
-  acc += d;
-  while (acc >= 25){ acc -= 25; step(1); }           // cada 25 grados, una emisora
-  while (acc <= -25){ acc += 25; step(-1); }
+  moverDial(d / 30 * bandStep[activeBand]);           // 30 grados de giro = de una emisora a la siguiente
 });
 ['pointerup', 'pointercancel'].forEach(ev => knob.addEventListener(ev, () => { lastAng = null; }));
 knob.addEventListener('keydown', e => {
@@ -1443,6 +1515,30 @@ function nivelBanda(i){
   return Math.min(1, .2 + s2 / (cortes[1] - cortes[0]) / 200);
 }
 let faseOnda = 0;
+const NIETOS = ['Adrián', 'Héctor', 'Laura', 'Carla', 'Oliver', 'Sara'];
+// Los nombres desfilan de derecha a izquierda y cada letra va dando saltitos
+function dibujaNietos(w, h, t){
+  octx.font = '22px VT323, "Courier New", monospace';
+  octx.textBaseline = 'alphabetic';
+  octx.fillStyle = colorOnda; octx.shadowColor = colorOnda; octx.shadowBlur = 8;
+  const texto = NIETOS.join('   ♥   ') + '   ♥   ';
+  const ancho = octx.measureText(texto).width;
+  const desplaz = (t / 1000 * 38) % ancho;                    // 38 píxeles por segundo
+  let x = w - desplaz - ancho;
+  while (x < w){
+    let xi = x;
+    for (let i = 0; i < texto.length; i++){
+      const c = texto[i], cw = octx.measureText(c).width;
+      if (xi > -cw && xi < w){
+        const salto = Math.abs(Math.sin(t / 260 + i * .55)) * (h * .38);   // cada letra salta a su ritmo
+        octx.fillText(c, xi, h - 6 - salto);
+      }
+      xi += cw;
+    }
+    x += ancho;
+  }
+  octx.shadowBlur = 0;
+}
 function dibujaOnda(){
   requestAnimationFrame(dibujaOnda);
   const dpr = window.devicePixelRatio || 1, w = osc.clientWidth, h = osc.clientHeight;
@@ -1457,6 +1553,7 @@ function dibujaOnda(){
   octx.moveTo(0, h / 2 + .5); octx.lineTo(w, h / 2 + .5); octx.stroke();
   octx.globalAlpha = 1;
   const on = cab.classList.contains('on'), sint = cab.classList.contains('tuning');
+  if (!on && !sint && !scanning){ dibujaNietos(w, h, performance.now()); return; }   // radio apagada: los nietos
   octx.strokeStyle = colorOnda; octx.lineWidth = 1.6;
   octx.shadowColor = colorOnda; octx.shadowBlur = 6;
   octx.beginPath();
@@ -1474,7 +1571,8 @@ function dibujaOnda(){
     for (let x = 0; x < w; x++){
       const t = x / w * Math.PI * 2;
       let v = 0;
-      if (sint) v = (Math.random() - .5) * .9;                // sintonizando: ruido
+      if (sint) v = (Math.random() - .5) * (.15 + Math.min(1, desafino * 1.6));   // sintonizando: más ruido cuanto peor afinada
+      if (sint && desafino < .12) v += .25 * Math.sin(t * 6 + faseOnda);          // casi afinada: asoma la onda
       else if (on) v = amp * (Math.sin(t * 6 + faseOnda) + .5 * Math.sin(t * 13 - faseOnda * 1.7) + .25 * Math.sin(t * 29 + faseOnda * 2.3));
       else v = (Math.random() - .5) * .04;                     // apagada: casi plana
       const y = h / 2 + v * h * .45;
@@ -1486,7 +1584,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '18', FECHA_VERSION = '5-11-2026';   // cambiar en cada versión nueva
+const VERSION = '19', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -1502,7 +1600,7 @@ $('pName').onclick = () => {
 function barrasSenal(){
   const el = $('iSig');
   let n = 0;
-  if (cab.classList.contains('tuning')) n = 1 + Math.floor(Math.random() * 3);   // buscando: la señal baila
+  if (cab.classList.contains('tuning')) n = barrasSint || 1;                   // sintonizando: según lo afinada que esté
   else if (cab.classList.contains('on') && cur && !playingRec){
     const b = cur.bitrate || 96;
     n = b >= 128 ? 4 : b >= 96 ? 3 : b >= 64 ? 2 : 1;                           // más calidad, más barras
@@ -1751,12 +1849,12 @@ const DIAS_C = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const hoyIdx = d => (d.getDay() + 6) % 7;                      // getDay(): domingo = 0 → lo pasamos a lunes = 0
 let psReloj = '';
 // Al abrir la radio: saludo a los nietos en la pantalla durante unos segundos
-const saludoHasta = Date.now() + 7000;
+const saludoHasta = Date.now() + 13000;
 setTimeout(() => {
   if (cab.classList.contains('on')) return;
   $('lFreq').textContent = '♥'; $('lMhz').textContent = '';
   $('iRDS').classList.add('on');
-  setPS('PARA NUESTROS NIETOS');
+  setPS('PARA NUESTROS NIETOS ' + NIETOS.join(' '));
   $('lRT').textContent = 'Con cariño de sus abuelos';
 }, 300);
 setInterval(() => {
