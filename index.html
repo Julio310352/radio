@@ -249,18 +249,16 @@ input[type=range]{accent-color:var(--dial)}
 #podProg{width:100%;margin:8px 0 4px}
 .podctl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums;font-size:14px;color:var(--muted)}
 .podctl .btn{margin-top:0;padding:8px 14px}
-.marco{margin:20px auto 0;max-width:300px;text-align:center}
-.marco-vacio{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px;border:2px dashed color-mix(in srgb,var(--brass) 60%,transparent);border-radius:8px}
-.marco-vacio span{font-size:12px;color:color-mix(in srgb,var(--brass),var(--text) 45%);opacity:.8}
-.marco-vacio .btn{margin-top:0}
-.marco-borde{padding:14px;border-radius:4px;
-  background:linear-gradient(135deg,#6b4423,#3a2312 30%,#7a4e2a 55%,#2e1a0d);
-  box-shadow:0 8px 18px rgba(0,0,0,.55),inset 0 0 0 3px #c9a46a,inset 0 0 0 5px #2a180b}
-.marco-borde img{display:block;width:100%;height:auto;border:3px solid #efe3c8;box-shadow:inset 0 0 0 1px rgba(0,0,0,.3)}
-.marco figcaption input{width:100%;margin-top:8px;text-align:center;background:transparent;border:1px solid transparent;border-radius:6px;padding:4px;
-  font-family:var(--f-script);font-size:22px;color:color-mix(in srgb,var(--brass),var(--text) 35%)}
-.marco figcaption input:focus{border-color:var(--line)}
-.marco-btns{display:flex;justify-content:center;gap:6px;opacity:.75}
+.placa.con-foto{display:flex;align-items:center;gap:14px;max-width:470px;padding-left:24px}
+.placa-txt{flex:1;min-width:0}
+.placa-foto{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;width:84px}
+.placa-foto img{display:block;width:84px;height:104px;object-fit:cover;border-radius:42px / 52px;
+  border:3px solid var(--brass-lo);box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.3);filter:sepia(.25) contrast(1.05)}
+.placa-pie{font-family:var(--f-script);font-size:13px;line-height:1.1;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.4)}
+.foto-ctl{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;margin-top:6px;opacity:.7}
+.foto-ctl .mini{height:34px;font-size:13px;color:color-mix(in srgb,var(--brass),var(--text) 45%)}
+.foto-ctl input[type=text]{width:min(100%,260px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px;font-size:15px;text-align:center}
+@media (max-width:420px){.placa.con-foto{gap:10px;padding-left:18px;padding-right:18px}.placa-foto{width:68px}.placa-foto img{width:68px;height:86px}.placa.con-foto .ded3{font-size:17px}.placa.con-foto .ded1{font-size:21px}}
 .mesa-foto{max-height:28vh;max-width:70vw;margin-top:16px;border:4px solid #3a2312;opacity:.75;filter:sepia(.3)}
 .knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
@@ -435,19 +433,22 @@ body.noche #nocheVelo{opacity:.5}
         </div>
       </div>
     </div>
-    <figure class="marco" id="marco">
-      <div class="marco-vacio" id="marcoVacio"><button class="btn" id="fotoPoner" type="button">＋ Poner una foto</button><span>Se guarda solo en este aparato</span></div>
-      <div class="marco-foto" id="marcoFoto" hidden>
-        <div class="marco-borde"><img id="fotoImg" alt="Foto de recuerdo"></div>
-        <figcaption><input type="text" id="fotoPie" aria-label="Texto bajo la foto" value="En recuerdo de mis padres"></figcaption>
-        <div class="marco-btns"><button class="mini" id="fotoCambiar" type="button">Cambiar foto</button><button class="mini" id="fotoQuitar" type="button">Quitar</button></div>
+    <div class="placa" id="placa" role="note" aria-label="Dedicatoria">
+      <div class="placa-foto" id="marcoFoto" hidden>
+        <img id="fotoImg" alt="Foto de recuerdo">
+        <span class="placa-pie" id="fotoPieTxt">En recuerdo de mis padres</span>
       </div>
+      <div class="placa-txt">
+        <span class="ded1">Para nuestros nietos</span>
+        <span class="ded3">Adrián · Héctor · Laura · Carla · Oliver · Sara</span>
+        <span class="ded2">con cariño de sus abuelos <span class="corazon">♥</span></span>
+      </div>
+    </div>
+    <div class="foto-ctl">
+      <span id="marcoVacio"><button class="mini" id="fotoPoner" type="button">＋ Poner una foto en la placa</button></span>
+      <span id="fotoBtns" hidden><button class="mini" id="fotoCambiar" type="button">Cambiar foto</button><button class="mini" id="fotoTexto" type="button">Cambiar texto</button><button class="mini" id="fotoQuitar" type="button">Quitar foto</button></span>
+      <input type="text" id="fotoPie" aria-label="Texto bajo la foto" value="En recuerdo de mis padres" hidden>
       <input type="file" id="fotoArchivo" accept="image/*" hidden>
-    </figure>
-    <div class="placa" role="note" aria-label="Dedicatoria">
-      <span class="ded1">Para nuestros nietos</span>
-      <span class="ded3">Adrián · Héctor · Laura · Carla · Oliver · Sara</span>
-      <span class="ded2">con cariño de sus abuelos <span class="corazon">♥</span></span>
     </div>
     <p class="version" id="version"></p>
   </div>
@@ -1825,7 +1826,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '30', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '31', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2278,10 +2279,13 @@ $('pSubs').onclick = () => {
 function muestraFoto(){
   let datos = null, pie = '';
   try { datos = localStorage.getItem('radio.foto'); pie = localStorage.getItem('radio.fotoPie'); } catch(e){}
-  $('marcoVacio').hidden = !!datos; $('marcoFoto').hidden = !datos;
+  $('marcoVacio').hidden = !!datos; $('fotoBtns').hidden = !datos; $('marcoFoto').hidden = !datos;
+  $('placa').classList.toggle('con-foto', !!datos);                 // con foto, la placa se pone en dos columnas
   if (datos){ $('fotoImg').src = datos; $('mesaFoto').src = datos; }
   $('mesaFoto').hidden = !datos;
-  if (pie) $('fotoPie').value = pie;
+  if (pie != null) $('fotoPie').value = pie;
+  $('fotoPieTxt').textContent = $('fotoPie').value;
+  $('fotoPieTxt').hidden = !$('fotoPie').value;
 }
 // Reduce la foto (las del iPhone ocupan mucho) y la guarda en el aparato
 function guardaFoto(archivo){
@@ -2300,12 +2304,13 @@ function guardaFoto(archivo){
 }
 $('fotoPoner').onclick = $('fotoCambiar').onclick = () => $('fotoArchivo').click();
 $('fotoArchivo').onchange = e => { const f = e.target.files[0]; if (f) guardaFoto(f); e.target.value = ''; };
-$('fotoPie').onchange = () => { try { localStorage.setItem('radio.fotoPie', $('fotoPie').value.trim()); } catch(e){} };
+$('fotoPie').onchange = () => { try { localStorage.setItem('radio.fotoPie', $('fotoPie').value.trim()); } catch(e){} $('fotoPie').hidden = true; muestraFoto(); };
+$('fotoTexto').onclick = () => { const i = $('fotoPie'); i.hidden = !i.hidden; if (!i.hidden) i.focus(); };
 let quitarFoto = 0;
 $('fotoQuitar').onclick = () => {
   const b = $('fotoQuitar');
-  if (!quitarFoto){ quitarFoto = setTimeout(() => { quitarFoto = 0; b.textContent = 'Quitar'; }, 5000); b.textContent = '¿Seguro?'; return; }
-  clearTimeout(quitarFoto); quitarFoto = 0; b.textContent = 'Quitar';
+  if (!quitarFoto){ quitarFoto = setTimeout(() => { quitarFoto = 0; b.textContent = 'Quitar foto'; }, 5000); b.textContent = '¿Seguro?'; return; }
+  clearTimeout(quitarFoto); quitarFoto = 0; b.textContent = 'Quitar foto';
   try { localStorage.removeItem('radio.foto'); } catch(e){}
   muestraFoto();
 };
