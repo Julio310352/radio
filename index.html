@@ -815,6 +815,7 @@ function play(s, opt = {}){
   ensureAudioCtx();
   if (!cab.classList.contains('on')) zumbido();        // las lámparas se calientan
   staticOn(); cab.classList.add('tuning');
+  desafino = .5; barrasSint = 2;
   addHist(s);
   showStation(s);
   try { localStorage.setItem('radio.last', JSON.stringify(slim(s))); } catch(e){}
@@ -1270,6 +1271,9 @@ function pintaDial(){
   $('needle').style.setProperty('--pos', posOf(fDial) + '%');
   $('lFreq').textContent = fDial.toFixed(2); $('lMhz').textContent = 'MHz';
   if (noiseGain) noiseGain.gain.setTargetAtTime(c && c.d < zona * .25 ? .006 : .012 + desafino * .06, actx.currentTime, .03);
+  // Si te alejas de la emisora que está sonando, se pierde: solo queda el ruido
+  const fuera = !c || c.d >= zona || (cur && c.id !== cur.stationuuid);
+  if (fuera && cur && !audio.paused && !playingRec && !silencio) perderEmisora();
   if (c && c.d < zona){
     const nombre = (c.s._label || c.s.name).trim();
     if (psSint !== nombre){ psSint = nombre; setPS(nombre); clic(); }
@@ -1282,6 +1286,11 @@ function pintaDial(){
     barrasSint = 1;
     $('lRT').textContent = 'Sin emisora · sigue girando';
   }
+}
+function perderEmisora(){
+  switching = true;                              // que la pausa no cambie el resto de la pantalla
+  audio.pause();
+  cab.classList.remove('on'); $('iST').classList.remove('on'); setPlaying(false);
 }
 function moverDial(mhz){
   const b = bands[activeBand];
@@ -1313,9 +1322,16 @@ function deslizaA(destino, s2, ms){
   afinando = requestAnimationFrame(paso);
 }
 function afc(){
+  if (lastAng !== null){ tuneTimer = setTimeout(afc, 300); return; }   // aún tienes el dedo en la rueda
   const c = cercana(fDial);
   if (!c || c.d > bandStep[activeBand] * .9){                   // más allá de la última emisora: solo ruido
-    setTimeout(() => { if (cab.classList.contains('tuning') && !scanning){ staticOff(); cab.classList.remove('tuning'); } }, 1500);
+    setTimeout(() => {
+      if (cab.classList.contains('tuning') && !scanning){
+        staticOff(); cab.classList.remove('tuning');
+        switching = false; quiereSonar = false; setStatus('Sin emisora en esta frecuencia');
+        if (necesitaVigilia()) modoSilencio();
+      }
+    }, 1500);
     return;
   }
   deslizaA(c.f, c.s, 250);
@@ -1586,7 +1602,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '20', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '21', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
