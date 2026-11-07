@@ -1554,6 +1554,7 @@ function dibujaOnda(){
   octx.globalAlpha = 1;
   const on = cab.classList.contains('on'), sint = cab.classList.contains('tuning');
   if (!on && !sint && !scanning){ dibujaNietos(w, h, performance.now()); return; }   // radio apagada: los nietos
+  octx.globalAlpha = (on && !sint) ? .4 : 1;                    // sonando: la onda más suave, para que se lean los nombres
   octx.strokeStyle = colorOnda; octx.lineWidth = 1.6;
   octx.shadowColor = colorOnda; octx.shadowBlur = 6;
   octx.beginPath();
@@ -1579,12 +1580,13 @@ function dibujaOnda(){
       x ? octx.lineTo(x, y) : octx.moveTo(x, y);
     }
   }
-  octx.stroke(); octx.shadowBlur = 0;
+  octx.stroke(); octx.shadowBlur = 0; octx.globalAlpha = 1;
+  if (on && !sint) dibujaNietos(w, h, performance.now());      // los nietos saltan por encima de la onda
 }
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '19', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '20', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
