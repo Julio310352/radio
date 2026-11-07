@@ -42,7 +42,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-body);-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
-body{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+body{padding-bottom:calc(var(--alto-rep,150px) + 16px)}
 [hidden]{display:none!important}
 button,input,select{font:inherit;color:inherit}
 .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -157,6 +157,33 @@ input[type=range]{accent-color:var(--dial)}
 .prog select,.prog input{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:15px}
 .estad{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding:8px 0;font-size:15px}
 .estad span:last-child{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mesa,.despierta{position:fixed;inset:0;z-index:30;background:#000;color:var(--lcd);font-family:var(--f-lcd);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(16px,env(safe-area-inset-left,0px));
+  text-shadow:0 0 14px color-mix(in srgb,var(--lcd) 55%,transparent)}
+.mesa .mesa-hora,.mesa .mesa-emisora{opacity:.85}
+.mesa-hora{font-size:min(34vw,190px);line-height:.9;font-variant-numeric:tabular-nums}
+.mesa-fecha{font-size:28px;opacity:.8}
+.mesa-tiempo{font-size:26px;opacity:.85}
+.mesa-emisora{font-size:30px;margin-top:10px}
+.mesa-alarma{font-size:22px;opacity:.7}
+.mesa-nietos{font-family:var(--f-script);font-size:22px;opacity:.55;margin-top:14px}
+.mesa-ayuda{font-family:var(--f-body);font-size:13px;opacity:.4;margin-top:18px}
+.despierta{background:var(--lcd-bg)}
+.d-saludo{font-size:40px;margin-bottom:24px}
+.d-btn{width:min(90vw,420px);min-height:64px;margin-top:12px;border-radius:14px;border:2px solid var(--lcd);background:transparent;color:var(--lcd);font-family:var(--f-display);font-weight:700;font-size:24px;letter-spacing:.06em;text-transform:uppercase}
+.d-pos{min-height:110px;font-size:30px;background:var(--lcd);color:var(--lcd-bg)}
+.tele{display:flex;align-items:center;gap:8px;margin:2px 0;font-size:19px;overflow:hidden}
+.tele-tag{flex:none;font-size:14px;padding:0 5px;border:1px solid currentColor;border-radius:3px;opacity:.8}
+.tele-pista{flex:1;min-width:0;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.tele-pista span{display:inline-block;padding-left:100%;animation:tele var(--tele-dur,60s) linear infinite}
+@keyframes tele{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){.tele-pista span{animation:none;padding-left:0}}
+.ajgrid{display:grid;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0 14px}
+.ajgrid .fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ajgrid label{font-size:15px}
+.ajgrid input[type=text],.ajgrid select{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:15px}
+.ajgrid input[type=checkbox]{width:22px;height:22px;accent-color:var(--dial)}
+.memfila .fm{flex:none;width:4.6em;font-family:var(--f-lcd);font-size:18px;text-align:center}
 .knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
@@ -288,6 +315,7 @@ body.noche #nocheVelo{opacity:.5}
         <div class="lcd-main"><span class="freq" id="lFreq">--.-</span><span class="mhz" id="lMhz">MHz</span></div>
         <div class="ps" id="lPS">MI RADIO</div>
         <canvas class="osc" id="osc" aria-hidden="true"></canvas>
+        <div class="tele" id="tele" hidden><span class="tele-tag" id="teleTag">TELETIPO</span><div class="tele-pista"><span id="teleTxt"></span></div></div>
         <div class="rt" id="lRT">Gira la rueda para buscar emisoras</div>
       </div>
       <div>
@@ -311,6 +339,7 @@ body.noche #nocheVelo{opacity:.5}
         <p class="vhint" id="vHint" hidden>En el iPhone el volumen se cambia con los botones laterales, salvo con el ecualizador encendido.</p>
         <div class="eqpanel off" id="eqPanel" hidden>
           <label class="eqsw"><input type="checkbox" id="eqOn"> Ecualizador</label>
+          <label class="eqsw" style="font-size:17px"><input type="checkbox" id="eqPorEm"> Recordar un ajuste para cada emisora</label>
           <div class="eqbands" id="eqBands"></div>
           <div class="eqpre" id="eqPre"></div>
           <p class="vhint">Si una emisora no lo permite, suena igual pero sin ecualizador.</p>
@@ -389,6 +418,21 @@ body.noche #nocheVelo{opacity:.5}
 </main>
 
 <div id="nocheVelo" aria-hidden="true"></div>
+<div class="mesa" id="mesa" hidden role="dialog" aria-label="Modo mesilla">
+  <div class="mesa-hora" id="mesaHora">00:00</div>
+  <div class="mesa-fecha" id="mesaFecha"></div>
+  <div class="mesa-tiempo" id="mesaTiempo"></div>
+  <div class="mesa-emisora" id="mesaEmisora"></div>
+  <div class="mesa-alarma" id="mesaAlarma"></div>
+  <div class="mesa-nietos">Adrián · Héctor · Laura · Carla · Oliver · Sara</div>
+  <p class="mesa-ayuda">Toca la pantalla para salir</p>
+</div>
+<div class="despierta" id="despierta" hidden role="dialog" aria-label="Despertador">
+  <div class="mesa-hora" id="dHora">07:00</div>
+  <div class="d-saludo">¡Buenos días!</div>
+  <button class="d-btn d-pos" id="dPosponer" type="button">10 minutos más</button>
+  <button class="d-btn" id="dApagar" type="button">Apagar el despertador</button>
+</div>
 <div class="player">
   <div class="wrap row">
     <div class="logo" id="pLogo">♪</div>
@@ -405,6 +449,8 @@ body.noche #nocheVelo{opacity:.5}
     <button class="rec" id="pRec" type="button"><span class="dot"></span><span id="pRecTxt">Grabar</span></button>
     <button class="timer" id="pAzar" type="button" aria-label="Emisora al azar">Sorpresa</button>
     <button class="timer" id="pNoche" type="button" aria-label="Modo noche">Noche</button>
+    <button class="timer" id="pMesa" type="button" aria-label="Modo mesilla">Mesilla</button>
+    <button class="timer" id="pEnviar" type="button" aria-label="Enviar emisora">Enviar</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -776,7 +822,7 @@ function renderFavs(){
   else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
   setBand('vFa', favs);
   if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
-  box.append(panelEstadisticas(), panelAjustes());
+  box.append(panelOpciones(), panelEstadisticas(), panelAjustes());
 }
 
 /* ---------- Pestañas ---------- */
@@ -971,8 +1017,9 @@ EQ_BANDAS.forEach(([, , etiqueta], i) => {
   r.addEventListener('input', () => setBanda(i, +r.value));
   d.append(val, r, l); $('eqBands').append(d);
 });
-function setBanda(i, v){
+function setBanda(i, v, auto){
   eq.g[i] = v;
+  if (!auto && eq.porEm && cur && !playingRec && typeof eqEm !== 'undefined'){ eqEm[cur.stationuuid] = [...eq.g]; guardaEqEm(); }
   $('eq' + i).value = v;
   $('eqv' + i).textContent = (v > 0 ? '+' : '') + v;
   if (eqFiltros[i]) eqFiltros[i].gain.value = v;
@@ -1151,7 +1198,7 @@ async function renderGrab(){
   if (lastRec && !items.some(i => i.id === lastRec.id)) items.unshift(lastRec);
   box.replaceChildren();
   if (!items.length){ message(box, 'No tienes grabaciones. Mientras escuchas una emisora, toca «● Grabar» en el reproductor.'); return; }
-  box.append(heading('Mis grabaciones'));
+  box.append(heading('Mis grabaciones'), note('Para llevar una grabación al NAS: pulsa Guardar → Guardar en Archivos → elige el NAS. La primera vez, conéctalo en la app Archivos: ··· → Conectarse al servidor → smb://192.168.178.130'));
   const ul = document.createElement('ul'); ul.className = 'list';
   for (const it of items){
     const li = document.createElement('li'); li.className = 'st';
@@ -1197,7 +1244,7 @@ function setBand(tab, list){
   const b = list.filter(x => x && x.stationuuid).slice(0, 100);
   const step = b.length <= 25 ? 8 : b.length <= 50 ? 4 : 2;     // en décimas de MHz
   bands[tab] = b;
-  bandFreq[tab] = new Map(b.map((x, i) => [x.stationuuid, (880 + i * step) / 10]));
+  bandFreq[tab] = new Map(b.map((x, i) => [x.stationuuid, tab === 'vMe' && x.fm ? x.fm : (880 + i * step) / 10]));
   bandStep[tab] = step / 10;                                     // separación entre emisoras, en MHz
   if (tab === activeBand){ tuneIdx = -1; refreshDial(); }
 }
@@ -1210,8 +1257,10 @@ function refreshDial(){
 }
 function rtText(s){ return [s.state, pais(s.countrycode)].filter(Boolean).join(', ') + (s.bitrate ? ` · ${s.codec || ''} ${s.bitrate} kbps` : ''); }
 function showLCD(s, tuning){
-  const f = freqOf(s) ?? s._mf;
+  const real = (mems.find(m => m.stationuuid === s.stationuuid) || {}).fm;
+  const f = (activeBand !== 'vMe' && real) ? null : (freqOf(s) ?? s._mf);
   if (f){ fDial = f; $('lFreq').textContent = f.toFixed(1); $('lMhz').textContent = 'MHz'; $('needle').style.setProperty('--pos', posOf(f) + '%'); }
+  else if (real){ $('lFreq').textContent = real.toFixed(1); $('lMhz').textContent = 'MHz'; }
   else { $('lFreq').textContent = 'NET'; $('lMhz').textContent = ''; }
   $('iRDS').classList.add('on');
   setPS(s._label || s.name);
@@ -1500,7 +1549,7 @@ async function autoScan(){
 $('mAuto').onclick = autoScan;
 renderMems();
 
-/* ---------- Colores de la radio (20 acabados) ---------- */
+/* ---------- Colores de la radio (40 acabados) ---------- */
 // fondo, panel, líneas, texto, texto suave, dial, aguja, letras pantalla, fondo pantalla, mandos, mueble arriba, mueble abajo, rueda claro, rueda oscuro
 const PIELES = [
   ['Madera clásica',  '#1b140f','#261d16','#3b2e23','#f3e7d3','#a8937a','#f2b34a','#e0482f','#ffb347','#170f08','#c9a46a','#3d2817','#28190e','#7d5c3a','#3a2717'],
@@ -1522,7 +1571,27 @@ const PIELES = [
   ['Verde menta',     '#ecf5f0','#dbece3','#b8d6c6','#17271f','#577266','#1f7a5a','#c0392b','#9dffcf','#08160f','#bfdccd','#cfe8db','#a2cdb6','#8fbfa6','#4f8a6d'],
   ['Marfil y oro',    '#f7f2e6','#eee5cf','#d8c8a2','#251d10','#6e5f45','#8c6a12','#b23a24','#ffd36b','#16110a','#e2c26e','#f1e6c8','#d9c393','#e2c26e','#a8862f'],
   ['Morado nocturno', '#130e1c','#1e162c','#342848','#efe8fb','#a597c0','#c49bff','#ff6b8a','#d6b3ff','#0d0816','#c7b4e6','#33224f','#1b1230','#5a4384','#24183d'],
-  ['Fósforo verde',   '#030803','#081208','#143014','#b8ffb8','#5fae5f','#39ff6a','#ff3b3b','#39ff6a','#020602','#4fd06a','#0a160a','#020602','#1d3d1d','#071207']
+  ['Fósforo verde',   '#030803','#081208','#143014','#b8ffb8','#5fae5f','#39ff6a','#ff3b3b','#39ff6a','#020602','#4fd06a','#0a160a','#020602','#1d3d1d','#071207'],
+  ['Haya natural','#f3e9d8','#e8dbc3','#d2bf9d','#2a1e12','#6c5a44','#8a4f12','#c0392b','#ffb347','#1b130b','#cfa877','#e3cfa9','#c9ad7f','#b08a58','#7a5a33'],
+  ['Ébano','#0e0c0b','#191614','#2e2925','#f1ebe4','#a39a90','#e9b65a','#e0482f','#ffbf5e','#0b0806','#c8a36a','#1f1915','#0c0a08','#3f342c','#15110e'],
+  ['Teca','#1a120a','#271b10','#43301c','#f6e9d6','#b49a7a','#f0b04a','#e0482f','#ffb85a','#140d07','#d4a96a','#6a4524','#3e2612','#93633a','#4a2e16'],
+  ['Pino nórdico','#f6f0e3','#ece2cc','#d7c7a5','#2b2216','#6e6049','#7d5a1c','#c0392b','#ffcf7a','#1a140c','#d9bf8a','#efe0bf','#dac497','#c9a86e','#8f7140'],
+  ['Baquelita marfil','#f4f0e6','#e9e3d3','#d1c8b1','#262219','#6b6452','#7a3b1e','#b23a24','#ffb347','#171209','#c9b68c','#ebe3cd','#d4c8a8','#cbbd99','#8b7d5c'],
+  ['Azul cielo','#eef5fb','#dceaf6','#b9d2e8','#14263a','#4f6a85','#1f5fa8','#d0392b','#9fe0ff','#071320','#b9cde0','#d8e8f6','#a9c7e4','#93b4d6','#4f7aa8'],
+  ['Azul marino','#08111d','#0f1c2e','#1d3049','#e3ecf8','#8b9fbd','#f2c35e','#ff5f4a','#ffd27a','#050c16','#c9b27a','#102a4c','#081a32','#2c4b78','#0d1f3a'],
+  ['Verde bosque','#0a140e','#122119','#1f3a2a','#e3f1e7','#8daa97','#e8c25a','#e0582f','#b8ff8a','#06100a','#b5a674','#173d27','#0b2516','#2f6146','#123020'],
+  ['Oliva','#14140a','#202012','#383820','#eeeed8','#a5a583','#d8cf62','#e06030','#e2ff6a','#0e0e05','#b7b07a','#4a4a22','#2b2b12','#6e6e3a','#33331a'],
+  ['Chocolate','#140c08','#21140e','#3a2419','#f4e6dc','#ae9484','#f0b072','#e8513a','#ffc28a','#100805','#cfa07a','#4a2a1a','#2a160c','#6e4430','#331c11'],
+  ['Vino tinto','#160709','#240c11','#3f1720','#f8e4e8','#bb8f99','#f2c06e','#ffffff','#ffc58a','#110407','#d8af82','#5c1424','#330810','#8a2a3d','#3f0d18'],
+  ['Ámbar antiguo','#1a1205','#281c08','#453210','#fbeed0','#b9a273','#ffb020','#e0482f','#ffb020','#120c03','#d9a54a','#5a3c0e','#352206','#8a6320','#41290a'],
+  ['Plata vieja','#121314','#1d1f21','#33373b','#eef0f2','#9da3a9','#c9d2dc','#ff5a4a','#d6e4ff','#0a0c10','#c2c8cf','#3a3e43','#1e2124','#7b8189','#2d3136'],
+  ['Cobre','#160d09','#231511','#3e251d','#f7e7df','#b5948a','#f0a070','#ffd86a','#ffab78','#110805','#d99a70','#7a3e24','#45200f','#b0643e','#55281a'],
+  ['Bronce','#14100a','#211a10','#3b2f1c','#f4ecdc','#ab9b80','#e2b45c','#e0482f','#ffc864','#0f0b05','#c8a060','#5e4626','#382912','#8c6c3c','#3e2d16'],
+  ['Coral','#fbf0ec','#f5ded6','#e8bfb2','#33201b','#7d5d55','#c2452d','#9c2a1a','#ffb59c','#1e0f0b','#e9b5a3','#f4d2c6','#e2aa98','#d8957f','#a55a44'],
+  ['Lavanda','#f3f0f8','#e5def0','#cbbfe0','#251d33','#685b80','#6a45a8','#c0392b','#d6c2ff','#120c1c','#cdbfe6','#e2d8f2','#c5b4e4','#b19dd6','#735b9e'],
+  ['Grafito','#0f1012','#18191c','#2a2c31','#e9eaec','#8f939b','#9fb4c8','#ff6a3d','#ffb35a','#0a0a0c','#a4a8ae','#26282c','#121315','#55585e','#1c1d20'],
+  ['Arena del desierto','#f7f1e4','#efe4cd','#dccaa4','#2c2417','#72634a','#a0641a','#c0392b','#ffcc6e','#1a130a','#dcc08a','#ecdcb7','#d8c08f','#cbac76','#957848'],
+  ['Nieve','#f7f9fb','#eceff3','#d6dce4','#1c232b','#5d6773','#2f6db5','#d0392b','#8fd8ff','#0a1118','#d2d8e0','#eef1f5','#d0d7e0','#c3ccd6','#7d8896']
 ];
 const CLAVES = ['--bg','--panel','--line','--text','--muted','--dial','--needle','--lcd','--lcd-bg','--brass','--cab1','--cab2','--knob1','--knob2'];
 let colorOnda = '#ffb347';
@@ -1628,7 +1697,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '23', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '24', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -1717,13 +1786,21 @@ function panelMemorias(){
   const d = document.createElement('div');
   d.append(heading('Mis memorias'));
   if (!mems.length){ d.append(note('Aún no hay memorias. Pon una emisora y pulsa MEM, o pulsa AUTO estando en España o Mundo para guardar las 20 de mejor sonido.')); return d; }
-  d.append(note(`Tienes ${mems.length} de ${MAXMEM}. Toca ▶ para escuchar, toca el nombre para cambiarlo, ↑ ↓ para ordenarlas y Borrar para quitarla.`));
+  d.append(note(`Tienes ${mems.length} de ${MAXMEM}. Toca ▶ para escuchar, toca el nombre para cambiarlo, ↑ ↓ para ordenarlas y Borrar para quitarla. En FM puedes escribir su frecuencia real (por ejemplo 98.6): la pantalla la mostrará y, en esta pestaña, la rueda irá por esas frecuencias.`));
   mems.forEach((m, i) => {
     const f = document.createElement('div'); f.className = 'memfila';
     const num = document.createElement('span'); num.className = 'mnum'; num.textContent = 'M' + (i + 1);
     const nombre = document.createElement('input'); nombre.type = 'text'; nombre.id = 'mn' + i;
     nombre.value = (m._label || m.name).trim(); nombre.setAttribute('aria-label', 'Nombre de la memoria ' + (i + 1));
     nombre.onchange = () => { m._label = nombre.value.trim() || m.name; saveMems(); };
+    const fm = document.createElement('input'); fm.type = 'text'; fm.inputMode = 'decimal'; fm.className = 'fm'; fm.id = 'mf' + i;
+    fm.placeholder = 'FM'; fm.value = m.fm ? m.fm.toFixed(1) : ''; fm.setAttribute('aria-label', 'Frecuencia FM real de la memoria ' + (i + 1));
+    fm.onchange = () => {
+      const v = parseFloat(fm.value.replace(',', '.'));
+      if (v >= 87.5 && v <= 108){ m.fm = Math.round(v * 10) / 10; fm.value = m.fm.toFixed(1); }
+      else { delete m.fm; fm.value = ''; }
+      saveMems();
+    };
     const mover = (dir) => () => {
       const j = i + dir; if (j < 0 || j >= mems.length) return;
       [mems[i], mems[j]] = [mems[j], mems[i]];                  // intercambia las dos memorias
@@ -1734,7 +1811,7 @@ function panelMemorias(){
       if (!armado){ armado = setTimeout(() => { armado = 0; borrar.textContent = 'Borrar'; borrar.classList.remove('warn'); }, 6000); borrar.textContent = '¿Seguro?'; borrar.classList.add('warn'); return; }
       clearTimeout(armado); mems.splice(i, 1); saveMems(); renderMemorias();
     });
-    f.append(num, nombre, miniBtn('▶', 'Escuchar', 'play', () => play(m)), miniBtn('↑', 'Subir', '', mover(-1)), miniBtn('↓', 'Bajar', '', mover(1)), borrar);
+    f.append(num, nombre, fm, miniBtn('▶', 'Escuchar', 'play', () => play(m)), miniBtn('↑', 'Subir', '', mover(-1)), miniBtn('↓', 'Bajar', '', mover(1)), borrar);
     d.append(f);
   });
   let todas = 0;
@@ -1924,7 +2001,7 @@ setInterval(() => {
   const dia = DIAS[hoyIdx(d)];
   if (psReloj !== dia){ psReloj = dia; setPS(dia); }
   const prox = proximaAlarma();
-  $('lRT').textContent = prox ? `Despertador: ${prox}` : d.toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'});
+  $('lRT').textContent = prox && alarma.armado ? `Despertador: ${prox}` : (tiempoTxt || d.toLocaleDateString('es-ES', {day: 'numeric', month: 'long', year: 'numeric'}));
 }, 1000);
 
 /* ---------- Despertador ---------- */
@@ -2023,6 +2100,7 @@ function sonarAlarma(){
   st = st || cur || mems[0] || bands.vEs[0];
   if (!st) return;
   play(st, {normal: true});
+  abreDespierta();
   // Volumen que sube poco a poco (donde el navegador lo permite)
   if (!volFijo){
     let n = 0; audioNormal.volume = .05;
@@ -2033,6 +2111,7 @@ function sonarAlarma(){
 // Cada 15 segundos mira si toca sonar. Si la app estuvo dormida, aún suena si no han pasado 10 minutos.
 setInterval(() => {
   if (!alarma.armado) return;
+  if (alarma.pospuesta && Date.now() >= alarma.pospuesta){ alarma.pospuesta = 0; sonarAlarma(); return; }
   const ahora = new Date(), a = alarma.dias[hoyIdx(ahora)];
   if (!a.on) return;
   const [h, m] = a.h.split(':').map(Number);
@@ -2084,12 +2163,234 @@ function panelAjustes(){
   return d;
 }
 
+/* ---------- Altura del reproductor (para que no tape nada) ---------- */
+try { new ResizeObserver(([e]) => document.documentElement.style.setProperty('--alto-rep', e.target.offsetHeight + 'px')).observe(document.querySelector('.player')); } catch(e){}
+
+/* ---------- Pantalla del despertador: posponer o apagar ---------- */
+function abreDespierta(){
+  $('dHora').textContent = new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+  $('despierta').hidden = false;
+}
+$('dPosponer').onclick = () => {
+  alarma.pospuesta = Date.now() + 10 * 60000;                 // vuelve a sonar dentro de 10 minutos
+  quiereSonar = false; audio.pause();
+  $('despierta').hidden = true;
+  $('lRT').textContent = 'Pospuesto · vuelve a sonar a las ' + new Date(alarma.pospuesta).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+};
+$('dApagar').onclick = () => { alarma.pospuesta = 0; $('despierta').hidden = true; };   // la radio sigue sonando
+
+/* ---------- Modo mesilla ---------- */
+function pintaMesa(){
+  const d = new Date();
+  $('mesaHora').textContent = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+  const f = d.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'long'});
+  $('mesaFecha').textContent = f.charAt(0).toUpperCase() + f.slice(1);
+  $('mesaEmisora').textContent = cab.classList.contains('on') && cur ? '♪ ' + (cur._label || cur.name).trim() : '';
+  const p = proximaAlarma();
+  $('mesaAlarma').textContent = alarma.armado && p ? '⏰ ' + p : '';
+  $('mesaTiempo').textContent = tiempoTxt;
+}
+let mesaIv = 0;
+$('pMesa').onclick = () => { pintaMesa(); $('mesa').hidden = false; pantallaEncendida(); mesaIv = setInterval(pintaMesa, 5000); };
+$('mesa').onclick = () => { $('mesa').hidden = true; clearInterval(mesaIv); };
+
+/* ---------- Enviar una emisora (por WhatsApp, correo...) ---------- */
+$('pEnviar').onclick = async () => {
+  if (!cur || playingRec){ $('lRT').textContent = 'Pon primero la emisora que quieres enviar'; return; }
+  const nombre = (cur._label || cur.name).trim();
+  const enlace = location.origin + location.pathname + '#e=' + cur.stationuuid;
+  const texto = `Escucha ${nombre} en la radio de los abuelos 📻`;
+  try {
+    if (navigator.share){ await navigator.share({title: 'Mi Radio', text: texto, url: enlace}); return; }
+  } catch(e){ if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(texto + ' ' + enlace); $('lRT').textContent = 'Enlace copiado: pégalo en WhatsApp'; }
+  catch(e){ $('lRT').textContent = enlace; }
+};
+// Al abrir un enlace enviado: deja esa emisora preparada
+async function abrirEnlace(){
+  const m = location.hash.match(/^#e=([0-9a-f-]{36})$/i);
+  if (!m) return;
+  try {
+    const r = await api('/json/stations/byuuid/' + m[1]);
+    if (r[0] && usable(r[0])){
+      cur = r[0]; showStation(r[0]);
+      setStatus('Te han enviado esta emisora · toca ▶ para escucharla', 'live');
+    }
+  } catch(e){}
+  history.replaceState(null, '', location.pathname);
+}
+
+/* ---------- Ajustes: noticias, tiempo, teletipo y ecualizador por emisora ---------- */
+let ajustes = {noticias: false, noticiasDe: 'Radio Nacional', ciudad: '', lat: null, lon: null, teletipo: true};
+try { Object.assign(ajustes, JSON.parse(localStorage.getItem('radio.ajustes')) || {}); } catch(e){}
+const guardaAjustes = () => { try { localStorage.setItem('radio.ajustes', JSON.stringify(ajustes)); } catch(e){} };
+let eqEm = {};
+try { eqEm = JSON.parse(localStorage.getItem('radio.eqem')) || {}; } catch(e){}
+function guardaEqEm(){ try { localStorage.setItem('radio.eqem', JSON.stringify(eqEm)); } catch(e){} }
+$('eqPorEm').checked = !!eq.porEm;
+$('eqPorEm').onchange = e => { eq.porEm = e.target.checked; saveEq(); };
+// Al cambiar de emisora: pone su ajuste de ecualizador (si lo tiene) y cambia el teletipo a su país
+const playBase = play;
+play = function(s, opt = {}){
+  playBase(s, opt);
+  if (eq.porEm && eqEm[s.stationuuid]) eqEm[s.stationuuid].forEach((v, i) => setBanda(i, v, true));
+  teletipo(s.countrycode);
+};
+
+// Noticias a la hora en punto
+let boletin = null;
+const NOTICIAS = ['Radio Nacional', 'Radio 5', 'Cadena SER', 'COPE', 'Onda Cero'];
+function emisoraNoticias(){
+  for (const g of curated) for (const x of g.list) if (!x._missing && x._label === ajustes.noticiasDe) return x;
+  return null;
+}
+setInterval(() => {
+  if (!ajustes.noticias || boletin || playingRec || rec || silencio) return;
+  const d = new Date();
+  if (d.getMinutes() !== 0 || !cab.classList.contains('on') || !cur) return;
+  const n = emisoraNoticias();
+  if (!n || n.stationuuid === cur.stationuuid) return;
+  boletin = {vuelta: cur, hasta: Date.now() + 6 * 60000};      // 6 minutos de noticias
+  play(n);
+  setTimeout(() => { if (boletin) $('lRT').textContent = 'Noticias de las ' + d.getHours() + ' · luego vuelve ' + (boletin.vuelta._label || boletin.vuelta.name).trim(); }, 2500);
+}, 15000);
+setInterval(() => {
+  if (!boletin || Date.now() < boletin.hasta) return;
+  const v = boletin.vuelta; boletin = null;
+  if (cab.classList.contains('on') || quiereSonar) play(v);
+}, 10000);
+
+// El tiempo (Open-Meteo, gratuito y sin registro)
+const CIELO = {0: 'Despejado', 1: 'Casi despejado', 2: 'Algunas nubes', 3: 'Nublado', 45: 'Niebla', 48: 'Niebla', 51: 'Llovizna', 53: 'Llovizna', 55: 'Llovizna',
+  61: 'Lluvia débil', 63: 'Lluvia', 65: 'Lluvia fuerte', 71: 'Nieve', 73: 'Nieve', 75: 'Nieve', 80: 'Chubascos', 81: 'Chubascos', 82: 'Chubascos fuertes', 95: 'Tormenta', 96: 'Tormenta', 99: 'Tormenta'};
+let tiempoTxt = '';
+async function cargaTiempo(){
+  if (ajustes.lat == null){ tiempoTxt = ''; return; }
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ajustes.lat}&longitude=${ajustes.lon}&current=temperature_2m,weather_code&timezone=auto`);
+    const j = await r.json();
+    tiempoTxt = `${Math.round(j.current.temperature_2m)}° · ${CIELO[j.current.weather_code] || ''} · ${ajustes.ciudad}`;
+  } catch(e){}
+}
+cargaTiempo(); setInterval(cargaTiempo, 20 * 60000);
+// Sonando, el tiempo aparece un momento cada 30 segundos en la línea de abajo
+setInterval(() => {
+  if (!tiempoTxt || !cab.classList.contains('on') || cab.classList.contains('tuning')) return;
+  $('lRT').textContent = tiempoTxt;
+  setTimeout(() => { if ($('lRT').textContent === tiempoTxt && cur) $('lRT').textContent = rtText(cur); }, 6000);
+}, 30000);
+
+/* ---------- Teletipo de noticias (Wikipedia «En las noticias») ---------- */
+// Idioma de la Wikipedia según el país de la emisora
+const IDIOMA_PAIS = {GB: 'en', US: 'en', IE: 'en', AU: 'en', CA: 'en', NZ: 'en', FR: 'fr', BE: 'fr', CH: 'de', DE: 'de', AT: 'de',
+  IT: 'it', PT: 'pt', BR: 'pt', NL: 'nl', PL: 'pl', SE: 'sv', NO: 'no', DK: 'da', FI: 'fi', RU: 'ru', UA: 'uk', JP: 'ja', CN: 'zh', GR: 'el', TR: 'tr', CZ: 'cs', RO: 'ro', HU: 'hu'};
+const cacheTele = {};
+let teleIdioma = '';
+const sinEtiquetas = h => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent.replace(/\s+/g, ' ').trim(); };
+async function titulares(lang){
+  const c = cacheTele[lang];
+  if (c && Date.now() - c.t < 30 * 60000) return c.items;            // se guardan 30 minutos
+  for (let atras = 0; atras < 3; atras++){                            // hoy o, si no hay, días anteriores
+    const d = new Date(Date.now() - atras * 86400000), z = n => String(n).padStart(2, '0');
+    try {
+      const r = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/feed/featured/${d.getFullYear()}/${z(d.getMonth() + 1)}/${z(d.getDate())}`);
+      const j = await r.json();
+      const items = (j.news || []).map(n => sinEtiquetas(n.story)).filter(Boolean).slice(0, 6);
+      if (items.length){ cacheTele[lang] = {t: Date.now(), items}; return items; }
+    } catch(e){}
+  }
+  return [];
+}
+async function traduce(texto, de){
+  // MyMemory: traductor gratuito; si falla, se deja el texto original
+  try {
+    const r = await (await fetch('https://api.mymemory.translated.net/get?langpair=' + de + '|es&q=' + encodeURIComponent(texto.slice(0, 480)))).json();
+    const t = r && r.responseData && r.responseData.translatedText;
+    return t && r.responseStatus == 200 ? sinEtiquetas(t) : texto;
+  } catch(e){ return texto; }
+}
+async function teletipo(pais){
+  const caja = $('tele');
+  if (!ajustes.teletipo){ caja.hidden = true; return; }
+  const lang = IDIOMA_PAIS[(pais || 'ES').toUpperCase()] || 'es';
+  if (lang === teleIdioma && !caja.hidden) return;
+  teleIdioma = lang;
+  let items = await titulares(lang);
+  let traducido = false;
+  if (lang !== 'es' && items.length){
+    const clave = 'es-' + lang;
+    if (cacheTele[clave] && Date.now() - cacheTele[clave].t < 30 * 60000) items = cacheTele[clave].items;
+    else { items = await Promise.all(items.map(t => traduce(t, lang))); cacheTele[clave] = {t: Date.now(), items}; }
+    traducido = true;
+  }
+  if (!items.length && lang !== 'es'){ items = await titulares('es'); traducido = false; }
+  if (teleIdioma !== lang) return;                                    // mientras tanto cambiaste de emisora
+  if (!items.length){ caja.hidden = true; return; }
+  const txt = items.join('   ◆   ') + '   ◆   Fuente: Wikipedia' + (traducido ? ' · traducido al español' : '');
+  $('teleTxt').textContent = txt;
+  $('teleTag').textContent = traducido ? 'TELETIPO · ' + lang.toUpperCase() + '→ES' : 'TELETIPO';
+  caja.style.setProperty('--tele-dur', Math.max(30, Math.round(txt.length / 7)) + 's');   // velocidad de lectura cómoda
+  caja.hidden = false;
+}
+
+// Panel de ajustes (en la pestaña Favoritas)
+function panelOpciones(){
+  const d = document.createElement('div');
+  d.append(heading('Ajustes de la radio'));
+  const g = document.createElement('div'); g.className = 'ajgrid';
+  const casilla = (id, texto, valor, cambio) => {
+    const f = document.createElement('div'); f.className = 'fila';
+    const c = document.createElement('input'); c.type = 'checkbox'; c.id = id; c.checked = valor;
+    const l = document.createElement('label'); l.htmlFor = id; l.textContent = texto;
+    c.onchange = () => cambio(c.checked);
+    f.append(c, l); return f;
+  };
+  // Teletipo
+  g.append(casilla('ajTele', 'Teletipo de noticias en la pantalla (traducido si la emisora es extranjera)', ajustes.teletipo, v => {
+    ajustes.teletipo = v; guardaAjustes(); teleIdioma = ''; teletipo(cur && cur.countrycode);
+  }));
+  // Noticias a la hora en punto
+  const f1 = casilla('ajNot', 'Noticias a la hora en punto (6 min) con', ajustes.noticias, v => { ajustes.noticias = v; guardaAjustes(); });
+  const s1 = document.createElement('select'); s1.id = 'ajNotDe';
+  NOTICIAS.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; s1.append(o); });
+  s1.value = ajustes.noticiasDe;
+  s1.onchange = () => { ajustes.noticiasDe = s1.value; guardaAjustes(); };
+  f1.append(s1);
+  g.append(f1);
+  // Ciudad para el tiempo
+  const f2 = document.createElement('div'); f2.className = 'fila';
+  const l2 = document.createElement('label'); l2.htmlFor = 'ajCiudad'; l2.textContent = 'Mi ciudad (para el tiempo)';
+  const i2 = document.createElement('input'); i2.type = 'text'; i2.id = 'ajCiudad'; i2.placeholder = 'Escribe tu ciudad'; i2.value = ajustes.ciudad;
+  const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'btn'; b2.textContent = 'Guardar ciudad'; b2.style.marginTop = '0';
+  const m2 = document.createElement('p'); m2.className = 'note'; m2.textContent = tiempoTxt ? 'Ahora: ' + tiempoTxt : '';
+  b2.onclick = async () => {
+    const q = i2.value.trim();
+    if (!q){ ajustes.ciudad = ''; ajustes.lat = ajustes.lon = null; guardaAjustes(); tiempoTxt = ''; m2.textContent = 'Tiempo desactivado.'; return; }
+    m2.textContent = 'Buscando…';
+    try {
+      const r = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=es&name=' + encodeURIComponent(q))).json();
+      const c = r.results && r.results[0];
+      if (!c){ m2.textContent = 'No encuentro esa ciudad. Prueba a escribirla de otra forma.'; return; }
+      Object.assign(ajustes, {ciudad: c.name, lat: c.latitude, lon: c.longitude}); guardaAjustes();
+      i2.value = c.name;
+      await cargaTiempo();
+      m2.textContent = tiempoTxt ? 'Ahora: ' + tiempoTxt : 'Ciudad guardada.';
+    } catch(e){ m2.textContent = 'No hay conexión con el servicio del tiempo.'; }
+  };
+  f2.append(l2, i2, b2);
+  g.append(f2, m2);
+  d.append(g);
+  return d;
+}
+teletipo('ES');
+
 /* ---------- Arranque ---------- */
 try {
   const last = JSON.parse(localStorage.getItem('radio.last'));
   if (last && last.stationuuid){ cur = last; showStation(last); setStatus('Última emisora · toca ▶ para escucharla'); }
 } catch(e){}
 loadEspana();
+abrirEnlace();
 </script>
 </body>
 </html>
