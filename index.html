@@ -149,6 +149,8 @@ input[type=range]{accent-color:var(--dial)}
 .memfila input:focus{border-color:var(--line);background:var(--panel)}
 .memfila .mini{min-width:40px}
 .memfila .mini.warn{min-width:76px}
+.memfila.on{background:color-mix(in srgb,var(--dial) 16%,transparent);box-shadow:inset 4px 0 0 var(--dial);border-radius:8px;padding-left:8px}
+.memfila.on .mnum::after{content:" ●";color:var(--needle);font-size:14px}
 .prog{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;display:grid;gap:8px}
 .prog .fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .prog label{font-size:14px;color:var(--muted);min-width:5.5em}
@@ -175,7 +177,9 @@ h1 span{color:var(--dial)}
 .needle{position:absolute;top:2px;bottom:2px;width:2px;background:var(--needle);box-shadow:0 0 8px var(--needle);left:var(--pos,50%);transition:left .9s cubic-bezier(.3,.7,.2,1)}
 @media (prefers-reduced-motion:reduce){.needle{transition:none}}
 
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+@media (max-width:480px){.tabs .tab{font-size:12px;letter-spacing:0;padding:9px 1px}}
+@media (max-width:360px){.tabs .tab{font-size:11px}}
 .tab{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
 .tab[aria-selected="true"]{color:var(--bg);background:var(--dial);border-color:var(--dial)}
 
@@ -333,6 +337,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="tab" role="tab" id="tEs" aria-selected="true" data-v="vEs">España</button>
     <button class="tab" role="tab" id="tMu" aria-selected="false" data-v="vMu">Mundo</button>
     <button class="tab" role="tab" id="tFa" aria-selected="false" data-v="vFa">Favoritas</button>
+    <button class="tab" role="tab" id="tMe" aria-selected="false" data-v="vMe">Memorias</button>
     <button class="tab" role="tab" id="tGr" aria-selected="false" data-v="vGr">Grabadas</button>
   </div>
 </nav>
@@ -363,6 +368,10 @@ body.noche #nocheVelo{opacity:.5}
   </section>
 
   <!-- GRABACIONES -->
+  <section id="vMe" hidden>
+    <div id="meOut"></div>
+  </section>
+
   <section id="vGr" hidden>
     <h2>Programar una grabación</h2>
     <div class="prog">
@@ -767,7 +776,7 @@ function renderFavs(){
   else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
   setBand('vFa', favs);
   if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
-  box.append(panelMemorias(), panelEstadisticas(), panelAjustes());
+  box.append(panelEstadisticas(), panelAjustes());
 }
 
 /* ---------- Pestañas ---------- */
@@ -775,6 +784,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => { x.setAttribute('aria-selected', x === t); $(x.dataset.v).hidden = x !== t; });
   if (t.dataset.v === 'vMu' && !muLoaded){ muLoaded = true; loadCountries(); loadMundo(); }
   if (t.dataset.v === 'vFa') renderFavs();
+  if (t.dataset.v === 'vMe') renderMemorias();
   if (t.dataset.v === 'vGr'){ renderGrab(); rellenaProg(); }
   else { activeBand = t.dataset.v; tuneIdx = -1; refreshDial(); }
   const nav = document.querySelector('.tabsbar');
@@ -805,6 +815,7 @@ function showStation(s){
   if (old) old.replaceWith(nuevo);
   $('pBtn').disabled = false;
   document.querySelectorAll('.st').forEach(li => li.classList.toggle('on', li.dataset.id === s.stationuuid));
+  document.querySelectorAll('.memfila').forEach((f, i) => f.classList.toggle('on', !!mems[i] && mems[i].stationuuid === s.stationuuid));
   showLCD(s);
 }
 function play(s, opt = {}){
@@ -1177,10 +1188,10 @@ updQ();
 
 /* ---------- Dial, pantalla RDS y rueda de sintonía ---------- */
 const cab = $('cab');
-const bands = {vEs: [], vMu: [], vFa: []};       // emisoras colocadas en el dial de cada pestaña
-const bandFreq = {vEs: new Map(), vMu: new Map(), vFa: new Map()};
+const bands = {vEs: [], vMu: [], vFa: [], vMe: []};       // emisoras colocadas en el dial de cada pestaña
+const bandFreq = {vEs: new Map(), vMu: new Map(), vFa: new Map(), vMe: new Map()};
 let activeBand = 'vEs', tuneIdx = -1, tuneTimer;
-const bandStep = {vEs: .8, vMu: .8, vFa: .8};
+const bandStep = {vEs: .8, vMu: .8, vFa: .8, vMe: .8};
 // Reparte hasta 100 emisoras entre 88 y 108 MHz (cada 0,2, 0,4 u 0,8 MHz)
 function setBand(tab, list){
   const b = list.filter(x => x && x.stationuuid).slice(0, 100);
@@ -1404,7 +1415,7 @@ function loadMems(){ try { return JSON.parse(localStorage.getItem('radio.mem')) 
 const MAXMEM = 30;   // memorias en total: 20 de AUTO + huecos para las tuyas
 let mems = loadMems(), scanning = false;
 let memQuitar = null, memQuitarT = 0;     // para quitar una memoria con dos toques de MEM
-function saveMems(){ try { localStorage.setItem('radio.mem', JSON.stringify(mems)); } catch(e){} renderMems(); }
+function saveMems(){ try { localStorage.setItem('radio.mem', JSON.stringify(mems)); } catch(e){} renderMems(); setBand('vMe', mems); }
 function renderMems(){
   const sel = $('mem');
   sel.replaceChildren();
@@ -1431,7 +1442,7 @@ $('mSave').onclick = () => {
       clearTimeout(memQuitarT); memQuitar = null;
       mems.splice(i, 1); saveMems();
       $('lRT').textContent = `Quitada de la memoria M${i + 1}`;
-      if (!$('vFa').hidden) renderFavs();
+      if (!$('vMe').hidden) renderMemorias();
       return;
     }
     memQuitar = cur.stationuuid;
@@ -1448,6 +1459,7 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
 async function autoScan(){
   const b = bands[activeBand], fmap = bandFreq[activeBand];
   if (scanning) return;
+  if (activeBand === 'vMe'){ $('lRT').textContent = 'Para AUTO, ve a España o Mundo'; return; }
   if (!b.length){ $('lRT').textContent = 'No hay emisoras en esta banda'; return; }
   scanning = true; $('mAuto').setAttribute('aria-busy', 'true');
   ensureAudioCtx(); clearTimeout(tuneTimer);
@@ -1616,7 +1628,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '22', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '23', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -1695,11 +1707,17 @@ $('tamBtn').onclick = () => { tam = (tam + 1) % TAMANOS.length; try { localStora
 aplicaTam();
 
 /* ---------- Ordenar, renombrar y borrar memorias ---------- */
+function renderMemorias(){
+  const box = $('meOut');
+  box.replaceChildren(panelMemorias());
+  setBand('vMe', mems);                                       // la rueda y ◀◀ ▶▶ recorren las memorias
+  if (cur) box.querySelectorAll('.memfila').forEach((f, i) => f.classList.toggle('on', mems[i] && mems[i].stationuuid === cur.stationuuid));
+}
 function panelMemorias(){
   const d = document.createElement('div');
   d.append(heading('Mis memorias'));
-  if (!mems.length){ d.append(note('Aún no hay memorias. Pulsa AUTO o MEM en la radio.')); return d; }
-  d.append(note('Toca un nombre para cambiarlo. Usa ↑ ↓ para ordenarlas.'));
+  if (!mems.length){ d.append(note('Aún no hay memorias. Pon una emisora y pulsa MEM, o pulsa AUTO estando en España o Mundo para guardar las 20 de mejor sonido.')); return d; }
+  d.append(note(`Tienes ${mems.length} de ${MAXMEM}. Toca ▶ para escuchar, toca el nombre para cambiarlo, ↑ ↓ para ordenarlas y Borrar para quitarla.`));
   mems.forEach((m, i) => {
     const f = document.createElement('div'); f.className = 'memfila';
     const num = document.createElement('span'); num.className = 'mnum'; num.textContent = 'M' + (i + 1);
@@ -1709,12 +1727,12 @@ function panelMemorias(){
     const mover = (dir) => () => {
       const j = i + dir; if (j < 0 || j >= mems.length) return;
       [mems[i], mems[j]] = [mems[j], mems[i]];                  // intercambia las dos memorias
-      saveMems(); renderFavs();
+      saveMems(); renderMemorias();
     };
     let armado = 0;
     const borrar = miniBtn('Borrar', 'Borrar memoria', '', () => {
       if (!armado){ armado = setTimeout(() => { armado = 0; borrar.textContent = 'Borrar'; borrar.classList.remove('warn'); }, 6000); borrar.textContent = '¿Seguro?'; borrar.classList.add('warn'); return; }
-      clearTimeout(armado); mems.splice(i, 1); saveMems(); renderFavs();
+      clearTimeout(armado); mems.splice(i, 1); saveMems(); renderMemorias();
     });
     f.append(num, nombre, miniBtn('▶', 'Escuchar', 'play', () => play(m)), miniBtn('↑', 'Subir', '', mover(-1)), miniBtn('↓', 'Bajar', '', mover(1)), borrar);
     d.append(f);
@@ -1723,7 +1741,7 @@ function panelMemorias(){
   const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn'; bt.textContent = 'Borrar todas las memorias';
   bt.onclick = () => {
     if (!todas){ todas = setTimeout(() => { todas = 0; bt.textContent = 'Borrar todas las memorias'; }, 6000); bt.textContent = '¿Seguro? Toca otra vez para borrar las ' + mems.length; return; }
-    clearTimeout(todas); mems = []; saveMems(); renderFavs();
+    clearTimeout(todas); mems = []; saveMems(); renderMemorias();
   };
   d.append(bt);
   return d;
