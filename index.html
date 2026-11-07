@@ -169,10 +169,23 @@ input[type=range]{accent-color:var(--dial)}
 .mesa-nietos{font-family:var(--f-script);font-size:22px;opacity:.55;margin-top:14px}
 .mesa-ayuda{font-family:var(--f-body);font-size:13px;opacity:.4;margin-top:18px}
 .despierta{background:var(--lcd-bg)}
+.noticias{position:fixed;inset:0;z-index:31;overflow-y:auto;background:var(--lcd-bg);color:var(--lcd);font-family:var(--f-lcd);
+  padding:calc(env(safe-area-inset-top,0px) + 12px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 20px) max(16px,env(safe-area-inset-left,0px))}
+.not-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--lcd-bg);padding-bottom:8px}
+.not-cab h2{margin:0;font-family:var(--f-lcd);font-size:30px;letter-spacing:.06em;color:var(--lcd);font-weight:400}
+.not-cerrar{width:auto;min-height:48px;margin:0;padding:0 18px;font-size:18px}
+.not-lista{margin:8px 0 0;padding-left:1.4em;display:grid;gap:18px;font-size:23px;line-height:1.3;max-width:70ch}
+.not-lista a{display:inline-block;margin-top:6px;font-family:var(--f-display);font-size:16px;letter-spacing:.08em;text-transform:uppercase;color:var(--lcd);border:1px solid var(--lcd);border-radius:6px;padding:4px 10px;text-decoration:none}
+.ajustesPan{font-family:var(--f-body);color:var(--text);background:var(--bg)}
+.ajustesPan .not-cab{background:var(--bg)}
+.ajustesPan .not-cab h2{color:var(--dial)}
+.ajustesPan .not-cerrar{color:var(--dial);border-color:var(--dial)}
+.not-fuente{font-family:var(--f-body);font-size:13px;opacity:.6;margin-top:22px}
 .d-saludo{font-size:40px;margin-bottom:24px}
 .d-btn{width:min(90vw,420px);min-height:64px;margin-top:12px;border-radius:14px;border:2px solid var(--lcd);background:transparent;color:var(--lcd);font-family:var(--f-display);font-weight:700;font-size:24px;letter-spacing:.06em;text-transform:uppercase}
 .d-pos{min-height:110px;font-size:30px;background:var(--lcd);color:var(--lcd-bg)}
-.tele{display:flex;align-items:center;gap:8px;margin:2px 0;font-size:19px;overflow:hidden}
+.tele{display:flex;align-items:center;gap:8px;margin:4px 0;padding:3px 6px;font-size:24px;overflow:hidden;cursor:pointer;border-radius:4px;background:color-mix(in srgb,var(--lcd) 12%,transparent);border:1px solid color-mix(in srgb,var(--lcd) 30%,transparent)}
+.tele:active{background:color-mix(in srgb,var(--lcd) 22%,transparent)}
 .tele-tag{flex:none;font-size:14px;padding:0 5px;border:1px solid currentColor;border-radius:3px;opacity:.8}
 .tele-pista{flex:1;min-width:0;overflow:hidden;white-space:nowrap;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
 .tele-pista span{display:inline-block;padding-left:100%;animation:tele var(--tele-dur,60s) linear infinite}
@@ -180,7 +193,9 @@ input[type=range]{accent-color:var(--dial)}
 @media (prefers-reduced-motion:reduce){.tele-pista span{animation:none;padding-left:0}}
 .ajgrid{display:grid;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0 14px}
 .ajgrid .fila{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.ajgrid label{font-size:15px}
+.ajgrid label{font-size:15px;flex:1;min-width:0}
+.ajgrid input[type=text]{flex:1 1 100%!important;font-size:17px!important}
+.ajgrid .fila select{flex:1 1 100%}
 .ajgrid input[type=text],.ajgrid select{flex:1;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:15px}
 .ajgrid input[type=checkbox]{width:22px;height:22px;accent-color:var(--dial)}
 .memfila .fm{flex:none;width:4.6em;font-family:var(--f-lcd);font-size:18px;text-align:center}
@@ -297,6 +312,7 @@ body.noche #nocheVelo{opacity:.5}
         <select class="skinsel" id="skin" aria-label="Color de la radio"></select>
         <button class="qbtn" id="qBtn" type="button">Calidad alta</button>
         <button class="qbtn" id="tamBtn" type="button" aria-label="Tamaño de letra">A</button>
+        <button class="qbtn" id="ajBtn" type="button" aria-label="Ajustes">⚙ Ajustes</button>
       </div>
     </div>
     <div class="tubes" aria-hidden="true">
@@ -315,7 +331,7 @@ body.noche #nocheVelo{opacity:.5}
         <div class="lcd-main"><span class="freq" id="lFreq">--.-</span><span class="mhz" id="lMhz">MHz</span></div>
         <div class="ps" id="lPS">MI RADIO</div>
         <canvas class="osc" id="osc" aria-hidden="true"></canvas>
-        <div class="tele" id="tele" hidden><span class="tele-tag" id="teleTag">TELETIPO</span><div class="tele-pista"><span id="teleTxt"></span></div></div>
+        <div class="tele" id="tele" hidden role="button" tabindex="0" aria-label="Ver las noticias del teletipo"><span class="tele-tag" id="teleTag">TELETIPO</span><div class="tele-pista"><span id="teleTxt"></span></div></div>
         <div class="rt" id="lRT">Gira la rueda para buscar emisoras</div>
       </div>
       <div>
@@ -426,6 +442,15 @@ body.noche #nocheVelo{opacity:.5}
   <div class="mesa-alarma" id="mesaAlarma"></div>
   <div class="mesa-nietos">Adrián · Héctor · Laura · Carla · Oliver · Sara</div>
   <p class="mesa-ayuda">Toca la pantalla para salir</p>
+</div>
+<div class="noticias ajustesPan" id="ajPan" hidden role="dialog" aria-label="Ajustes">
+  <div class="not-cab"><h2>⚙ Ajustes</h2><button class="d-btn not-cerrar" id="ajCerrar" type="button">Cerrar</button></div>
+  <div id="ajOut"></div>
+</div>
+<div class="noticias" id="noticias" hidden role="dialog" aria-label="Noticias">
+  <div class="not-cab"><h2 id="notTit">Noticias</h2><button class="d-btn not-cerrar" id="notCerrar" type="button">Cerrar</button></div>
+  <ol class="not-lista" id="notLista"></ol>
+  <p class="not-fuente" id="notFuente"></p>
 </div>
 <div class="despierta" id="despierta" hidden role="dialog" aria-label="Despertador">
   <div class="mesa-hora" id="dHora">07:00</div>
@@ -1697,7 +1722,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '24', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '25', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2285,7 +2310,7 @@ setInterval(() => {
 const IDIOMA_PAIS = {GB: 'en', US: 'en', IE: 'en', AU: 'en', CA: 'en', NZ: 'en', FR: 'fr', BE: 'fr', CH: 'de', DE: 'de', AT: 'de',
   IT: 'it', PT: 'pt', BR: 'pt', NL: 'nl', PL: 'pl', SE: 'sv', NO: 'no', DK: 'da', FI: 'fi', RU: 'ru', UA: 'uk', JP: 'ja', CN: 'zh', GR: 'el', TR: 'tr', CZ: 'cs', RO: 'ro', HU: 'hu'};
 const cacheTele = {};
-let teleIdioma = '';
+let teleIdioma = '', teleItems = [], teleTrad = '';
 const sinEtiquetas = h => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent.replace(/\s+/g, ' ').trim(); };
 async function titulares(lang){
   const c = cacheTele[lang];
@@ -2295,7 +2320,10 @@ async function titulares(lang){
     try {
       const r = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/feed/featured/${d.getFullYear()}/${z(d.getMonth() + 1)}/${z(d.getDate())}`);
       const j = await r.json();
-      const items = (j.news || []).map(n => sinEtiquetas(n.story)).filter(Boolean).slice(0, 6);
+      const items = (j.news || []).map(n => {
+        const l = (n.links || [])[0];
+        return {t: sinEtiquetas(n.story), u: l && l.content_urls ? (l.content_urls.mobile || l.content_urls.desktop).page : `https://${lang}.wikipedia.org/`};
+      }).filter(x => x.t).slice(0, 8);
       if (items.length){ cacheTele[lang] = {t: Date.now(), items}; return items; }
     } catch(e){}
   }
@@ -2320,18 +2348,42 @@ async function teletipo(pais){
   if (lang !== 'es' && items.length){
     const clave = 'es-' + lang;
     if (cacheTele[clave] && Date.now() - cacheTele[clave].t < 30 * 60000) items = cacheTele[clave].items;
-    else { items = await Promise.all(items.map(t => traduce(t, lang))); cacheTele[clave] = {t: Date.now(), items}; }
+    else { items = await Promise.all(items.map(async x => ({t: await traduce(x.t, lang), u: x.u}))); cacheTele[clave] = {t: Date.now(), items}; }
     traducido = true;
   }
   if (!items.length && lang !== 'es'){ items = await titulares('es'); traducido = false; }
   if (teleIdioma !== lang) return;                                    // mientras tanto cambiaste de emisora
   if (!items.length){ caja.hidden = true; return; }
-  const txt = items.join('   ◆   ') + '   ◆   Fuente: Wikipedia' + (traducido ? ' · traducido al español' : '');
+  teleItems = items; teleTrad = traducido ? lang : '';
+  const txt = items.map(x => x.t).join('   ◆   ') + '   ◆   Fuente: Wikipedia' + (traducido ? ' · traducido al español' : '') + '   ◆   Toca para leer';
   $('teleTxt').textContent = txt;
   $('teleTag').textContent = traducido ? 'TELETIPO · ' + lang.toUpperCase() + '→ES' : 'TELETIPO';
   caja.style.setProperty('--tele-dur', Math.max(30, Math.round(txt.length / 7)) + 's');   // velocidad de lectura cómoda
   caja.hidden = false;
 }
+
+// Tocar el teletipo: todas las noticias, completas y con enlace
+function abreNoticias(){
+  if (!teleItems.length) return;
+  const ol = $('notLista'); ol.replaceChildren();
+  teleItems.forEach(x => {
+    const li = document.createElement('li');
+    const t = document.createElement('div'); t.textContent = x.t;
+    const a = document.createElement('a'); a.href = x.u; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Leer más';
+    li.append(t, a); ol.append(li);
+  });
+  $('notTit').textContent = teleTrad ? 'Noticias (' + teleTrad.toUpperCase() + ' → español)' : 'Noticias';
+  $('notFuente').textContent = 'Fuente: Wikipedia, «En las noticias»' + (teleTrad ? ' · traducción automática con MyMemory, puede tener errores' : '') + '.';
+  $('noticias').hidden = false;
+}
+$('tele').onclick = abreNoticias;
+$('tele').onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abreNoticias(); } };
+$('notCerrar').onclick = () => { $('noticias').hidden = true; };
+// Botón ⚙ Ajustes: ciudad, teletipo y noticias a un toque
+$('ajBtn').onclick = () => { $('ajOut').replaceChildren(panelOpciones()); $('ajPan').hidden = false; };
+$('ajCerrar').onclick = () => { $('ajPan').hidden = true; if (!$('vFa').hidden) renderFavs(); };
+// Cada 30 minutos, titulares nuevos
+setInterval(() => { teleIdioma = ''; teletipo(cur && cur.countrycode); }, 30 * 60000);
 
 // Panel de ajustes (en la pestaña Favoritas)
 function panelOpciones(){
