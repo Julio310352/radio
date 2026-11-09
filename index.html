@@ -236,6 +236,7 @@ input[type=range]{accent-color:var(--dial)}
   padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) max(16px,env(safe-area-inset-left,0px));color:#8a7a66;font-family:var(--f-body)}
 .pwr-on{width:120px;height:120px;font-size:58px;box-shadow:0 0 30px color-mix(in srgb,var(--needle) 45%,transparent),0 6px 16px rgba(0,0,0,.7)}
 .ap-txt{font-family:var(--f-display);font-size:20px;letter-spacing:.14em;text-transform:uppercase;margin:8px 0 0}
+.ap-sub{font-size:15px;margin:0;opacity:.8}
 .ap-ver{font-size:16px;max-width:30ch;min-height:1.4em;margin:0}
 .ap-ver.nueva{color:#f2b34a;font-weight:600}
 .ap-nietos{font-family:var(--f-script);font-size:20px;opacity:.45;margin-top:30px}
@@ -363,6 +364,14 @@ body.noche #nocheVelo{opacity:.5}
 .mini{min-width:44px;height:44px;background:none;border:0;color:var(--muted);font-size:14px;padding:0 6px}
 .mini.play{color:var(--dial);font-size:18px}
 .mini.warn{color:var(--needle);font-weight:600}
+</style>
+<script>
+  // Interruptor: si la radio se apagó, al abrirla solo aparece el botón de encender
+  try { if (localStorage.getItem('radio.encendida') === '0') document.documentElement.classList.add('apagada'); } catch(e){}
+</script>
+<style>
+  html.apagada .apagado{display:flex!important}
+  html.apagada body > :not(.apagado){visibility:hidden}
 </style>
 </head>
 <body>
@@ -527,7 +536,8 @@ body.noche #nocheVelo{opacity:.5}
 <div id="nocheVelo" aria-hidden="true"></div>
 <div class="apagado" id="apagado" hidden role="dialog" aria-label="Radio apagada">
   <button class="pwr pwr-on" id="pwrOn" type="button" aria-label="Encender la radio">⏻</button>
-  <p class="ap-txt">Pulsa para encender</p>
+  <p class="ap-txt">Radio apagada</p>
+  <p class="ap-sub">Pulsa el botón para encenderla</p>
   <p class="ap-ver" id="pwrVer"></p>
   <p class="ap-nietos">Adrián · Héctor · Laura · Carla · Oliver · Sara</p>
 </div>
@@ -585,6 +595,7 @@ body.noche #nocheVelo{opacity:.5}
 </div>
 
 <script>
+const APAGADA = document.documentElement.classList.contains('apagada');   // arrancó con el interruptor en apagado
 /* ---------- Servicio de emisoras (Radio Browser, gratuito y abierto) ---------- */
 const SERVERS = ['https://de1.api.radio-browser.info','https://de2.api.radio-browser.info','https://fi1.api.radio-browser.info'];
 let srv = 0;
@@ -1860,7 +1871,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '33', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
+const VERSION = '34', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2381,11 +2392,19 @@ $('pwr').onclick = () => {
   audio.pause(); audioNormal.pause(); if (audioEq) audioEq.pause();
   staticOff(); cab.classList.remove('on', 'tuning'); setPlaying(false);
   sonidoApagar();
+  if (wakeLock){ wakeLock.release().catch(() => {}); wakeLock = null; }   // la pantalla ya puede apagarse
+  audio.removeAttribute('src'); audio.load();                  // corta la conexión con la emisora
+  try { localStorage.setItem('radio.encendida', '0'); } catch(e){}      // se queda apagada
+  document.documentElement.classList.add('apagada');
   $('apagado').hidden = false;
   comprobarVersion();
+  setTimeout(() => { try { window.close(); } catch(e){} }, 2500);  // en el ordenador cierra la ventana; en el iPhone se queda en negro
 };
 // Encender = volver a cargar la radio entera, con la versión más nueva
-$('pwrOn').onclick = () => location.replace(location.pathname + '?v=' + Date.now());
+$('pwrOn').onclick = () => {
+  try { localStorage.setItem('radio.encendida', '1'); } catch(e){}
+  location.replace(location.pathname + '?v=' + Date.now());
+};
 
 /* ---------- Teclas (ordenador) ---------- */
 document.addEventListener('keydown', e => {
@@ -2451,7 +2470,7 @@ let psReloj = '';
 // Al abrir la radio: saludo a los nietos en la pantalla durante unos segundos
 const saludoHasta = Date.now() + 13000;
 setTimeout(() => {
-  if (cab.classList.contains('on')) return;
+  if (APAGADA || cab.classList.contains('on')) return;
   $('lFreq').textContent = '♥'; $('lMhz').textContent = '';
   $('iRDS').classList.add('on');
   setPS('PARA NUESTROS NIETOS ' + NIETOS.join(' '));
@@ -2741,7 +2760,7 @@ async function cargaTiempo(){
     tiempoTxt = `${Math.round(j.current.temperature_2m)}° · ${CIELO[j.current.weather_code] || ''} · ${ajustes.ciudad}`;
   } catch(e){}
 }
-cargaTiempo(); setInterval(cargaTiempo, 20 * 60000);
+if (!APAGADA){ cargaTiempo(); setInterval(cargaTiempo, 20 * 60000); }
 // Sonando, el tiempo aparece un momento cada 30 segundos en la línea de abajo
 setInterval(() => {
   if (!tiempoTxt || !cab.classList.contains('on') || cab.classList.contains('tuning')) return;
@@ -3067,15 +3086,15 @@ function panelOpciones(){
   d.append(g);
   return d;
 }
-teletipo('ES');
+if (!APAGADA) teletipo('ES');
 
 /* ---------- Arranque ---------- */
 try {
   const last = JSON.parse(localStorage.getItem('radio.last'));
   if (last && last.stationuuid){ cur = last; showStation(last); setStatus('Última emisora · toca ▶ para escucharla'); }
 } catch(e){}
-loadEspana();
-abrirEnlace();
+if (APAGADA){ $('apagado').hidden = false; comprobarVersion(); }   // solo el interruptor
+else { loadEspana(); abrirEnlace(); }
 </script>
 </body>
 </html>
