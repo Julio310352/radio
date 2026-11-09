@@ -166,7 +166,7 @@ input[type=range]{accent-color:var(--dial)}
 .mesa-tiempo{font-size:26px;opacity:.85}
 .mesa-emisora{font-size:30px;margin-top:10px}
 .mesa-alarma{font-size:22px;opacity:.7}
-.mesa-nietos{font-family:var(--f-script);font-size:22px;opacity:.55;margin-top:14px}
+.mesa-nietos{font-family:var(--f-script);font-size:26px;opacity:.8;margin-top:14px}
 .mesa-ayuda{font-family:var(--f-body);font-size:13px;opacity:.4;margin-top:18px}
 .despierta{background:var(--lcd-bg)}
 .noticias{position:fixed;inset:0;z-index:31;overflow-y:auto;background:var(--lcd-bg);color:var(--lcd);font-family:var(--f-lcd);
@@ -263,10 +263,10 @@ input[type=range]{accent-color:var(--dial)}
 .knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
-.topbtns{display:flex;gap:8px;min-width:0}
-.skinsel{max-width:150px;min-width:0;background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--dial)}
+.topbtns{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.skinsel{max-width:170px;min-width:120px;background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--dial)}
 .skinsel option{color:#222;background:#fff;text-transform:none}
-.osc{display:block;width:100%;height:44px;margin:2px 0 1px}
+.osc{display:block;width:100%;height:56px;margin:2px 0 1px}
 h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.04em;text-transform:uppercase}
 h1 span{color:var(--dial)}
 .qbtn{background:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--dial)}
@@ -373,6 +373,7 @@ body.noche #nocheVelo{opacity:.5}
       <div class="titulo"><button class="pwr" id="pwr" type="button" aria-label="Apagar la radio">⏻</button><h1>Mi <span>Radio</span></h1></div>
       <div class="topbtns">
         <select class="skinsel" id="skin" aria-label="Color de la radio"></select>
+        <button class="qbtn" id="skinAzar" type="button" aria-label="Color de la radio al azar">🎲</button>
         <button class="qbtn" id="qBtn" type="button">Calidad alta</button>
         <button class="qbtn" id="tamBtn" type="button" aria-label="Tamaño de letra">A</button>
         <button class="qbtn" id="ajBtn" type="button" aria-label="Ajustes">⚙ Ajustes</button>
@@ -1678,7 +1679,7 @@ async function autoScan(){
 $('mAuto').onclick = autoScan;
 renderMems();
 
-/* ---------- Colores de la radio (40 acabados) ---------- */
+/* ---------- Colores de la radio (60 acabados) ---------- */
 // fondo, panel, líneas, texto, texto suave, dial, aguja, letras pantalla, fondo pantalla, mandos, mueble arriba, mueble abajo, rueda claro, rueda oscuro
 const PIELES = [
   ['Madera clásica',  '#1b140f','#261d16','#3b2e23','#f3e7d3','#a8937a','#f2b34a','#e0482f','#ffb347','#170f08','#c9a46a','#3d2817','#28190e','#7d5c3a','#3a2717'],
@@ -1720,7 +1721,27 @@ const PIELES = [
   ['Lavanda','#f3f0f8','#e5def0','#cbbfe0','#251d33','#685b80','#6a45a8','#c0392b','#d6c2ff','#120c1c','#cdbfe6','#e2d8f2','#c5b4e4','#b19dd6','#735b9e'],
   ['Grafito','#0f1012','#18191c','#2a2c31','#e9eaec','#8f939b','#9fb4c8','#ff6a3d','#ffb35a','#0a0a0c','#a4a8ae','#26282c','#121315','#55585e','#1c1d20'],
   ['Arena del desierto','#f7f1e4','#efe4cd','#dccaa4','#2c2417','#72634a','#a0641a','#c0392b','#ffcc6e','#1a130a','#dcc08a','#ecdcb7','#d8c08f','#cbac76','#957848'],
-  ['Nieve','#f7f9fb','#eceff3','#d6dce4','#1c232b','#5d6773','#2f6db5','#d0392b','#8fd8ff','#0a1118','#d2d8e0','#eef1f5','#d0d7e0','#c3ccd6','#7d8896']
+  ['Nieve','#f7f9fb','#eceff3','#d6dce4','#1c232b','#5d6773','#2f6db5','#d0392b','#8fd8ff','#0a1118','#d2d8e0','#eef1f5','#d0d7e0','#c3ccd6','#7d8896'],
+  ['Caramelo','#1a1007','#28190c','#46301a','#fbeedc','#b89c7c','#f5a442','#e0482f','#ffb85c','#130b04','#d8a462','#7a4a1c','#47290d','#a8703a','#542f10'],
+  ['Menta oscura','#08130f','#0f1f19','#1d382d','#e2f5ec','#88ad9c','#7fe0b0','#ff6b5a','#8affc4','#04100a','#9fc8b0','#14402e','#0a271b','#2f7055','#103425'],
+  ['Océano','#06111a','#0c1d2b','#173248','#e0f0fb','#86a7c2','#4fc3f7','#ff7043','#7fdcff','#030c14','#9fc2da','#0f3a5c','#072238','#24628f','#0c2c47'],
+  ['Atardecer','#1a0b10','#2a121a','#4a2230','#fde8ec','#c0909c','#ff9a5a','#ffd166','#ffb07a','#14070b','#e8a07a','#6e2638','#3e1220','#a8485c','#4e1828'],
+  ['Medianoche','#05060c','#0c0e18','#1a1e30','#e6e8f6','#8a8fb0','#8fa8ff','#ff5f7a','#a9b8ff','#030409','#a8b0d0','#141836','#0a0c1e','#323a6e','#11142c'],
+  ['Granate','#150608','#230b10','#3e151d','#f8e3e6','#b98c94','#e8b04a','#ff6a4a','#ffbd70','#100406','#d2a070','#5a0f1c','#33070f','#86283a','#3c0b15'],
+  ['Musgo','#0d110a','#161d11','#2b3820','#eaf0de','#9ba88a','#b8d468','#e0602f','#d2ff7a','#080c05','#a8b27a','#34451f','#1e2911','#5b7438','#24301a'],
+  ['Ciruela','#140913','#21101f','#3b1d38','#f6e4f3','#b28fae','#e68ad8','#ffd166','#f4a8ff','#0e050d','#c8a0c0','#4e1f48','#2c0f28','#7e3874','#381632'],
+  ['Cereza clara','#fbeff0','#f4dcdf','#e6b9be','#33181c','#7d585d','#b8243a','#8a1a2a','#ffb0c0','#1d0a0d','#e7b0b8','#f2cfd4','#e0a6ae','#d68f99','#a14a58'],
+  ['Melocotón','#fcf2ea','#f6e2d2','#e8c4a8','#33231a','#7e6453','#c8622a','#a03a1a','#ffc49a','#1e120a','#e8c09c','#f5d8c0','#e4b893','#d9a47c','#9e6a46'],
+  ['Pistacho','#f2f6e8','#e4edd0','#c8d8a6','#22291a','#66734f','#5f8a1e','#c0392b','#d6ff9a','#10160a','#c8d89c','#e0eac4','#c4d69a','#b0c67e','#71874a'],
+  ['Cielo nocturno','#070a14','#0e1424','#1c2640','#e4ebfb','#8d9bbd','#ffd36b','#ff6a5a','#ffe08a','#04060d','#c2b27a','#18234a','#0b122a','#34477e','#121c3c'],
+  ['Tabaco','#15100b','#221a12','#3c2e20','#f2e8dc','#a89884','#d9a35e','#e0482f','#ffc070','#0f0b07','#c39a68','#4f3a24','#2e2114','#7a5c3c','#36271a'],
+  ['Miel','#1a1304','#291e07','#47360f','#fcf1d2','#bba872','#ffc82e','#e0482f','#ffd24a','#120d02','#e0b24a','#6e5010','#3f2d06','#a37b1e','#4e3a0a'],
+  ['Pizarra','#101317','#191e24','#2c343e','#e8edf2','#909aa6','#7fb0d8','#ff7a4a','#a8d4ff','#0a0d10','#a4afbb','#2e3843','#181e25','#56636f','#20272f'],
+  ['Hielo','#f2f8fc','#e2eef6','#c2d8e8','#16232e','#556a7c','#2a7ab8','#d0392b','#a8e6ff','#08121a','#c2d6e6','#ddebf5','#b8d2e6','#a2c0d8','#5a7f9e'],
+  ['Turquesa claro','#eef8f6','#dcf0ec','#b6ddd5','#132a26','#50706a','#14897a','#c0392b','#9cfff0','#061412','#b4ddd4','#d2eeea','#a8d8cf','#8fcac0','#468a80'],
+  ['Rubí','#16050a','#250a12','#43121f','#fde4ea','#c08a98','#ff4d6d','#ffd166','#ff8aa2','#100306','#e0909e','#6e0f24','#3e0612','#a8233f','#4e0a1b'],
+  ['Esmeralda','#04120b','#081e13','#123a25','#e0f7eb','#82b097','#2fd68a','#ffb03a','#66ffb0','#020d07','#8ccfa8','#0e4a2c','#062a18','#1f7a4c','#0b3a22'],
+  ['Zafiro','#050a18','#0a1428','#14264a','#e2eafc','#8696c0','#4d7cff','#ffcf5a','#8cb0ff','#030712','#9cb0e0','#102a6a','#08183e','#2a4ea8','#0e2052']
 ];
 const CLAVES = ['--bg','--panel','--line','--text','--muted','--dial','--needle','--lcd','--lcd-bg','--brass','--cab1','--cab2','--knob1','--knob2'];
 let colorOnda = '#ffb347';
@@ -1740,6 +1761,10 @@ PIELES.forEach(([n], i) => { const o = document.createElement('option'); o.value
 let pielGuardada = 0;
 try { pielGuardada = +(localStorage.getItem('radio.piel') || 0); } catch(e){}
 $('skin').value = pielGuardada; ponPiel(pielGuardada);
+$('skinAzar').onclick = () => {
+  let n; do { n = Math.floor(Math.random() * PIELES.length); } while (n === +$('skin').value);
+  $('skin').value = n; ponPiel(n); $('lRT').textContent = 'Color: ' + PIELES[n][0];
+};
 $('skin').onchange = e => { ponPiel(+e.target.value); $('lRT').textContent = 'Color: ' + PIELES[+e.target.value][0]; };
 
 /* ---------- La onda en la pantalla (osciloscopio) ---------- */
@@ -1756,11 +1781,18 @@ function nivelBanda(i){
 }
 let faseOnda = 0;
 const NIETOS = ['Adrián', 'Héctor', 'Laura', 'Carla', 'Oliver', 'Sara'];
+// Colores al azar para cada letra: un tono (0-360) al azar, siempre vivo y luminoso para que se lea
+const tonoAzar = () => Math.floor(Math.random() * 360);
+const coloresLetras = [...Array(80)].map(tonoAzar);
+const colorLetra = i => `hsl(${coloresLetras[i % coloresLetras.length]}, 90%, 66%)`;
+setInterval(() => {                                            // cada 0,4 s, unas cuantas letras cambian de color
+  for (let k = 0; k < 8; k++) coloresLetras[Math.floor(Math.random() * coloresLetras.length)] = tonoAzar();
+}, 400);
 // Los nombres desfilan de derecha a izquierda y cada letra va dando saltitos
 function dibujaNietos(w, h, t){
-  octx.font = '22px VT323, "Courier New", monospace';
+  octx.font = '30px VT323, "Courier New", monospace';
   octx.textBaseline = 'alphabetic';
-  octx.fillStyle = colorOnda; octx.shadowColor = colorOnda; octx.shadowBlur = 8;
+  octx.shadowBlur = 10;
   const texto = NIETOS.join('   ♥   ') + '   ♥   ';
   const ancho = octx.measureText(texto).width;
   const desplaz = (t / 1000 * 38) % ancho;                    // 38 píxeles por segundo
@@ -1771,6 +1803,8 @@ function dibujaNietos(w, h, t){
       const c = texto[i], cw = octx.measureText(c).width;
       if (xi > -cw && xi < w){
         const salto = Math.abs(Math.sin(t / 260 + i * .55)) * (h * .38);   // cada letra salta a su ritmo
+        const col = colorLetra(i);                                   // cada letra con su color
+        octx.fillStyle = col; octx.shadowColor = col;
         octx.fillText(c, xi, h - 6 - salto);
       }
       xi += cw;
@@ -1826,7 +1860,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '32', FECHA_VERSION = '7-11-2026';   // cambiar en cada versión nueva
+const VERSION = '33', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2614,6 +2648,8 @@ $('dApagar').onclick = () => { alarma.pospuesta = 0; $('despierta').hidden = tru
 /* ---------- Modo mesilla ---------- */
 function pintaMesa(){
   const d = new Date();
+  const mn = document.querySelector('.mesa-nietos');                // los nombres, cada letra de un color
+  mn.replaceChildren(...[...NIETOS.join(' · ')].map((c, i) => { const sp = document.createElement('span'); sp.textContent = c; sp.style.color = colorLetra(i); return sp; }));
   $('mesaHora').textContent = d.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
   const f = d.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'long'});
   $('mesaFecha').textContent = f.charAt(0).toUpperCase() + f.slice(1);
