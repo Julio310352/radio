@@ -1936,7 +1936,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '40', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
+const VERSION = '41', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2690,7 +2690,8 @@ setInterval(() => {
   const d = new Date(), h = d.getHours();
   if (d.getMinutes() !== 0 || h === ultimaHora) return;
   ultimaHora = h;
-  if (ajustes.campanasNoche !== false && (h >= 22 || h < 8)) return;   // de noche, en silencio
+  const desde = ajustes.campDesde ?? 8, hasta = ajustes.campHasta ?? 22;
+  if (h < desde || h > hasta) return;                              // fuera de ese horario, en silencio (descanso)
   tocaHora(h);
 }, 15000);
 
@@ -2844,7 +2845,18 @@ function ajustesNuevos(g, casilla){
   // Campanadas
   g.append(casilla('ajCamp', 'Campanadas a la hora en punto', !!ajustes.campanas, v => { ajustes.campanas = v; guardaAjustes(); if (v) tocaHora(new Date().getHours()); }));
   g.append(casilla('ajCampN', '   … contando las horas', !!ajustes.campanasContar, v => { ajustes.campanasContar = v; guardaAjustes(); }));
-  g.append(casilla('ajCampS', '   … en silencio de 22:00 a 8:00', ajustes.campanasNoche !== false, v => { ajustes.campanasNoche = v; guardaAjustes(); }));
+  { // horario de las campanadas: solo suenan de tal hora a tal hora (ambas incluidas)
+    const f = document.createElement('div'); f.className = 'fila';
+    const sel = (id, valor, cambio) => {
+      const s = document.createElement('select'); s.id = id; s.className = 'field'; s.style.cssText = 'width:auto;flex:none;min-width:0;padding:6px 8px';
+      for (let h = 0; h < 24; h++) s.append(new Option(String(h).padStart(2, '0') + ':00', h));
+      s.value = valor; s.onchange = () => { cambio(+s.value); guardaAjustes(); }; return s;
+    };
+    const l1 = document.createElement('label'); l1.htmlFor = 'ajCampD'; l1.textContent = 'Sonar de las';
+    const l2 = document.createElement('label'); l2.htmlFor = 'ajCampH'; l2.textContent = 'a las';
+    f.append(l1, sel('ajCampD', ajustes.campDesde ?? 8, v => ajustes.campDesde = v), l2, sel('ajCampH', ajustes.campHasta ?? 22, v => ajustes.campHasta = v));
+    g.append(f);
+  }
   // Vúmetros y modo sencillo
   g.append(casilla('ajVu', 'Vúmetros de aguja', ajustes.vumetros !== false, v => { ajustes.vumetros = v; guardaAjustes(); aplicaVu(); }));
   g.append(casilla('ajSen', 'Abrir siempre en modo sencillo (botones grandes)', !!ajustes.sencilloSiempre, v => { ajustes.sencilloSiempre = v; guardaAjustes(); }));
