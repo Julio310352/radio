@@ -261,6 +261,22 @@ input[type=range]{accent-color:var(--dial)}
 .foto-ctl input[type=text]{width:min(100%,260px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px;font-size:15px;text-align:center}
 @media (max-width:420px){.placa.con-foto{gap:8px;padding-left:18px;padding-right:18px}.placa-foto{width:50px}.placa-foto img{width:46px;height:58px;border-width:2px}.placa-pie{font-size:10px}.placa.con-foto .ded3{font-size:17px}.placa.con-foto .ded1{font-size:21px}}
 .mesa-foto{max-height:28vh;max-width:70vw;margin-top:16px;border:4px solid #3a2312;opacity:.75;filter:sepia(.3)}
+.aviso{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--lcd) 18%,transparent);border:1px solid color-mix(in srgb,var(--lcd) 45%,transparent);font-family:var(--f-body);font-size:17px;line-height:1.35;color:var(--text);text-shadow:none}
+.aviso span{flex:1;min-width:0}
+.aviso button{flex:none;background:none;border:0;color:var(--lcd);font-size:18px;min-width:32px;min-height:32px}
+.vus{display:flex;justify-content:center;gap:14px;margin:16px auto 0;max-width:420px}
+.vus canvas{flex:1;min-width:0;max-width:190px;height:92px;border-radius:6px;border:3px solid var(--frame);box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 0 12px rgba(0,0,0,.3)}
+.sencillo{position:fixed;inset:0;z-index:32;background:var(--bg);display:flex;flex-direction:column;gap:14px;overflow-y:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(16px,env(safe-area-inset-left,0px))}
+.sen-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;flex:1}
+@media (min-width:700px){.sen-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.sen-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:150px;padding:12px;border-radius:16px;border:2px solid var(--line);background:var(--panel);color:var(--text);font-size:22px;font-weight:700;line-height:1.15;text-align:center}
+.sen-btn .logo{width:64px;height:64px;font-size:22px}
+.sen-btn.on{border-color:var(--dial);background:color-mix(in srgb,var(--dial) 22%,var(--panel));box-shadow:0 0 0 3px var(--dial)}
+.sen-parar{min-height:76px;border-radius:16px;border:0;background:var(--dial);color:var(--bg);font-size:26px;font-weight:800}
+.sen-salir{min-height:52px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--muted);font-size:17px}
+.aj-tit{font-weight:700;color:var(--dial);margin-top:6px}
+.ajgrid input[type=date],.ajgrid input[type=time]{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:16px}
 .knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
@@ -406,6 +422,7 @@ body.noche #nocheVelo{opacity:.5}
         <canvas class="osc" id="osc" aria-hidden="true"></canvas>
         <div class="tele" id="tele" hidden role="button" tabindex="0" aria-label="Ver las noticias del teletipo"><span class="tele-tag" id="teleTag">TELETIPO</span><div class="tele-pista"><span id="teleTxt"></span></div></div>
         <div class="rt" id="lRT">Gira la rueda para buscar emisoras</div>
+        <div class="aviso" id="aviso" hidden role="status"><span id="avisoTxt"></span><button type="button" id="avisoX" aria-label="Cerrar aviso">✕</button></div>
         <div class="subs" id="subs" hidden aria-live="polite"><div class="subs-tag" id="subsTag">SUBTÍTULOS</div><div id="subsTxt"></div><div class="subs-int" id="subsInt"></div></div>
       </div>
       <div>
@@ -443,6 +460,7 @@ body.noche #nocheVelo{opacity:.5}
         </div>
       </div>
     </div>
+    <div class="vus" id="vus" aria-hidden="true"><canvas id="vuL"></canvas><canvas id="vuR"></canvas></div>
     <div class="placa" id="placa" role="note" aria-label="Dedicatoria">
       <div class="placa-foto" id="marcoFoto" hidden>
         <img id="fotoImg" alt="Foto de recuerdo">
@@ -534,6 +552,11 @@ body.noche #nocheVelo{opacity:.5}
 </main>
 
 <div id="nocheVelo" aria-hidden="true"></div>
+<div class="sencillo" id="sencillo" hidden role="dialog" aria-label="Modo sencillo">
+  <div class="sen-grid" id="senGrid"></div>
+  <button class="sen-parar" id="senParar" type="button">■  Parar la radio</button>
+  <button class="sen-salir" id="senSalir" type="button">Salir del modo sencillo</button>
+</div>
 <div class="apagado" id="apagado" hidden role="dialog" aria-label="Radio apagada">
   <button class="pwr pwr-on" id="pwrOn" type="button" aria-label="Encender la radio">⏻</button>
   <p class="ap-txt">Radio apagada</p>
@@ -547,6 +570,7 @@ body.noche #nocheVelo{opacity:.5}
   <div class="mesa-tiempo" id="mesaTiempo"></div>
   <div class="mesa-emisora" id="mesaEmisora"></div>
   <div class="mesa-alarma" id="mesaAlarma"></div>
+  <div class="mesa-alarma" id="mesaCumple"></div>
   <img class="mesa-foto" id="mesaFoto" alt="" hidden>
   <div class="mesa-nietos">Adrián · Héctor · Laura · Carla · Oliver · Sara</div>
   <p class="mesa-ayuda">Toca la pantalla para salir</p>
@@ -590,6 +614,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="timer" id="pEnviar" type="button" aria-label="Enviar emisora">Enviar</button>
     <button class="timer" id="pMeteo" type="button" aria-label="Estación meteorológica">Tiempo</button>
     <button class="timer" id="pSubs" type="button" aria-label="Subtítulos traducidos">Subtítulos</button>
+    <button class="timer" id="pSencillo" type="button" aria-label="Modo sencillo">Sencillo</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -1800,6 +1825,11 @@ setInterval(() => {                                            // cada 0,4 s, un
   for (let k = 0; k < 8; k++) coloresLetras[Math.floor(Math.random() * coloresLetras.length)] = tonoAzar();
 }, 400);
 // Los nombres desfilan de derecha a izquierda y cada letra va dando saltitos
+function esLetraCumple(i){
+  if (!cumpleHoy.length) return false;
+  const texto = NIETOS.join('   ♥   ') + '   ♥   ';
+  return cumpleHoy.some(n => { const k = texto.indexOf(n); return i >= k && i < k + n.length; });
+}
 function dibujaNietos(w, h, t){
   octx.font = '30px VT323, "Courier New", monospace';
   octx.textBaseline = 'alphabetic';
@@ -1814,9 +1844,10 @@ function dibujaNietos(w, h, t){
       const c = texto[i], cw = octx.measureText(c).width;
       if (xi > -cw && xi < w){
         const salto = Math.abs(Math.sin(t / 260 + i * .55)) * (h * .38);   // cada letra salta a su ritmo
-        const col = colorLetra(i);                                   // cada letra con su color
+        const fiesta = esLetraCumple(i);                               // el día de su cumpleaños, su nombre salta más y en dorado
+        const col = fiesta ? `hsl(${45 + Math.sin(t / 150 + i) * 10}, 100%, 62%)` : colorLetra(i);
         octx.fillStyle = col; octx.shadowColor = col;
-        octx.fillText(c, xi, h - 6 - salto);
+        octx.fillText(c, xi, h - 6 - (fiesta ? Math.min(h * .6, salto * 1.6) : salto));
       }
       xi += cw;
     }
@@ -1871,7 +1902,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '34', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
+const VERSION = '35', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2361,6 +2392,244 @@ $('fotoQuitar').onclick = () => {
 };
 muestraFoto();
 
+/* ---------- Avisos en la pantalla (paseo, cumpleaños...) ---------- */
+let avisosVistos = {};
+try { avisosVistos = JSON.parse(localStorage.getItem('radio.avisos')) || {}; } catch(e){}
+const hoyTxt = () => new Date().toDateString();
+let avisoT = 0;
+function mostrarAviso(txt, clave, minutos = 30){
+  if (clave && avisosVistos[clave] === hoyTxt()) return;           // cada aviso, una vez al día
+  if (clave){ avisosVistos[clave] = hoyTxt(); try { localStorage.setItem('radio.avisos', JSON.stringify(avisosVistos)); } catch(e){} }
+  $('avisoTxt').textContent = txt; $('aviso').hidden = false;
+  clearTimeout(avisoT); avisoT = setTimeout(() => $('aviso').hidden = true, minutos * 60000);
+}
+$('avisoX').onclick = () => { $('aviso').hidden = true; };
+
+/* ---------- 1. Aviso para el paseo ---------- */
+async function avisoPaseo(){
+  if (APAGADA || !ajustes.paseoOn || ajustes.lat == null || !ajustes.paseoHora) return;
+  const [h, m] = ajustes.paseoHora.split(':').map(Number);
+  const t = new Date(); t.setHours(h, m, 0, 0);
+  const falta = t - Date.now();
+  if (falta < 0 || falta > 60 * 60000) return;                    // solo en la hora antes del paseo
+  try {
+    const f = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${ajustes.lat}&longitude=${ajustes.lon}&timezone=auto` +
+      '&hourly=temperature_2m,precipitation_probability,wind_speed_10m,weather_code&forecast_hours=3&wind_speed_unit=kmh')).json();
+    const i = Math.max(0, f.hourly.time.findIndex(x => +x.slice(11, 13) === h));
+    const temp = Math.round(f.hourly.temperature_2m[i]), llu = f.hourly.precipitation_probability[i] || 0, vi = Math.round(f.hourly.wind_speed_10m[i]);
+    const consejo = llu >= 50 ? ' · ☔ lleva paraguas' : temp <= 8 ? ' · abrígate bien' : temp >= 28 ? ' · lleva agua' : ' · buen día para andar';
+    mostrarAviso(`🚶 Paseo de las ${ajustes.paseoHora}: ${temp}°, ${llu} % de lluvia, viento ${fuerzaViento(vi).toLowerCase()} (${vi} km/h)${consejo}`, 'paseo', 70);
+  } catch(e){}
+}
+setInterval(avisoPaseo, 5 * 60000); setTimeout(avisoPaseo, 4000);
+
+/* ---------- 2. Tal día como hoy (Wikipedia en español) ---------- */
+let cacheEfe = null;
+async function efemerides(){
+  if (ajustes.efemerides === false) return [];
+  if (cacheEfe && cacheEfe.dia === hoyTxt()) return cacheEfe.items;
+  const d = new Date();
+  try {
+    const j = await (await fetch(`https://es.wikipedia.org/api/rest_v1/feed/featured/${d.getFullYear()}/${z2(d.getMonth() + 1)}/${z2(d.getDate())}`)).json();
+    const lista = (j.onthisday || []).filter(e => e.text && e.year);
+    const elegidas = lista.sort(() => Math.random() - .5).slice(0, 4);   // 4 al azar cada día
+    const items = elegidas.map(e => {
+      const l = (e.pages || [])[0];
+      return {t: `📜 Un día como hoy de ${e.year}: ${sinEtiquetas(e.text)}`, u: l && l.content_urls ? (l.content_urls.mobile || l.content_urls.desktop).page : 'https://es.wikipedia.org/'};
+    });
+    cacheEfe = {dia: hoyTxt(), items};
+    return items;
+  } catch(e){ return []; }
+}
+
+/* ---------- 3. Campanadas a la hora en punto ---------- */
+function campanada(t0, frec, vol = .12){
+  // Sonido de campana: varios tonos (no armónicos) que se apagan poco a poco
+  [[1, 1], [2.0, .5], [2.76, .35], [5.4, .2], [8.9, .1]].forEach(([k, a]) => {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = frec * k;
+    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol * a, t0 + .01);
+    g.gain.exponentialRampToValueAtTime(.0001, t0 + 2.8 / Math.sqrt(k));
+    o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 3);
+  });
+}
+function tocaHora(hora){
+  ensureAudioCtx(); if (!actx) return;
+  let t = actx.currentTime + .05;
+  campanada(t, 784); campanada(t + .7, 659);                       // ding-dong
+  if (ajustes.campanasContar){
+    const n = hora % 12 || 12;
+    for (let i = 0; i < n; i++) campanada(t + 2.2 + i * 1.5, 392, .14); // una campanada grave por cada hora
+  }
+}
+let ultimaHora = -1;
+setInterval(() => {
+  if (APAGADA || !ajustes.campanas) return;
+  const d = new Date(), h = d.getHours();
+  if (d.getMinutes() !== 0 || h === ultimaHora) return;
+  ultimaHora = h;
+  if (ajustes.campanasNoche !== false && (h >= 22 || h < 8)) return;   // de noche, en silencio
+  tocaHora(h);
+}, 15000);
+
+/* ---------- 4. Cumpleaños de los nietos (fechas guardadas solo en este aparato) ---------- */
+let cumples = {};
+try { cumples = JSON.parse(localStorage.getItem('radio.cumples')) || {}; } catch(e){}
+const guardaCumples = () => { try { localStorage.setItem('radio.cumples', JSON.stringify(cumples)); } catch(e){} };
+let cumpleHoy = [], fiestaPendiente = false;
+function infoCumples(){
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  return NIETOS.filter(n => cumples[n]).map(n => {
+    const [a, m, d] = cumples[n].split('-').map(Number);
+    let prox = new Date(hoy.getFullYear(), m - 1, d);
+    if (prox < hoy) prox = new Date(hoy.getFullYear() + 1, m - 1, d);
+    return {nombre: n, dias: Math.round((prox - hoy) / 86400000), edad: prox.getFullYear() - a};
+  }).sort((x, y) => x.dias - y.dias);
+}
+function fanfarria(){
+  ensureAudioCtx(); if (!actx){ fiestaPendiente = true; return; }
+  fiestaPendiente = false;
+  const t = actx.currentTime + .05;
+  [523, 659, 784, 1047, 784, 1047].forEach((f, i) => {              // una fanfarria corta y alegre
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'triangle'; o.frequency.value = f;
+    const t0 = t + i * .18 + (i > 3 ? .15 : 0);
+    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(.12, t0 + .02); g.gain.exponentialRampToValueAtTime(.0001, t0 + (i === 5 ? .9 : .3));
+    o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + 1);
+  });
+}
+function revisaCumples(){
+  if (APAGADA) return;
+  const info = infoCumples();
+  cumpleHoy = info.filter(c => c.dias === 0).map(c => c.nombre);
+  const hoy = info.filter(c => c.dias === 0), pronto = info.filter(c => c.dias > 0 && c.dias <= 7);
+  if (hoy.length){
+    const txt = hoy.map(c => `${c.nombre} cumple ${c.edad === 0 ? 'su primer mes' : c.edad + (c.edad === 1 ? ' año' : ' años')}`).join(' y ');
+    if (avisosVistos['cumple'] !== hoyTxt()) fanfarria();
+    mostrarAviso(`🎂 ¡Hoy es un día de fiesta! ${txt}. ¡Felicidades!`, 'cumple', 12 * 60);
+  } else if (pronto.length){
+    const c = pronto[0];
+    mostrarAviso(`🎁 ${c.dias === 1 ? 'Mañana' : 'Faltan ' + c.dias + ' días para'} el cumpleaños de ${c.nombre}${c.dias === 1 ? '' : ''} · cumple ${c.edad} ${c.edad === 1 ? 'año' : 'años'}`, 'pronto', 60);
+  }
+}
+setTimeout(revisaCumples, 15000); setInterval(revisaCumples, 60 * 60000);
+function proximoCumpleTxt(){
+  const c = infoCumples()[0];
+  if (!c || c.dias > 30) return '';
+  return c.dias === 0 ? `🎂 Hoy cumple ${c.nombre}` : `🎁 ${c.nombre} cumple ${c.edad} en ${c.dias} ${c.dias === 1 ? 'día' : 'días'}`;
+}
+
+/* ---------- 5. Modo sencillo: 6 botones grandes ---------- */
+function emisorasSencillo(){
+  let l = favs.slice(0, 6);
+  if (l.length < 6) l = l.concat(mems.filter(m => !l.some(x => x.stationuuid === m.stationuuid))).slice(0, 6);
+  if (l.length < 6) curated.forEach(g => g.list.forEach(x => { if (!x._missing && l.length < 6 && !l.some(y => y.stationuuid === x.stationuuid)) l.push(x); }));
+  return l;
+}
+function pintaSencillo(){
+  const g = $('senGrid'); g.replaceChildren();
+  const lista = emisorasSencillo();
+  if (!lista.length) g.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Aún no hay emisoras. Marca tus favoritas con ★ en la radio y aparecerán aquí en grande.'}));
+  lista.forEach(s => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'sen-btn';
+    if (cur && cur.stationuuid === s.stationuuid && cab.classList.contains('on')) b.classList.add('on');
+    const lg = logoEl(s);
+    b.append(lg, Object.assign(document.createElement('span'), {textContent: (s._label || s.name).trim()}));
+    b.onclick = () => { ensureAudioCtx(); play(s); setTimeout(pintaSencillo, 300); };
+    g.append(b);
+  });
+  $('senParar').textContent = cab.classList.contains('on') || cab.classList.contains('tuning') ? '■  Parar la radio' : '▶  Volver a escuchar';
+}
+function abreSencillo(){ pintaSencillo(); $('sencillo').hidden = false; }
+$('pSencillo').onclick = abreSencillo;
+$('senSalir').onclick = () => { $('sencillo').hidden = true; };
+$('senParar').onclick = () => { toggle(); setTimeout(pintaSencillo, 400); };
+setInterval(() => { if (!$('sencillo').hidden) pintaSencillo(); }, 3000);
+
+/* ---------- 6. Vúmetros de aguja ---------- */
+const vuNivel = [0, 0], vuAguja = [0, 0];
+let vuDatos = null;
+function nivelReal(){
+  if (!vuDatos) vuDatos = new Uint8Array(analizador.fftSize);
+  analizador.getByteTimeDomainData(vuDatos);
+  let s2 = 0; for (let i = 0; i < vuDatos.length; i++){ const v = (vuDatos[i] - 128) / 128; s2 += v * v; }
+  return Math.min(1, Math.sqrt(s2 / vuDatos.length) * 3.2);         // volumen medio (RMS), ajustado a la escala
+}
+function dibujaVu(cv, k){
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  if (!W) return;
+  if (cv.width !== Math.round(W * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // esfera crema iluminada
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#f8eccb'); g.addColorStop(1, '#e2cf9e');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const cx = W / 2, cy = H * 1.05, R = H * .82, A0 = -Math.PI * .78, A1 = -Math.PI * .22;
+  const ang = v => A0 + v * (A1 - A0);
+  c.lineWidth = 2;
+  c.strokeStyle = '#3a2a1a'; c.beginPath(); c.arc(cx, cy, R, A0, ang(.72)); c.stroke();
+  c.strokeStyle = '#c0392b'; c.beginPath(); c.arc(cx, cy, R, ang(.72), A1); c.stroke();      // zona roja
+  c.fillStyle = '#3a2a1a'; c.font = '600 9px ' + col('--f-display'); c.textAlign = 'center';
+  [[0, '-20'], [.3, '-10'], [.5, '-5'], [.72, '0'], [.88, '+2'], [1, '+3']].forEach(([v, t]) => {
+    const a = ang(v);
+    c.beginPath(); c.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.lineTo(cx + Math.cos(a) * (R - 6), cy + Math.sin(a) * (R - 6)); c.stroke();
+    c.fillStyle = v >= .72 ? '#c0392b' : '#3a2a1a';
+    c.fillText(t, cx + Math.cos(a) * (R + 9), cy + Math.sin(a) * (R + 9) + 3);
+  });
+  c.fillStyle = '#3a2a1a'; c.font = 'italic 700 13px Georgia, serif'; c.fillText('VU', cx, H * .72);
+  // aguja con algo de inercia, como las de verdad
+  vuAguja[k] += (vuNivel[k] - vuAguja[k]) * (vuNivel[k] > vuAguja[k] ? .35 : .12);
+  const a = ang(Math.max(0, Math.min(1.03, vuAguja[k])));
+  c.strokeStyle = '#111'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * (R - 2), cy + Math.sin(a) * (R - 2)); c.stroke();
+  c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(0, 0, W, 3);
+}
+function bucleVu(){
+  requestAnimationFrame(bucleVu);
+  if (ajustes.vumetros === false || $('vus').hidden) return;
+  const on = cab.classList.contains('on');
+  let base = 0;
+  if (on && senalReal()) base = nivelReal();
+  else if (on) base = .35 + .3 * ((lv[0] + lv[2] + lv[4]) / 3) + (Math.random() - .5) * .12;   // simulado
+  vuNivel[0] = base; vuNivel[1] = on ? Math.max(0, base + (Math.random() - .5) * .08) : 0;
+  dibujaVu($('vuL'), 0); dibujaVu($('vuR'), 1);
+}
+requestAnimationFrame(bucleVu);
+function aplicaVu(){ $('vus').hidden = ajustes.vumetros === false; }
+setTimeout(aplicaVu, 0);                                        // cuando ya estén cargados los ajustes
+
+/* ---------- Ajustes nuevos (se añaden al panel de ajustes) ---------- */
+function ajustesNuevos(g, casilla){
+  // Paseo
+  const fp = casilla('ajPaseo', 'Avisarme del tiempo antes de mi paseo, a las', !!ajustes.paseoOn, v => { ajustes.paseoOn = v; guardaAjustes(); avisoPaseo(); });
+  const hp = document.createElement('input'); hp.type = 'time'; hp.id = 'ajPaseoH'; hp.value = ajustes.paseoHora || '09:00';
+  hp.onchange = () => { ajustes.paseoHora = hp.value; guardaAjustes(); };
+  if (!ajustes.paseoHora) ajustes.paseoHora = hp.value;
+  fp.append(hp); g.append(fp);
+  // Efemérides
+  g.append(casilla('ajEfe', 'Tal día como hoy (historia) en el teletipo', ajustes.efemerides !== false, v => { ajustes.efemerides = v; guardaAjustes(); teleIdioma = ''; teletipo(cur && cur.countrycode); }));
+  // Campanadas
+  g.append(casilla('ajCamp', 'Campanadas a la hora en punto', !!ajustes.campanas, v => { ajustes.campanas = v; guardaAjustes(); if (v) tocaHora(new Date().getHours()); }));
+  g.append(casilla('ajCampN', '   … contando las horas', !!ajustes.campanasContar, v => { ajustes.campanasContar = v; guardaAjustes(); }));
+  g.append(casilla('ajCampS', '   … en silencio de 22:00 a 8:00', ajustes.campanasNoche !== false, v => { ajustes.campanasNoche = v; guardaAjustes(); }));
+  // Vúmetros y modo sencillo
+  g.append(casilla('ajVu', 'Vúmetros de aguja', ajustes.vumetros !== false, v => { ajustes.vumetros = v; guardaAjustes(); aplicaVu(); }));
+  g.append(casilla('ajSen', 'Abrir siempre en modo sencillo (botones grandes)', !!ajustes.sencilloSiempre, v => { ajustes.sencilloSiempre = v; guardaAjustes(); }));
+  // Cumpleaños
+  const tc = document.createElement('div'); tc.className = 'aj-tit'; tc.textContent = '🎂 Cumpleaños de los nietos (solo en este aparato)';
+  g.append(tc);
+  NIETOS.forEach((n, i) => {
+    const f = document.createElement('div'); f.className = 'fila';
+    const l = document.createElement('label'); l.htmlFor = 'cum' + i; l.textContent = n;
+    const inp = document.createElement('input'); inp.type = 'date'; inp.id = 'cum' + i; inp.value = cumples[n] || '';
+    inp.onchange = () => { if (inp.value) cumples[n] = inp.value; else delete cumples[n]; guardaCumples(); revisaCumples(); };
+    f.append(l, inp); g.append(f);
+  });
+  const prox = proximoCumpleTxt();
+  if (prox) g.append(Object.assign(document.createElement('p'), {className: 'note', textContent: prox}));
+}
+setTimeout(() => { if (ajustes.sencilloSiempre && !APAGADA) abreSencillo(); }, 1500);
+
 /* ---------- Botón de encendido ---------- */
 function sonidoApagar(){
   if (!actx) return;
@@ -2621,7 +2890,7 @@ function panelAjustes(){
   const bL = document.createElement('button'); bL.type = 'button'; bL.className = 'btn'; bL.textContent = 'Cargar ajustes';
   const msg = document.createElement('p'); msg.className = 'note';
   bC.onclick = () => {
-    const datos = {v: 1, favs, mems, eq, alarma: {...alarma, armado: false}};
+    const datos = {v: 1, favs, mems, eq, alarma: {...alarma, armado: false}, cumples, ajustes};
     ta.value = btoa(unescape(encodeURIComponent(JSON.stringify(datos))));   // texto → base64 (admite tildes)
     ta.select();
     const ok = () => msg.textContent = 'Código copiado. Pégalo en el otro aparato.';
@@ -2639,6 +2908,8 @@ function panelAjustes(){
       if (datos.mems) localStorage.setItem('radio.mem', JSON.stringify(datos.mems));
       if (datos.eq) localStorage.setItem('radio.eq', JSON.stringify(datos.eq));
       if (datos.alarma) localStorage.setItem('radio.alarma', JSON.stringify(datos.alarma));
+      if (datos.cumples) localStorage.setItem('radio.cumples', JSON.stringify(datos.cumples));
+      if (datos.ajustes) localStorage.setItem('radio.ajustes', JSON.stringify(datos.ajustes));
     } catch(e){ msg.textContent = 'No se han podido guardar en este aparato.'; return; }
     msg.textContent = 'Ajustes cargados. Reiniciando…';
     setTimeout(() => location.reload(), 1200);
@@ -2676,6 +2947,7 @@ function pintaMesa(){
   const p = proximaAlarma();
   $('mesaAlarma').textContent = alarma.armado && p ? '⏰ ' + p : '';
   $('mesaTiempo').textContent = tiempoTxt;
+  $('mesaCumple').textContent = proximoCumpleTxt();
 }
 let mesaIv = 0;
 $('pMesa').onclick = () => { pintaMesa(); $('mesa').hidden = false; pantallaEncendida(); mesaIv = setInterval(pintaMesa, 5000); };
@@ -2719,6 +2991,7 @@ $('eqPorEm').onchange = e => { eq.porEm = e.target.checked; saveEq(); };
 // Al cambiar de emisora: pone su ajuste de ecualizador (si lo tiene) y cambia el teletipo a su país
 const playBase = play;
 play = function(s, opt = {}){
+  if (fiestaPendiente) setTimeout(fanfarria, 1500);
   podActual = null; $('podBar').hidden = true;
   playBase(s, opt);
   if (eq.porEm && eqEm[s.stationuuid]) eqEm[s.stationuuid].forEach((v, i) => setBanda(i, v, true));
@@ -2816,6 +3089,9 @@ async function teletipo(pais){
   }
   if (!items.length && lang !== 'es'){ items = await titulares('es'); traducido = false; }
   if (teleIdioma !== lang) return;                                    // mientras tanto cambiaste de emisora
+  if (!items.length){ caja.hidden = true; return; }
+  items = items.concat(await efemerides());                         // tal día como hoy
+  if (teleIdioma !== lang) return;
   if (!items.length){ caja.hidden = true; return; }
   teleItems = items; teleTrad = traducido ? lang : '';
   const txt = items.map(x => x.t).join('   ◆   ') + '   ◆   Fuente: Wikipedia' + (traducido ? ' · traducido al español' : '') + '   ◆   Toca para leer';
@@ -3083,6 +3359,7 @@ function panelOpciones(){
   };
   f2.append(l2, i2, b2);
   g.append(f2, m2);
+  ajustesNuevos(g, casilla);
   d.append(g);
   return d;
 }
