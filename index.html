@@ -1806,7 +1806,18 @@ $('skin').onchange = e => { ponPiel(+e.target.value); $('lRT').textContent = 'Co
 /* ---------- La onda en la pantalla (osciloscopio) ---------- */
 const osc = $('osc'), octx = osc.getContext('2d');
 let datosOnda = null, datosFrec = null;
-const senalReal = () => analizador && audio === audioEq && !audio.paused && !silencio;
+// ¿Llega de verdad el sonido al analizador? En el iPhone, con emisoras por Internet, a veces solo llega silencio.
+let ultimaSenalViva = 0, datosVivo = null;
+function compruebaSenal(){
+  if (!analizador || audio !== audioEq || audio.paused || silencio) return;
+  if (!datosVivo) datosVivo = new Uint8Array(analizador.fftSize);
+  analizador.getByteTimeDomainData(datosVivo);
+  let max = 0; for (let i = 0; i < datosVivo.length; i += 8) max = Math.max(max, Math.abs(datosVivo[i] - 128));
+  if (max > 2) ultimaSenalViva = Date.now();                      // hay sonido de verdad
+}
+setInterval(compruebaSenal, 250);
+// Real solo si en el último segundo y medio ha llegado sonido; si no, la aguja, la onda y las lámparas van simuladas
+const senalReal = () => analizador && audio === audioEq && !audio.paused && !silencio && Date.now() - ultimaSenalViva < 1500;
 function nivelBanda(i){
   // Energía de 5 zonas del sonido (graves → agudos) para las 5 lámparas
   if (!datosFrec) datosFrec = new Uint8Array(analizador.frequencyBinCount);
@@ -1902,7 +1913,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '35', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
+const VERSION = '37', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2547,14 +2558,17 @@ $('senParar').onclick = () => { toggle(); setTimeout(pintaSencillo, 400); };
 setInterval(() => { if (!$('sencillo').hidden) pintaSencillo(); }, 3000);
 
 /* ---------- 6. Vúmetros de aguja ---------- */
-const vuNivel = [0, 0], vuAguja = [0, 0];
+const vuNivel = [0, 0], vuAguja = [0, 0], vuCambio = [0, 0];
 let vuDatos = null;
 function nivelReal(){
   if (!vuDatos) vuDatos = new Uint8Array(analizador.fftSize);
   analizador.getByteTimeDomainData(vuDatos);
   let s2 = 0; for (let i = 0; i < vuDatos.length; i++){ const v = (vuDatos[i] - 128) / 128; s2 += v * v; }
-  return Math.min(1, Math.sqrt(s2 / vuDatos.length) * 3.2);         // volumen medio (RMS), ajustado a la escala
+  const rms = Math.sqrt(s2 / vuDatos.length);                      // volumen medio (RMS)
+  vuPico = Math.max(vuPico * .997, rms, .02);                       // el pico reciente baja muy despacio
+  return Math.min(1.05, rms / vuPico * .85);                        // sensibilidad automática: los picos llegan cerca del 0
 }
+let vuPico = .05;
 function dibujaVu(cv, k){
   const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
   const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
@@ -2589,9 +2603,17 @@ function bucleVu(){
   if (ajustes.vumetros === false || $('vus').hidden) return;
   const on = cab.classList.contains('on');
   let base = 0;
-  if (on && senalReal()) base = nivelReal();
-  else if (on) base = .35 + .3 * ((lv[0] + lv[2] + lv[4]) / 3) + (Math.random() - .5) * .12;   // simulado
-  vuNivel[0] = base; vuNivel[1] = on ? Math.max(0, base + (Math.random() - .5) * .08) : 0;
+  const ahora = performance.now();
+  if (on && senalReal()){ base = nivelReal(); vuNivel[0] = base; vuNivel[1] = Math.max(0, base + (Math.random() - .5) * .06); }
+  else if (on){
+    // Simulado: cada aguja salta a un nivel nuevo cada pocas décimas, a veces con un golpe en la zona roja
+    for (let k = 0; k < 2; k++){
+      if (ahora > vuCambio[k]){
+        vuNivel[k] = Math.random() < .12 ? .8 + Math.random() * .25 : .2 + Math.random() * .6;
+        vuCambio[k] = ahora + 70 + Math.random() * 230;
+      }
+    }
+  } else { vuNivel[0] = vuNivel[1] = 0; }
   dibujaVu($('vuL'), 0); dibujaVu($('vuR'), 1);
 }
 requestAnimationFrame(bucleVu);
