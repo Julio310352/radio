@@ -1930,7 +1930,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '38', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
+const VERSION = '39', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2445,8 +2445,8 @@ audioNormal.addEventListener('timeupdate', () => {
   const t = audio.currentTime, d = audio.duration || 0;
   if (d){ $('musProg').value = Math.round(t / d * 1000); $('musTiempo').textContent = `${fmtTime(t)} / ${fmtTime(d)}`; }
 });
-audioNormal.addEventListener('ended', () => { if (musActual && playingRec) musSig(1); });           // al acabar, la siguiente
-audioNormal.addEventListener('error', () => { if (musActual && playingRec) setTimeout(() => musSig(1), 1500); }); // si una falla, salta
+audioNormal.addEventListener('ended', () => { if (musActual && playingRec && !document.documentElement.classList.contains('apagada')) musSig(1); });           // al acabar, la siguiente
+audioNormal.addEventListener('error', () => { if (musActual && playingRec && audio.getAttribute('src')) setTimeout(() => { if (musActual) musSig(1); }, 1500); }); // si una falla, salta
 let musTimer;
 $('qMus').addEventListener('input', () => { clearTimeout(musTimer); musTimer = setTimeout(verArtistas, 350); });
 // ⏮ ⏭ de la pantalla de bloqueo y de los auriculares: con tu música, cambian de canción
@@ -2827,6 +2827,7 @@ $('pwr').onclick = () => {
   if (rec) stopRec();                                          // lo grabado se guarda
   if (subsOn) paraSubtitulos();
   quiereSonar = false; boletin = null;
+  paraMusica(); podActual = null; playingRec = false;            // también se para tu música y los podcasts
   alarma.armado = false; updAlarmaUI();
   silencio = false; switching = false;
   audio.pause(); audioNormal.pause(); if (audioEq) audioEq.pause();
