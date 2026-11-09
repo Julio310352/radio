@@ -297,8 +297,11 @@ h1 span{color:var(--dial)}
 .needle{position:absolute;top:2px;bottom:2px;width:2px;background:var(--needle);box-shadow:0 0 8px var(--needle);left:var(--pos,50%);transition:left .9s cubic-bezier(.3,.7,.2,1)}
 @media (prefers-reduced-motion:reduce){.needle{transition:none}}
 
-.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
-@media (max-width:560px){.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+@media (max-width:700px){.tabs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.musbtns{display:flex;gap:8px;margin:0 0 10px}
+#musAzar[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
+#musBar small{color:var(--muted)}
 @media (max-width:480px){.tabs .tab{font-size:12px;letter-spacing:0;padding:9px 1px}}
 @media (max-width:360px){.tabs .tab{font-size:11px}}
 .tab{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
@@ -489,6 +492,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="tab" role="tab" id="tMe" aria-selected="false" data-v="vMe">Memorias</button>
     <button class="tab" role="tab" id="tPo" aria-selected="false" data-v="vPo">Podcasts</button>
     <button class="tab" role="tab" id="tGr" aria-selected="false" data-v="vGr">Grabadas</button>
+    <button class="tab" role="tab" id="tMs" aria-selected="false" data-v="vMs">Mi música</button>
   </div>
 </nav>
 
@@ -533,6 +537,18 @@ body.noche #nocheVelo{opacity:.5}
       <div class="podctl"><button class="btn" id="podAtras" type="button">⟲ 15 s</button><span id="podTiempo">0:00 / 0:00</span><button class="btn" id="podAdel" type="button">30 s ⟳</button></div>
     </div>
     <div id="podOut"></div>
+  </section>
+
+  <section id="vMs" hidden>
+    <div class="tools">
+      <input class="field" id="qMus" type="search" placeholder="Buscar canción, cantante o disco" autocomplete="off">
+    </div>
+    <div class="podbar" id="musBar" hidden>
+      <div class="podtit" id="musTit"></div>
+      <input type="range" id="musProg" min="0" max="1000" value="0" aria-label="Posición de la canción">
+      <div class="podctl"><button class="btn" id="musAnt" type="button" aria-label="Canción anterior">⏮</button><span><span id="musTiempo">0:00 / 0:00</span><br><small id="musNum"></small></span><button class="btn" id="musAzar" type="button" aria-pressed="false" aria-label="Al azar">🔀</button><button class="btn" id="musSig" type="button" aria-label="Canción siguiente">⏭</button></div>
+    </div>
+    <div id="musOut"></div>
   </section>
 
   <section id="vGr" hidden>
@@ -997,8 +1013,9 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   if (t.dataset.v === 'vFa') renderFavs();
   if (t.dataset.v === 'vMe') renderMemorias();
   if (t.dataset.v === 'vPo' && !podCargados){ podCargados = true; cargaPodcasts(); }
+  if (t.dataset.v === 'vMs' && !musCargada) cargaMusica();
   if (t.dataset.v === 'vGr'){ renderGrab(); rellenaProg(); }
-  else if (t.dataset.v !== 'vPo'){ activeBand = t.dataset.v; tuneIdx = -1; refreshDial(); }
+  else if (t.dataset.v !== 'vPo' && t.dataset.v !== 'vMs'){ activeBand = t.dataset.v; tuneIdx = -1; refreshDial(); }
   const nav = document.querySelector('.tabsbar');
   if (window.scrollY > nav.offsetTop) window.scrollTo(0, nav.offsetTop);
 });
@@ -1065,7 +1082,7 @@ function toggle(){
   else { quiereSonar = false; audio.pause(); }
 }
 $('pBtn').onclick = toggle;
-wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? (podActual ? 'Podcast' : 'Escuchando grabación') : 'En directo', 'live'); setPlaying(true); });
+wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? (podActual ? 'Podcast' : musActual ? 'Mi música' : 'Escuchando grabación') : 'En directo', 'live'); setPlaying(true); });
 wire('waiting', () => setStatus('Cargando…'));
 wire('pause', () => {
   if (necesitaVigilia() && !switching) setTimeout(() => { if (audio.paused && !switching) modoSilencio(); }, 400); if (!switching){ staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); } setPlaying(false); if (!switching && !audio.error) setStatus('En pausa'); });
@@ -1331,7 +1348,7 @@ function stopRec(){ if (!rec) return; const R = rec; R.ctl.abort(); finishRec(R)
 $('pRec').onclick = () => rec ? stopRec() : startRec();
 
 function playRec(it){
-  playingRec = true; switching = true; podActual = null; $('podBar').hidden = true;
+  playingRec = true; switching = true; podActual = null; $('podBar').hidden = true; paraMusica();
   usePlayer(audioNormal);
   audio.src = URL.createObjectURL(it.blob);
   audio.play().catch(() => {});
@@ -1913,7 +1930,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '37', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
+const VERSION = '38', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2258,7 +2275,7 @@ async function verEpisodios(p){
 
 function playPodcast(ep){
   if (rec) stopRec();
-  playingRec = true; switching = true; podActual = ep;
+  playingRec = true; switching = true; podActual = ep; paraMusica();
   quiereSonar = false;
   usePlayer(audioNormal);
   audio.src = ep.url;
@@ -2303,6 +2320,138 @@ TEMAS_POD.forEach(([v, l]) => {
   $('podTemas').append(b);
 });
 let podCargados = false;
+
+/* ---------- Mi música del NAS ---------- */
+// La lista de canciones (musica.txt) la crea el NAS cada noche. Las canciones se abren desde /music/ del propio NAS.
+let musLista = null, musCola = [], musPos = -1, musActual = null, musAzar = false, musCargada = false;
+const musUrl = ruta => '/music/' + ruta.split('/').map(encodeURIComponent).join('/');
+const musTitulo = ruta => ruta.split('/').pop().replace(/\.[^.]+$/, '');
+const musNombre = a => a.replace(/\bAC_DC\b/i, 'AC/DC').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+const musArtista = ruta => musNombre(ruta.split('/')[0]);
+const musCarpeta = ruta => ruta.split('/').slice(1, -1).join(' · ');
+
+async function cargaMusica(){
+  const box = $('musOut');
+  box.replaceChildren(note('Cargando tu música…'));
+  try {
+    const r = await fetch('musica.txt?t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) throw new Error(r.status);
+    musLista = (await r.text()).split('\n').map(l => l.trim()).filter(Boolean);
+  } catch(e){
+    musLista = null;
+    box.replaceChildren(heading('Mi música'),
+      note('Tu música está en el NAS de casa, y solo se puede oír abriendo la radio desde el NAS:'),
+      Object.assign(document.createElement('p'), {className: 'note', innerHTML: '<b>http://192.168.178.130/radio/</b>'}),
+      note('En casa funciona con el wifi. Fuera de casa, enciende antes WireGuard. Desde GitHub no se puede porque el NAS no tiene conexión segura (https).'));
+    return;
+  }
+  musCargada = true;
+  verArtistas();
+}
+
+function filaMus(icono, nombre, sub, fn, id){
+  const li = document.createElement('li'); li.className = 'st'; if (id) li.dataset.mus = id;
+  const main = document.createElement('button'); main.type = 'button'; main.className = 'st-main';
+  const info = document.createElement('div'); info.className = 'info';
+  info.append(Object.assign(document.createElement('div'), {className: 'name', textContent: nombre}),
+              Object.assign(document.createElement('div'), {className: 'sub', textContent: sub}));
+  main.append(Object.assign(document.createElement('div'), {className: 'logo', textContent: icono}), info);
+  main.onclick = fn; li.append(main);
+  if (musActual && id === musActual) li.classList.add('on');
+  return li;
+}
+function botonesLista(lista){
+  const d = document.createElement('div'); d.className = 'musbtns';
+  const todo = Object.assign(document.createElement('button'), {type: 'button', className: 'btn', textContent: '▶ Escuchar todo'});
+  todo.onclick = () => { musAzar = false; marcaAzar(); ponCola(lista, 0); };
+  const azar = Object.assign(document.createElement('button'), {type: 'button', className: 'btn', textContent: '🔀 Al azar'});
+  azar.onclick = () => { musAzar = true; marcaAzar(); ponCola(lista, Math.floor(Math.random() * lista.length)); };
+  d.append(todo, azar);
+  return d;
+}
+
+function verArtistas(){
+  const box = $('musOut'), q = $('qMus').value.trim().toLowerCase();
+  box.replaceChildren();
+  if (!musLista || !musLista.length){ box.append(note('No he encontrado canciones en el NAS.')); return; }
+  if (q){                                                        // buscando: se ven las canciones que coinciden
+    const res = musLista.filter(r => r.toLowerCase().includes(q));
+    box.append(heading(`${res.length} ${res.length === 1 ? 'canción' : 'canciones'} con «${$('qMus').value.trim()}»`));
+    if (!res.length) return;
+    box.append(botonesLista(res));
+    const ul = document.createElement('ul'); ul.className = 'list';
+    res.slice(0, 300).forEach((r, i) => ul.append(filaMus('♪', musTitulo(r), musArtista(r) + (musCarpeta(r) ? ' · ' + musCarpeta(r) : ''), () => ponCola(res, i), r)));
+    box.append(ul);
+    if (res.length > 300) box.append(note('Se ven las 300 primeras. Escribe algo más para afinar.'));
+    return;
+  }
+  const grupos = new Map();
+  musLista.forEach(r => { const a = r.split('/')[0]; grupos.set(a, (grupos.get(a) || 0) + 1); });
+  box.append(heading(`Tu música · ${grupos.size} carpetas · ${musLista.length} canciones`), botonesLista(musLista));
+  const ul = document.createElement('ul'); ul.className = 'list';
+  grupos.forEach((n, a) => ul.append(filaMus('💿', musNombre(a), n + (n === 1 ? ' canción' : ' canciones'), () => verCarpeta(a))));
+  box.append(ul);
+}
+function verCarpeta(a){
+  const box = $('musOut');
+  const lista = musLista.filter(r => r.split('/')[0] === a);
+  const volver = Object.assign(document.createElement('button'), {type: 'button', className: 'btn', textContent: '← Volver'});
+  volver.onclick = verArtistas;
+  const ul = document.createElement('ul'); ul.className = 'list';
+  lista.forEach((r, i) => ul.append(filaMus('♪', musTitulo(r), musCarpeta(r), () => { musAzar = false; marcaAzar(); ponCola(lista, i); }, r)));
+  box.replaceChildren(volver, heading(musNombre(a)), botonesLista(lista), ul);
+  window.scrollTo(0, document.querySelector('.tabsbar').offsetTop);
+}
+
+function ponCola(lista, i){ musCola = lista.slice(); musPos = i; tocaMus(); }
+function tocaMus(){
+  const ruta = musCola[musPos]; if (!ruta) return;
+  if (rec) stopRec();
+  playingRec = true; switching = true; quiereSonar = false;
+  podActual = null; $('podBar').hidden = true;
+  musActual = ruta;
+  usePlayer(audioNormal);
+  audio.src = musUrl(ruta);
+  audio.play().catch(() => {});
+  const tit = musTitulo(ruta), art = musArtista(ruta);
+  $('pName').textContent = tit;
+  $('pBtn').disabled = false;
+  $('lFreq').textContent = 'NAS'; $('lMhz').textContent = ''; setPS(art.slice(0, 16)); $('lRT').textContent = tit;
+  document.querySelectorAll('.st').forEach(li => li.classList.toggle('on', li.dataset.mus === ruta));
+  document.querySelectorAll('.memfila').forEach(f => f.classList.remove('on'));
+  setStatus('Cargando canción…');
+  $('musBar').hidden = false;
+  $('musTit').textContent = `${art} · ${tit}`;
+  $('musNum').textContent = `${musPos + 1} de ${musCola.length}`;
+  if ('mediaSession' in navigator) try {
+    navigator.mediaSession.metadata = new MediaMetadata({title: tit, artist: art, album: 'Mi Radio · Mi música'});
+  } catch(e){}
+}
+function musSig(dir){
+  if (!musCola.length) return;
+  if (musAzar && dir > 0 && musCola.length > 1){ let n; do { n = Math.floor(Math.random() * musCola.length); } while (n === musPos); musPos = n; }
+  else musPos = (musPos + dir + musCola.length) % musCola.length;
+  tocaMus();
+}
+function marcaAzar(){ $('musAzar').setAttribute('aria-pressed', musAzar); }
+function paraMusica(){ musActual = null; $('musBar').hidden = true; }
+
+$('musAnt').onclick = () => { if (audio.currentTime > 4) audio.currentTime = 0; else musSig(-1); };
+$('musSig').onclick = () => musSig(1);
+$('musAzar').onclick = () => { musAzar = !musAzar; marcaAzar(); };
+$('musProg').addEventListener('input', e => { if (musActual && audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration; });
+audioNormal.addEventListener('timeupdate', () => {
+  if (!musActual || audio !== audioNormal || !playingRec) return;
+  const t = audio.currentTime, d = audio.duration || 0;
+  if (d){ $('musProg').value = Math.round(t / d * 1000); $('musTiempo').textContent = `${fmtTime(t)} / ${fmtTime(d)}`; }
+});
+audioNormal.addEventListener('ended', () => { if (musActual && playingRec) musSig(1); });           // al acabar, la siguiente
+audioNormal.addEventListener('error', () => { if (musActual && playingRec) setTimeout(() => musSig(1), 1500); }); // si una falla, salta
+let musTimer;
+$('qMus').addEventListener('input', () => { clearTimeout(musTimer); musTimer = setTimeout(verArtistas, 350); });
+// ⏮ ⏭ de la pantalla de bloqueo y de los auriculares: con tu música, cambian de canción
+const saltarRadio = saltar;
+saltar = dir => musActual ? musSig(dir) : saltarRadio(dir);
 
 /* ---------- Subtítulos traducidos (prueba): micrófono + reconocimiento de voz + traductor ---------- */
 // Idioma que se reconoce, según el país de la emisora
@@ -3014,7 +3163,7 @@ $('eqPorEm').onchange = e => { eq.porEm = e.target.checked; saveEq(); };
 const playBase = play;
 play = function(s, opt = {}){
   if (fiestaPendiente) setTimeout(fanfarria, 1500);
-  podActual = null; $('podBar').hidden = true;
+  podActual = null; $('podBar').hidden = true; paraMusica();
   playBase(s, opt);
   if (eq.porEm && eqEm[s.stationuuid]) eqEm[s.stationuuid].forEach((v, i) => setBanda(i, v, true));
   teletipo(s.countrycode);
