@@ -57,7 +57,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tubes{display:flex;justify-content:center;align-items:flex-end;gap:16px;height:70px;margin:8px 0 6px}
 .tube{position:relative;width:22px;height:50px;border-radius:11px 11px 3px 3px;overflow:hidden;
   background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.24) 28%,rgba(255,255,255,.04) 55%,rgba(255,255,255,.14));
-  border:1px solid rgba(255,235,200,.28);box-shadow:0 0 calc(var(--lv,0) * 22px) rgba(255,138,42,calc(var(--lv,0) * .55))}
+  border:1px solid var(--tubo-borde,rgba(255,235,200,.28));background-color:var(--tubo-vidrio,transparent);box-shadow:0 0 calc(var(--lv,0) * 22px) rgba(255,138,42,calc(var(--lv,0) * .55))}
 .tube.big{width:30px;height:66px;border-radius:15px 15px 3px 3px}
 .tube::before{content:"";position:absolute;left:50%;bottom:9px;width:12px;height:58%;transform:translateX(-50%);border-radius:6px;
   background:radial-gradient(ellipse at 50% 75%,var(--glow) 0%,rgba(255,138,42,.55) 35%,rgba(255,138,42,0) 72%);
@@ -142,7 +142,7 @@ input[type=range]{accent-color:var(--dial)}
   text-shadow:0 1px 0 rgba(255,255,255,.45)}
 .placa .corazon{color:var(--needle)}
 .placa .ded3{display:block;font-family:var(--f-script);font-weight:700;font-size:20px;line-height:1.25;margin-top:2px;text-shadow:0 1px 0 rgba(255,255,255,.45)}
-.version{margin:8px 0 0;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);opacity:.8}
+.version{margin:8px 0 0;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cab-txt,color-mix(in srgb,var(--brass),var(--text) 45%))}
 .memfila{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--line);padding:6px 0}
 .memfila .mnum{flex:none;width:2.4em;font-family:var(--f-lcd);font-size:20px;color:var(--dial)}
 .memfila input{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;padding:6px;font-size:15px;color:var(--text)}
@@ -260,8 +260,8 @@ input[type=range]{accent-color:var(--dial)}
 .foto-cuantas{width:100%;text-align:center;font-size:12px;color:var(--muted)}
 select.mini{background:transparent;border:1px solid var(--line);border-radius:6px;padding:0 6px}
 .placa-pie{font-family:var(--f-script);font-size:11px;line-height:1.1;text-align:center;text-shadow:0 1px 0 rgba(255,255,255,.4)}
-.foto-ctl{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;margin-top:6px;opacity:.7}
-.foto-ctl .mini{height:34px;font-size:13px;color:color-mix(in srgb,var(--brass),var(--text) 45%)}
+.foto-ctl{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px;margin-top:6px}
+.foto-ctl .mini{height:34px;font-size:13px;color:var(--cab-txt,color-mix(in srgb,var(--brass),var(--text) 45%))}
 .foto-ctl input[type=text]{width:min(100%,260px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px;font-size:15px;text-align:center}
 @media (max-width:420px){.placa.con-foto{gap:8px;padding-left:18px;padding-right:18px}.placa-foto{width:50px}.placa-foto img{width:46px;height:58px;border-width:2px}.placa-pie{font-size:10px}.placa.con-foto .ded3{font-size:17px}.placa.con-foto .ded1{font-size:21px}}
 .mesa-foto{max-height:28vh;max-width:70vw;margin-top:16px;border:4px solid #3a2312;opacity:.75;filter:sepia(.3)}
@@ -281,7 +281,7 @@ select.mini{background:transparent;border:1px solid var(--line);border-radius:6p
 .sen-salir{min-height:52px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--muted);font-size:17px}
 .aj-tit{font-weight:700;color:var(--dial);margin-top:6px}
 .ajgrid input[type=date],.ajgrid input[type=time]{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:16px}
-.knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:color-mix(in srgb,var(--brass),var(--text) 45%);margin-top:6px}
+.knob-label{display:block;text-align:center;font-family:var(--f-display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--cab-txt,color-mix(in srgb,var(--brass),var(--text) 45%));margin-top:6px}
 .dial .mk{position:absolute;bottom:20px;width:3px;height:3px;border-radius:50%;background:var(--dial);opacity:.55;transform:translateX(-50%)}
 .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
 .topbtns{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
@@ -1817,11 +1817,41 @@ const PIELES = [
 ];
 const CLAVES = ['--bg','--panel','--line','--text','--muted','--dial','--needle','--lcd','--lcd-bg','--brass','--cab1','--cab2','--knob1','--knob2'];
 let colorOnda = '#ffb347';
+/* Contraste: cada piel se corrige sola para que letras y controles se lean bien sobre su fondo */
+const rgbDe = h => [1, 3, 5].map(k => parseInt(h.substr(k, 2), 16));
+const hexDe = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+function luz(h){ return rgbDe(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }).reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0); }
+function contraste(a, b){ const x = luz(a), y = luz(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+function mezcla(a, b, t){ const x = rgbDe(a), y = rgbDe(b); return hexDe(x.map((v, i) => v + (y[i] - v) * t)); }
+// Acerca el color al negro o al blanco (lo que pida el fondo) hasta que se lea con el contraste pedido
+function legible(color, fondos, minimo){
+  if (fondos.every(f => contraste(color, f) >= minimo)) return color;
+  const claro = fondos.reduce((a, f) => a + luz(f), 0) / fondos.length > .18;
+  const meta = claro ? '#000000' : '#ffffff';
+  for (let t = .05; t <= 1.001; t += .05){
+    const c = mezcla(color, meta, t);
+    if (fondos.every(f => contraste(c, f) >= minimo)) return c;
+  }
+  return meta;
+}
 function ponPiel(i){
   const p = PIELES[i] || PIELES[0];
-  CLAVES.forEach((k, j) => document.documentElement.style.setProperty(k, p[j + 1]));
+  const v = {}; CLAVES.forEach((k, j) => v[k] = p[j + 1]);
+  const fondos = [v['--bg'], v['--panel']];
+  v['--text']  = legible(v['--text'], fondos, 7);                 // letras principales: muy claras
+  v['--muted'] = legible(v['--muted'], fondos, 4.6);               // letras secundarias y botones pequeños
+  v['--dial']  = legible(v['--dial'], fondos, 4.6);                // títulos y botón ▶ (su icono va en el color del fondo)
+  v['--line']  = legible(v['--line'], fondos, 1.9);                // bordes de botones y casillas
+  v['--lcd']   = legible(v['--lcd'], [v['--lcd-bg']], 7);          // pantalla RDS
+  CLAVES.forEach(k => document.documentElement.style.setProperty(k, v[k]));
   // Mandos y textos: oscuros sobre mandos claros
-  document.documentElement.style.setProperty('--ink', '#1e150c');
+  document.documentElement.style.setProperty('--ink', legible('#1e150c', [v['--brass']], 7));
+  // Letras sobre el mueble (SINTONÍA, versión, botones de las fotos) y cristal de las lámparas
+  const mueble = [v['--cab1'], v['--cab2']];
+  document.documentElement.style.setProperty('--cab-txt', legible(mezcla(v['--brass'], v['--text'], .45), mueble, 4.6));
+  const muebleClaro = (luz(v['--cab1']) + luz(v['--cab2'])) / 2 > .18;
+  document.documentElement.style.setProperty('--tubo-borde', muebleClaro ? 'rgba(60,40,20,.45)' : 'rgba(255,235,200,.28)');
+  document.documentElement.style.setProperty('--tubo-vidrio', muebleClaro ? 'rgba(60,40,20,.10)' : 'rgba(255,255,255,.06)');
   // Acabados claros: controles del sistema (casillas, desplegables) en claro
   const [r, g, b] = [1, 3, 5].map(k => parseInt(p[1].substr(k, 2), 16));
   document.documentElement.style.colorScheme = (r * .3 + g * .59 + b * .11) > 128 ? 'light' : 'dark';
@@ -1949,7 +1979,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '42', FECHA_VERSION = '10-11-2026';   // cambiar en cada versión nueva
+const VERSION = '43', FECHA_VERSION = '10-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
