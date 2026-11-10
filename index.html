@@ -306,6 +306,13 @@ h1 span{color:var(--dial)}
 .musbtns{display:flex;gap:8px;margin:0 0 10px}
 #musAzar[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
 #musBar small{color:var(--muted)}
+.mus-cab{display:flex;align-items:center;gap:10px}.mus-cab .podtit{flex:1;min-width:0}
+#musCar{width:56px;height:56px;border-radius:6px;object-fit:cover;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.mus-elige{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;margin:-4px 0 8px;border:1px dashed var(--dial);border-radius:10px;font-size:14px;color:var(--muted);list-style:none}
+.pa-lista{margin:6px 0 14px;padding-left:20px;line-height:1.7}
+#pPaseo.activo{border-color:var(--dial);color:var(--dial)}
+.not-cab .leer{margin-left:auto;margin-right:8px}
+.mesa-hora{cursor:pointer}
 @media (max-width:480px){.tabs .tab{font-size:12px;letter-spacing:0;padding:9px 1px}}
 @media (max-width:360px){.tabs .tab{font-size:11px}}
 .tab{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
@@ -550,7 +557,7 @@ body.noche #nocheVelo{opacity:.5}
       <input class="field" id="qMus" type="search" placeholder="Buscar canción, cantante o disco" autocomplete="off">
     </div>
     <div class="podbar" id="musBar" hidden>
-      <div class="podtit" id="musTit"></div>
+      <div class="mus-cab"><img id="musCar" alt="" hidden><div class="podtit" id="musTit"></div></div>
       <input type="range" id="musProg" min="0" max="1000" value="0" aria-label="Posición de la canción">
       <div class="podctl"><button class="btn" id="musAnt" type="button" aria-label="Canción anterior">⏮</button><span><span id="musTiempo">0:00 / 0:00</span><br><small id="musNum"></small></span><button class="btn" id="musAzar" type="button" aria-pressed="false" aria-label="Al azar">🔀</button><button class="btn" id="musSig" type="button" aria-label="Canción siguiente">⏭</button></div>
     </div>
@@ -605,6 +612,11 @@ body.noche #nocheVelo{opacity:.5}
   <div class="not-cab"><h2>⚙ Ajustes</h2><button class="d-btn not-cerrar" id="ajCerrar" type="button">Cerrar</button></div>
   <div id="ajOut"></div>
 </div>
+<div class="noticias ajustesPan" id="paseoPan" hidden role="dialog" aria-label="Paseo">
+  <div class="not-cab"><h2>🚶 Mi paseo</h2><button class="d-btn not-cerrar" id="paCerrar" type="button">Cerrar</button></div>
+  <div id="paOut"></div>
+  <button class="d-btn d-pos" id="paBoton" type="button">Empezar el paseo</button>
+</div>
 <div class="noticias" id="noticias" hidden role="dialog" aria-label="Noticias">
   <div class="not-cab"><h2 id="notTit">Noticias</h2><button class="d-btn not-cerrar" id="notCerrar" type="button">Cerrar</button></div>
   <ol class="not-lista" id="notLista"></ol>
@@ -637,6 +649,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="timer" id="pMeteo" type="button" aria-label="Estación meteorológica">Tiempo</button>
     <button class="timer" id="pSubs" type="button" aria-label="Subtítulos traducidos">Subtítulos</button>
     <button class="timer" id="pSencillo" type="button" aria-label="Modo sencillo">Sencillo</button>
+    <button class="timer" id="pPaseo" type="button" aria-label="Contador del paseo">Paseo</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -1936,7 +1949,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '41', FECHA_VERSION = '9-11-2026';   // cambiar en cada versión nueva
+const VERSION = '42', FECHA_VERSION = '10-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2329,12 +2342,20 @@ let podCargados = false;
 
 /* ---------- Mi música del NAS ---------- */
 // La lista de canciones (musica.txt) la crea el NAS cada noche. Las canciones se abren desde /music/ del propio NAS.
-let musLista = null, musCola = [], musPos = -1, musActual = null, musAzar = false, musCargada = false;
+let musLista = null, musTodo = [], musLibros = [], musCola = [], musPos = -1, musActual = null, musAzar = false, musCargada = false;
+let musListas = {}, libPos = {};
+try { musListas = JSON.parse(localStorage.getItem('radio.listas')) || {}; } catch(e){}
+try { libPos = JSON.parse(localStorage.getItem('radio.libpos')) || {}; } catch(e){}
+const guardaListas = () => { try { localStorage.setItem('radio.listas', JSON.stringify(musListas)); } catch(e){} };
+const guardaLibPos = () => { try { localStorage.setItem('radio.libpos', JSON.stringify(libPos)); } catch(e){} };
+const FAVCAN = 'Mis canciones';                                    // la lista de las ★
+const esLibro = ruta => /^audiolibros\//i.test(ruta);
 const musUrl = ruta => '/music/' + ruta.split('/').map(encodeURIComponent).join('/');
 const musTitulo = ruta => ruta.split('/').pop().replace(/\.[^.]+$/, '');
 const musNombre = a => a.replace(/\bAC_DC\b/i, 'AC/DC').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
-const musArtista = ruta => musNombre(ruta.split('/')[0]);
+const musArtista = ruta => esLibro(ruta) ? musNombre(ruta.split('/')[1] || 'Audiolibro') : musNombre(ruta.split('/')[0]);
 const musCarpeta = ruta => ruta.split('/').slice(1, -1).join(' · ');
+const libroDe = ruta => ruta.split('/').slice(0, 2).join('/');      // audiolibros/<libro>
 
 async function cargaMusica(){
   const box = $('musOut');
@@ -2351,37 +2372,78 @@ async function cargaMusica(){
       note('En casa funciona con el wifi. Fuera de casa, enciende antes WireGuard. Desde GitHub no se puede porque el NAS no tiene conexión segura (https).'));
     return;
   }
+  musTodo = musLista.filter(r => !esLibro(r));
+  musLibros = musLista.filter(esLibro);
   musCargada = true;
   verArtistas();
 }
 
-function filaMus(icono, nombre, sub, fn, id){
-  const li = document.createElement('li'); li.className = 'st'; if (id) li.dataset.mus = id;
+const boton = (txt, fn, cls = 'btn') => { const b = Object.assign(document.createElement('button'), {type: 'button', className: cls, textContent: txt}); b.onclick = fn; return b; };
+function filaMus(icono, nombre, sub, fn, ruta, extra){
+  const li = document.createElement('li'); li.className = 'st'; if (ruta) li.dataset.mus = ruta;
   const main = document.createElement('button'); main.type = 'button'; main.className = 'st-main';
   const info = document.createElement('div'); info.className = 'info';
   info.append(Object.assign(document.createElement('div'), {className: 'name', textContent: nombre}),
               Object.assign(document.createElement('div'), {className: 'sub', textContent: sub}));
   main.append(Object.assign(document.createElement('div'), {className: 'logo', textContent: icono}), info);
   main.onclick = fn; li.append(main);
-  if (musActual && id === musActual) li.classList.add('on');
+  if (ruta && !esLibro(ruta)){                                     // ★ y ＋ para las listas
+    const star = document.createElement('button'); star.type = 'button'; star.className = 'star';
+    star.setAttribute('aria-label', 'Añadir a Mis canciones'); star.textContent = '★';
+    star.setAttribute('aria-pressed', (musListas[FAVCAN] || []).includes(ruta));
+    star.onclick = () => { alternaEnLista(FAVCAN, ruta); star.setAttribute('aria-pressed', (musListas[FAVCAN] || []).includes(ruta)); };
+    const mas = document.createElement('button'); mas.type = 'button'; mas.className = 'star'; mas.textContent = '＋';
+    mas.setAttribute('aria-label', 'Añadir a una lista');
+    mas.onclick = () => eligeLista(li, ruta);
+    li.append(star, mas);
+  }
+  if (extra) li.append(extra);
+  if (musActual && ruta === musActual) li.classList.add('on');
   return li;
 }
-function botonesLista(lista){
+function alternaEnLista(nombre, ruta){
+  const l = musListas[nombre] || (musListas[nombre] = []);
+  const i = l.indexOf(ruta);
+  if (i >= 0) l.splice(i, 1); else l.push(ruta);
+  guardaListas();
+}
+// Al pulsar ＋ sale debajo de la canción un recuadro con tus listas para elegir
+function eligeLista(li, ruta){
+  const sig = li.nextElementSibling;
+  if (sig && sig.classList.contains('mus-elige')){ sig.remove(); return; }
+  document.querySelectorAll('.mus-elige').forEach(x => x.remove());
+  const caja = document.createElement('li'); caja.className = 'mus-elige';
+  caja.append(Object.assign(document.createElement('span'), {textContent: 'Añadir a: '}));
+  Object.keys(musListas).filter(n => n !== FAVCAN).forEach(n => {
+    const dentro = musListas[n].includes(ruta);
+    caja.append(boton((dentro ? '✓ ' : '') + n, () => { alternaEnLista(n, ruta); caja.remove(); setStatus(dentro ? `Quitada de «${n}»` : `Añadida a «${n}»`); }, 'chip'));
+  });
+  const nueva = Object.assign(document.createElement('input'), {className: 'field', placeholder: 'Nueva lista (por ejemplo: Para andar)'});
+  nueva.style.cssText = 'flex:1 1 180px;width:auto;padding:6px 10px';
+  const ok = boton('Crear', () => {
+    const n = nueva.value.trim(); if (!n) return;
+    if (!musListas[n]) musListas[n] = [];
+    alternaEnLista(n, ruta); caja.remove(); setStatus(`Añadida a «${n}»`);
+  }, 'chip');
+  nueva.onkeydown = e => { if (e.key === 'Enter') ok.click(); };
+  caja.append(nueva, ok);
+  li.after(caja);
+}
+function botonesLista(lista, conAzar = true){
   const d = document.createElement('div'); d.className = 'musbtns';
-  const todo = Object.assign(document.createElement('button'), {type: 'button', className: 'btn', textContent: '▶ Escuchar todo'});
-  todo.onclick = () => { musAzar = false; marcaAzar(); ponCola(lista, 0); };
-  const azar = Object.assign(document.createElement('button'), {type: 'button', className: 'btn', textContent: '🔀 Al azar'});
-  azar.onclick = () => { musAzar = true; marcaAzar(); ponCola(lista, Math.floor(Math.random() * lista.length)); };
-  d.append(todo, azar);
+  d.append(boton('▶ Escuchar todo', () => { musAzar = false; marcaAzar(); ponCola(lista, 0); }));
+  if (conAzar) d.append(boton('🔀 Al azar', () => { musAzar = true; marcaAzar(); ponCola(lista, Math.floor(Math.random() * lista.length)); }));
   return d;
 }
+function volverBtn(){ return boton('← Volver', verArtistas); }
+function subeArriba(){ const t = document.querySelector('.tabsbar'); if (t) window.scrollTo(0, t.offsetTop); }
 
 function verArtistas(){
   const box = $('musOut'), q = $('qMus').value.trim().toLowerCase();
   box.replaceChildren();
   if (!musLista || !musLista.length){ box.append(note('No he encontrado canciones en el NAS.')); return; }
   if (q){                                                        // buscando: se ven las canciones que coinciden
-    const res = musLista.filter(r => r.toLowerCase().includes(q));
+    const res = musTodo.filter(r => r.toLowerCase().includes(q));
     box.append(heading(`${res.length} ${res.length === 1 ? 'canción' : 'canciones'} con «${$('qMus').value.trim()}»`));
     if (!res.length) return;
     box.append(botonesLista(res));
@@ -2391,22 +2453,89 @@ function verArtistas(){
     if (res.length > 300) box.append(note('Se ven las 300 primeras. Escribe algo más para afinar.'));
     return;
   }
+  // Mis listas
+  const nombres = Object.keys(musListas).filter(n => musListas[n].length || n !== FAVCAN);
+  if (nombres.length){
+    box.append(heading('Mis listas'));
+    const ul = document.createElement('ul'); ul.className = 'list';
+    nombres.forEach(n => ul.append(filaMus(n === FAVCAN ? '★' : '☰', n, musListas[n].length + (musListas[n].length === 1 ? ' canción' : ' canciones'), () => verLista(n))));
+    box.append(ul);
+  }
+  // Audiolibros
+  if (musLibros.length){
+    const ul = document.createElement('ul'); ul.className = 'list';
+    ul.append(filaMus('📚', 'Audiolibros', `${new Set(musLibros.map(libroDe)).size === 1 ? '1 libro' : new Set(musLibros.map(libroDe)).size + ' libros'} · recuerda por dónde vas`, verLibros));
+    box.append(ul);
+  }
   const grupos = new Map();
-  musLista.forEach(r => { const a = r.split('/')[0]; grupos.set(a, (grupos.get(a) || 0) + 1); });
-  box.append(heading(`Tu música · ${grupos.size} carpetas · ${musLista.length} canciones`), botonesLista(musLista));
+  musTodo.forEach(r => { const a = r.split('/')[0]; grupos.set(a, (grupos.get(a) || 0) + 1); });
+  box.append(heading(`Tu música · ${grupos.size} carpetas · ${musTodo.length} canciones`), botonesLista(musTodo));
   const ul = document.createElement('ul'); ul.className = 'list';
   grupos.forEach((n, a) => ul.append(filaMus('💿', musNombre(a), n + (n === 1 ? ' canción' : ' canciones'), () => verCarpeta(a))));
   box.append(ul);
 }
 function verCarpeta(a){
   const box = $('musOut');
-  const lista = musLista.filter(r => r.split('/')[0] === a);
-  const volver = Object.assign(document.createElement('button'), {type: 'button', className: 'btn', textContent: '← Volver'});
-  volver.onclick = verArtistas;
+  const lista = musTodo.filter(r => r.split('/')[0] === a);
   const ul = document.createElement('ul'); ul.className = 'list';
   lista.forEach((r, i) => ul.append(filaMus('♪', musTitulo(r), musCarpeta(r), () => { musAzar = false; marcaAzar(); ponCola(lista, i); }, r)));
-  box.replaceChildren(volver, heading(musNombre(a)), botonesLista(lista), ul);
-  window.scrollTo(0, document.querySelector('.tabsbar').offsetTop);
+  box.replaceChildren(volverBtn(), heading(musNombre(a)), botonesLista(lista), ul);
+  subeArriba();
+}
+function verLista(n){
+  const box = $('musOut');
+  const lista = (musListas[n] || []).filter(r => musLista.includes(r));   // las que ya no están en el NAS no salen
+  const ul = document.createElement('ul'); ul.className = 'list';
+  lista.forEach((r, i) => {
+    const quitar = boton('✕', () => { alternaEnLista(n, r); verLista(n); }, 'star');
+    quitar.setAttribute('aria-label', 'Quitar de la lista');
+    ul.append(filaMus('♪', musTitulo(r), musArtista(r), () => { musAzar = false; marcaAzar(); ponCola(lista, i); }, r, quitar));
+  });
+  let borrarT = 0;
+  const borrar = boton('Borrar la lista', () => {
+    if (!borrarT){ borrar.textContent = '¿Seguro?'; borrarT = setTimeout(() => { borrarT = 0; borrar.textContent = 'Borrar la lista'; }, 4000); return; }
+    clearTimeout(borrarT); delete musListas[n]; guardaListas(); verArtistas();
+  });
+  box.replaceChildren(volverBtn(), heading(n),
+    lista.length ? botonesLista(lista) : note(n === FAVCAN ? 'Pulsa ★ en una canción para traerla aquí.' : 'Pulsa ＋ en una canción para añadirla a esta lista.'),
+    ul, borrar);
+  subeArriba();
+}
+
+// Audiolibros: cada libro es una carpeta dentro de music/audiolibros; recuerda por dónde vas en cada uno
+function verLibros(){
+  const box = $('musOut');
+  const libros = new Map();
+  musLibros.forEach(r => { const l = libroDe(r); if (!libros.has(l)) libros.set(l, []); libros.get(l).push(r); });
+  const ul = document.createElement('ul'); ul.className = 'list';
+  const ultimo = libPos._ultimo;
+  if (ultimo && musLibros.includes(ultimo)){
+    const lista = libros.get(libroDe(ultimo));
+    box.replaceChildren(volverBtn(), heading('Audiolibros'),
+      boton(`▶ Seguir con «${musArtista(ultimo)}»`, () => { musAzar = false; marcaAzar(); ponCola(lista, lista.indexOf(ultimo)); }));
+  } else box.replaceChildren(volverBtn(), heading('Audiolibros'));
+  libros.forEach((caps, l) => {
+    const oidos = caps.filter(c => libPos[c] && libPos[c].fin).length;
+    ul.append(filaMus('📖', musNombre(l.split('/')[1] || l), `${caps.length} ${caps.length === 1 ? 'parte' : 'partes'}` + (oidos ? ` · ${oidos} escuchadas` : ''), () => verLibro(l, caps)));
+  });
+  const enlace = Object.assign(document.createElement('a'), {href: '/audiolibros/', textContent: 'Abrir mi app Mis Audiolibros', className: 'btn'});
+  box.append(ul, note('Para leer libros y ver la biblioteca completa, usa tu app:'), enlace);
+  subeArriba();
+}
+function verLibro(l, caps){
+  const box = $('musOut');
+  const ul = document.createElement('ul'); ul.className = 'list';
+  caps.forEach((r, i) => {
+    const p = libPos[r];
+    const sub = p ? (p.fin ? '✓ escuchado' : `vas por ${fmtTime(p.t)}`) : musCarpeta(r).split(' · ').slice(1).join(' · ');
+    ul.append(filaMus('▶', musTitulo(r), sub, () => { musAzar = false; marcaAzar(); ponCola(caps, i); }, r));
+  });
+  const vol = boton('← Volver', verLibros);
+  // por dónde ibas: la primera parte sin terminar
+  const sigue = caps.find(c => !(libPos[c] && libPos[c].fin));
+  box.replaceChildren(vol, heading(musNombre(l.split('/')[1] || l)),
+    sigue ? boton(libPos[sigue] ? '▶ Seguir por donde ibas' : '▶ Empezar', () => { musAzar = false; marcaAzar(); ponCola(caps, caps.indexOf(sigue)); }) : note('Libro terminado. Toca una parte para volver a oírla.'), ul);
+  subeArriba();
 }
 
 function ponCola(lista, i){ musCola = lista.slice(); musPos = i; tocaMus(); }
@@ -2418,21 +2547,93 @@ function tocaMus(){
   musActual = ruta;
   usePlayer(audioNormal);
   audio.src = musUrl(ruta);
+  if (esLibro(ruta)){                                             // audiolibro: sigue por donde lo dejaste
+    libPos._ultimo = ruta; guardaLibPos();
+    const p = libPos[ruta];
+    audio.addEventListener('loadedmetadata', function sigue(){
+      audio.removeEventListener('loadedmetadata', sigue);
+      if (p && !p.fin && p.t > 5 && musActual === ruta) audio.currentTime = Math.max(0, p.t - 3);
+    });
+  }
   audio.play().catch(() => {});
   const tit = musTitulo(ruta), art = musArtista(ruta);
   $('pName').textContent = tit;
   $('pBtn').disabled = false;
-  $('lFreq').textContent = 'NAS'; $('lMhz').textContent = ''; setPS(art.slice(0, 16)); $('lRT').textContent = tit;
+  $('lFreq').textContent = esLibro(ruta) ? 'LIBRO' : 'NAS'; $('lMhz').textContent = ''; setPS(art.slice(0, 16)); $('lRT').textContent = tit;
   document.querySelectorAll('.st').forEach(li => li.classList.toggle('on', li.dataset.mus === ruta));
-  document.querySelectorAll('.memfila').forEach(f => f.classList.remove('on'));
-  setStatus('Cargando canción…');
+  setStatus(esLibro(ruta) ? 'Cargando audiolibro…' : 'Cargando canción…');
   $('musBar').hidden = false;
   $('musTit').textContent = `${art} · ${tit}`;
   $('musNum').textContent = `${musPos + 1} de ${musCola.length}`;
+  $('musCar').hidden = true;
   if ('mediaSession' in navigator) try {
-    navigator.mediaSession.metadata = new MediaMetadata({title: tit, artist: art, album: 'Mi Radio · Mi música'});
+    navigator.mediaSession.metadata = new MediaMetadata({title: tit, artist: art, album: esLibro(ruta) ? 'Mi Radio · Audiolibros' : 'Mi Radio · Mi música'});
+  } catch(e){}
+  ponCaratula(ruta);
+}
+
+/* Carátula: se lee la foto que va dentro de la canción (etiqueta ID3 de los MP3) */
+const caratulas = new Map();
+async function leeInicio(url, n){
+  const r = await fetch(url, {headers: {Range: 'bytes=0-' + (n - 1)}});
+  if (!r.ok) throw new Error(r.status);
+  if (r.status === 206) return new Uint8Array(await r.arrayBuffer());
+  const rd = r.body.getReader(), trozos = []; let tot = 0;         // el servidor no ha hecho caso del Range: leemos solo el principio
+  while (tot < n){ const {done, value} = await rd.read(); if (done) break; trozos.push(value); tot += value.length; }
+  rd.cancel().catch(() => {});
+  const b = new Uint8Array(tot); let p = 0; trozos.forEach(t => { b.set(t, p); p += t.length; });
+  return b;
+}
+async function caratulaDe(ruta){
+  if (caratulas.has(ruta)) return caratulas.get(ruta);
+  let res = null;
+  try {
+    if (/\.mp3$/i.test(ruta)){
+      const url = musUrl(ruta);
+      const cab = await leeInicio(url, 10);
+      if (cab[0] === 0x49 && cab[1] === 0x44 && cab[2] === 0x33){          // "ID3"
+        const ver = cab[3], tam = (cab[6] << 21) | (cab[7] << 14) | (cab[8] << 7) | cab[9];
+        if (tam > 0 && tam < 8e6 && ver >= 3){
+          const b = await leeInicio(url, 10 + tam);
+          let p = 10;
+          if (cab[5] & 0x40) p += ver === 4 ? ((b[10] << 21) | (b[11] << 14) | (b[12] << 7) | b[13]) : 4 + ((b[10] << 24) | (b[11] << 16) | (b[12] << 8) | b[13]);
+          while (p + 10 < b.length){
+            const id = String.fromCharCode(b[p], b[p + 1], b[p + 2], b[p + 3]);
+            if (!/^[A-Z0-9]{4}$/.test(id)) break;
+            const ft = ver === 4 ? ((b[p + 4] << 21) | (b[p + 5] << 14) | (b[p + 6] << 7) | b[p + 7]) : ((b[p + 4] << 24) | (b[p + 5] << 16) | (b[p + 6] << 8) | b[p + 7]) >>> 0;
+            if (id === 'APIC'){
+              const d = b.subarray(p + 10, Math.min(b.length, p + 10 + ft));
+              const enc = d[0]; let i = 1;
+              let mime = ''; while (i < d.length && d[i] !== 0) mime += String.fromCharCode(d[i++]);
+              i++; i++;                                                   // fin del tipo + clase de foto
+              if (enc === 1 || enc === 2){ while (i + 1 < d.length && !(d[i] === 0 && d[i + 1] === 0)) i += 2; i += 2; }
+              else { while (i < d.length && d[i] !== 0) i++; i++; }
+              if (!/^image\//.test(mime)) mime = mime === 'PNG' ? 'image/png' : 'image/jpeg';
+              const blob = new Blob([d.subarray(i)], {type: mime});
+              res = await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = () => ok(null); fr.readAsDataURL(blob); });
+              break;
+            }
+            p += 10 + ft;
+          }
+        }
+      }
+    }
+  } catch(e){ res = null; }
+  caratulas.set(ruta, res);
+  return res;
+}
+async function ponCaratula(ruta){
+  const img = await caratulaDe(ruta);
+  if (musActual !== ruta || !img) return;
+  $('musCar').src = img; $('musCar').hidden = false;
+  const el = $('pLogo'), nuevo = Object.assign(document.createElement('img'), {className: 'logo', alt: '', src: img});
+  nuevo.id = 'pLogo'; el.replaceWith(nuevo);
+  if ('mediaSession' in navigator) try {
+    navigator.mediaSession.metadata = new MediaMetadata({title: musTitulo(ruta), artist: musArtista(ruta),
+      album: esLibro(ruta) ? 'Mi Radio · Audiolibros' : 'Mi Radio · Mi música', artwork: [{src: img, sizes: '512x512'}]});
   } catch(e){}
 }
+
 function musSig(dir){
   if (!musCola.length) return;
   if (musAzar && dir > 0 && musCola.length > 1){ let n; do { n = Math.floor(Math.random() * musCola.length); } while (n === musPos); musPos = n; }
@@ -2442,16 +2643,22 @@ function musSig(dir){
 function marcaAzar(){ $('musAzar').setAttribute('aria-pressed', musAzar); }
 function paraMusica(){ musActual = null; $('musBar').hidden = true; }
 
-$('musAnt').onclick = () => { if (audio.currentTime > 4) audio.currentTime = 0; else musSig(-1); };
+$('musAnt').onclick = () => { if (audio.currentTime > 4 && !esLibro(musActual || '')) audio.currentTime = 0; else musSig(-1); };
 $('musSig').onclick = () => musSig(1);
 $('musAzar').onclick = () => { musAzar = !musAzar; marcaAzar(); };
 $('musProg').addEventListener('input', e => { if (musActual && audio.duration) audio.currentTime = e.target.value / 1000 * audio.duration; });
+let libGuardado = 0;
 audioNormal.addEventListener('timeupdate', () => {
   if (!musActual || audio !== audioNormal || !playingRec) return;
   const t = audio.currentTime, d = audio.duration || 0;
   if (d){ $('musProg').value = Math.round(t / d * 1000); $('musTiempo').textContent = `${fmtTime(t)} / ${fmtTime(d)}`; }
+  if (esLibro(musActual) && Date.now() - libGuardado > 10000){ libGuardado = Date.now(); libPos[musActual] = {t, fin: !!(d && t > d - 20)}; guardaLibPos(); }
 });
-audioNormal.addEventListener('ended', () => { if (musActual && playingRec && !document.documentElement.classList.contains('apagada')) musSig(1); });           // al acabar, la siguiente
+audioNormal.addEventListener('ended', () => {
+  if (!musActual || !playingRec || document.documentElement.classList.contains('apagada')) return;
+  if (esLibro(musActual)){ libPos[musActual] = {t: 0, fin: true}; guardaLibPos(); if (musPos >= musCola.length - 1){ setStatus('Audiolibro terminado'); return; } }
+  musSig(1);                                                      // al acabar, la siguiente
+});
 audioNormal.addEventListener('error', () => { if (musActual && playingRec && audio.getAttribute('src')) setTimeout(() => { if (musActual) musSig(1); }, 1500); }); // si una falla, salta
 let musTimer;
 $('qMus').addEventListener('input', () => { clearTimeout(musTimer); musTimer = setTimeout(verArtistas, 350); });
@@ -2683,6 +2890,7 @@ function tocaHora(hora){
     const n = hora % 12 || 12;
     for (let i = 0; i < n; i++) campanada(t + 2.2 + i * 1.5, 392, .14); // una campanada grave por cada hora
   }
+  if (ajustes.horaVoz) setTimeout(() => habla(horaEnVoz()), (ajustes.campanasContar ? 2.6 + (hora % 12 || 12) * 1.5 : 2) * 1000);
 }
 let ultimaHora = -1;
 setInterval(() => {
@@ -3606,10 +3814,309 @@ function panelOpciones(){
   f2.append(l2, i2, b2);
   g.append(f2, m2);
   ajustesNuevos(g, casilla);
+  ajustesExtra(g, casilla);
   d.append(g);
   return d;
 }
 if (!APAGADA) teletipo('ES');
+
+
+/* ---------- Voz: leer en voz alta (noticias, tiempo, la hora, recordatorios) ---------- */
+let hablando = false, mutePrevio = false;
+function vozEs(){
+  const vs = speechSynthesis.getVoices();
+  return vs.find(v => v.lang === 'es-ES' && /m[oó]nica|jorge|google/i.test(v.name)) || vs.find(v => v.lang === 'es-ES') || vs.find(v => /^es/.test(v.lang));
+}
+if ('speechSynthesis' in window) speechSynthesis.getVoices();          // algunas voces tardan en aparecer
+function habla(txt, alAcabar){
+  if (!('speechSynthesis' in window)){ setStatus('Este aparato no sabe leer en voz alta'); return; }
+  callar();
+  // los textos largos se dicen por frases, porque el iPhone corta los muy largos
+  const frases = txt.replace(/\s+/g, ' ').match(/[^.!?;]+[.!?;]*/g) || [txt];
+  mutePrevio = audio.muted; audio.muted = true; hablando = true;   // la radio se calla mientras habla
+  marcaVoz();
+  const v = vozEs();
+  frases.forEach((f, i) => {
+    const u = new SpeechSynthesisUtterance(f.trim()); u.lang = 'es-ES'; if (v) u.voice = v; u.rate = .95;
+    if (i === frases.length - 1){ u.onend = u.onerror = () => { finVoz(); if (alAcabar) alAcabar(); }; }
+    speechSynthesis.speak(u);
+  });
+}
+function finVoz(){ if (!hablando) return; hablando = false; audio.muted = mutePrevio; marcaVoz(); }
+function callar(){ if ('speechSynthesis' in window && (hablando || speechSynthesis.speaking)){ speechSynthesis.cancel(); finVoz(); } }
+function marcaVoz(){ document.querySelectorAll('.leer').forEach(b => b.textContent = hablando ? '■ Callar' : '🔊 Leer'); }
+function botonLeer(fnTexto){
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'd-btn leer'; b.textContent = '🔊 Leer';
+  b.onclick = async () => { if (hablando){ callar(); return; } const t = await fnTexto(); if (t) habla(t); };
+  return b;
+}
+// Botón "Leer" en las noticias y en el tiempo
+$('notCerrar').before(botonLeer(() => teleItems.map(x => x.t).join('. ')));
+$('notCerrar').addEventListener('click', callar);
+$('mtCerrar').before(botonLeer(tiempoEnVoz));
+$('mtCerrar').addEventListener('click', callar);
+async function tiempoEnVoz(){
+  if (ajustes.lat == null){ setStatus('Primero pon tu ciudad en Ajustes'); return ''; }
+  try {
+    const {f} = await cargaMeteo(), c = f.current, ll = analizaLluvia(f);
+    return `El tiempo en ${ajustes.ciudad}. Ahora hace ${Math.round(c.temperature_2m)} grados, ${(CIELO[c.weather_code] || '').toLowerCase()}. ` +
+      `La sensación es de ${Math.round(c.apparent_temperature)} grados. ${ll.txt}. ` +
+      `Viento de ${Math.round(c.wind_speed_10m)} kilómetros por hora. Humedad del ${Math.round(c.relative_humidity_2m)} por ciento.`;
+  } catch(e){ setStatus('No hay conexión con el servicio del tiempo'); return ''; }
+}
+
+/* ---------- Reloj que habla ---------- */
+function horaEnVoz(d = new Date()){
+  let h = d.getHours(), m = d.getMinutes();
+  const parte = h < 6 ? 'de la madrugada' : h < 12 ? 'de la mañana' : h < 14 ? 'del mediodía' : h < 21 ? 'de la tarde' : 'de la noche';
+  let menos = false;
+  if (m > 30){ menos = true; m = 60 - m; h = (h + 1) % 24; }
+  const h12 = h % 12 || 12;
+  const base = h12 === 1 ? 'Es la una' : `Son las ${h12}`;
+  const min = m === 0 ? ' en punto' : m === 15 ? (menos ? ' menos cuarto' : ' y cuarto') : m === 30 ? ' y media' : (menos ? ` menos ${m}` : ` y ${m}`);
+  return `${base}${min} ${parte}.`;
+}
+const diHora = () => habla(horaEnVoz());
+$('mesaHora').addEventListener('click', e => { e.stopPropagation(); diHora(); });   // en la mesilla, tocar la hora la dice
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'h' || e.key === 'H') diHora();
+});
+
+/* ---------- Emisora según la hora y recordatorios: se miran cada 15 segundos ---------- */
+let recuerdos = [], hechosHoy = {};
+try { recuerdos = JSON.parse(localStorage.getItem('radio.recuerdos')) || []; } catch(e){}
+try { hechosHoy = JSON.parse(localStorage.getItem('radio.hechos')) || {}; } catch(e){}
+const guardaRecuerdos = () => { try { localStorage.setItem('radio.recuerdos', JSON.stringify(recuerdos)); } catch(e){} };
+const marcaHecho = k => { hechosHoy[k] = hoyTxt(); try { localStorage.setItem('radio.hechos', JSON.stringify(hechosHoy)); } catch(e){} };
+const hecho = k => hechosHoy[k] === hoyTxt();
+const hhmm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+const fechaISO = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+function sonandoRadio(){ return cab.classList.contains('on') && !playingRec; }
+setInterval(() => {
+  if (APAGADA) return;
+  const d = new Date(), ya = hhmm(d), hoy = fechaISO(d);
+  // Emisora según la hora: solo cambia si está sonando una emisora (no tu música ni un podcast)
+  (ajustes.horario || []).forEach((p, i) => {
+    const k = 'hor' + i + p.h;
+    if (p.h !== ya || hecho(k) || !p.s) return;
+    marcaHecho(k);
+    if (sonandoRadio() && (!cur || cur.stationuuid !== p.s.stationuuid)){ play(p.s); mostrarAviso(`🕒 Son las ${p.h}: cambio a ${(p.s._label || p.s.name).trim()}`, null, 2); }
+  });
+  // Recordatorios
+  recuerdos.forEach(r => {
+    const k = 'rec' + r.id;
+    if (r.h !== ya || hecho(k) || (r.f && r.f !== hoy)) return;
+    marcaHecho(k);
+    mostrarAviso('🔔 ' + r.t, null, 60);
+    try { ensureAudioCtx(); if (actx){ const t = actx.currentTime + .05; campanada(t, 784); campanada(t + .7, 659); campanada(t + 1.4, 784); } } catch(e){}
+    if (ajustes.recVoz !== false) setTimeout(() => habla('Recordatorio. ' + r.t), 2500);
+    if (r.f){ recuerdos = recuerdos.filter(x => x.id !== r.id); guardaRecuerdos(); }   // los de un solo día se borran al avisar
+  });
+}, 15000);
+
+/* ---------- Contador del paseo ---------- */
+let paseo = null, paseos = [];
+try { paseo = JSON.parse(localStorage.getItem('radio.paseoAhora')); } catch(e){}
+try { paseos = JSON.parse(localStorage.getItem('radio.paseos')) || []; } catch(e){}
+const guardaPaseo = () => { try { localStorage.setItem('radio.paseoAhora', JSON.stringify(paseo)); localStorage.setItem('radio.paseos', JSON.stringify(paseos)); } catch(e){} };
+const duracion = ms => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+function queSuena(){
+  if (audio.paused || !cab.classList.contains('on')) return null;
+  if (musActual) return esLibro(musActual) ? 'Audiolibro: ' + musArtista(musActual) : 'Mi música';
+  if (podActual) return 'Podcast: ' + podActual.podcast;
+  if (playingRec) return 'Una grabación';
+  return cur ? (cur._label || cur.name).trim() : null;
+}
+setInterval(() => {                                                 // cada 10 s apunta lo que suena
+  if (!paseo) return;
+  const q = queSuena(); if (q){ paseo.oido[q] = (paseo.oido[q] || 0) + 10; }
+  $('pPaseo').textContent = 'Paseo ' + duracion(Date.now() - paseo.ini).replace(' min', '′');
+  guardaPaseo();
+}, 10000);
+function resumenPaseo(p){
+  const lista = Object.entries(p.oido).sort((a, b) => b[1] - a[1]);
+  return {dur: duracion(p.fin - p.ini), lista};
+}
+function pintaPaseos(ultimo){
+  const out = $('paOut'); out.replaceChildren();
+  if (ultimo){
+    const r = resumenPaseo(ultimo);
+    out.append(texto('mt-big', r.dur), texto('mt-sub', `Saliste a las ${hhmm(new Date(ultimo.ini))} y volviste a las ${hhmm(new Date(ultimo.fin))}.`));
+    if (r.lista.length){
+      out.append(texto('mt-mid', 'Has escuchado:'));
+      const ul = document.createElement('ul'); ul.className = 'pa-lista';
+      r.lista.forEach(([n, s]) => ul.append(Object.assign(document.createElement('li'), {textContent: `${n} · ${Math.max(1, Math.round(s / 60))} min`})));
+      out.append(ul);
+    } else out.append(texto('mt-sub', 'No ha sonado nada durante el paseo.'));
+  }
+  if (paseos.length){
+    out.append(texto('mt-mid', 'Últimos paseos:'));
+    const ul = document.createElement('ul'); ul.className = 'pa-lista';
+    paseos.forEach(p => {
+      const d = new Date(p.ini);
+      ul.append(Object.assign(document.createElement('li'), {textContent: `${d.toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric', month: 'short'})} · ${hhmm(d)} · ${duracion(p.fin - p.ini)}`}));
+    });
+    out.append(ul);
+  }
+  if (!ultimo && !paseos.length) out.append(texto('mt-sub', 'Pulsa Empezar al salir de casa y Terminar al volver.'));
+  $('paBoton').textContent = paseo ? 'Terminar el paseo' : 'Empezar el paseo';
+  $('paseoPan').hidden = false;
+}
+function botonPaseo(){
+  if (!paseo){ pintaPaseos(null); return; }                        // sin paseo: se abre el panel para empezar
+  pintaPaseos(null);
+}
+$('pPaseo').onclick = botonPaseo;
+$('paBoton').onclick = () => {
+  if (!paseo){
+    paseo = {ini: Date.now(), oido: {}}; guardaPaseo();
+    $('pPaseo').textContent = 'Paseo 0′'; $('pPaseo').classList.add('activo');
+    $('paseoPan').hidden = true; setStatus('¡Buen paseo! Pulsa Paseo al volver');
+    if (ajustes.recVoz !== false) habla('Buen paseo.');
+    return;
+  }
+  paseo.fin = Date.now();
+  const hecho = paseo; paseo = null;
+  paseos = [{ini: hecho.ini, fin: hecho.fin}, ...paseos].slice(0, 10); guardaPaseo();
+  $('pPaseo').textContent = 'Paseo'; $('pPaseo').classList.remove('activo');
+  pintaPaseos(hecho);
+  if (ajustes.recVoz !== false) habla(`Bienvenido a casa. Has estado fuera ${resumenPaseo(hecho).dur.replace('h', 'horas').replace('min', 'minutos')}.`);
+};
+$('paCerrar').onclick = () => { $('paseoPan').hidden = true; };
+if (paseo){ $('pPaseo').classList.add('activo'); $('pPaseo').textContent = 'Paseo ' + duracion(Date.now() - paseo.ini).replace(' min', '′'); }
+
+/* ---------- Copia de seguridad en el NAS ---------- */
+// Guarda todo lo de la radio (favoritas, memorias, fotos, cumpleaños, ajustes, listas...) en el NAS, en radio/copia_radio.json
+const enNAS = () => location.protocol === 'http:' && !/github\.io$/.test(location.hostname);
+function datosRadio(){
+  const d = {};
+  for (let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if (k.startsWith('radio.') && !['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k)) d[k] = localStorage.getItem(k);
+  }
+  return d;
+}
+async function copiaGuardar(msg){
+  msg.textContent = 'Guardando en el NAS…';
+  try {
+    const cuerpo = JSON.stringify({v: 1, fecha: new Date().toISOString(), version: VERSION, aparato: navigator.platform || '', datos: datosRadio()});
+    const r = await fetch('copia.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: cuerpo});
+    const j = await r.json();
+    if (!j.ok) throw new Error();
+    msg.textContent = `Copia guardada en el NAS (${Math.max(1, Math.round(cuerpo.length / 1024))} KB). La copia anterior también se conserva.`;
+  } catch(e){ msg.textContent = 'No se ha podido guardar. Comprueba que copia.php está en la carpeta radio del NAS.'; }
+}
+async function copiaRecuperar(msg){
+  msg.textContent = 'Leyendo la copia del NAS…';
+  try {
+    const r = await fetch('copia.php?t=' + Date.now(), {cache: 'no-store'});
+    if (r.status === 404){ msg.textContent = 'Todavía no hay ninguna copia en el NAS.'; return; }
+    const j = await r.json();
+    if (!j.datos) throw new Error();
+    Object.keys(datosRadio()).forEach(k => localStorage.removeItem(k));
+    Object.entries(j.datos).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch(e){} });
+    msg.textContent = 'Copia recuperada. Reiniciando…';
+    setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 1200);
+  } catch(e){ msg.textContent = 'No se ha podido leer la copia del NAS.'; }
+}
+async function copiaFecha(msg){
+  try {
+    const r = await fetch('copia.php?info=1&t=' + Date.now(), {cache: 'no-store'});
+    if (!r.ok) return;
+    const j = await r.json();
+    if (j.fecha) msg.textContent = 'Última copia en el NAS: ' + new Date(j.fecha).toLocaleString('es-ES', {weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'}) + '.';
+  } catch(e){}
+}
+
+/* ---------- Ajustes nuevos: horario de emisoras, recordatorios, voz y copia en el NAS ---------- */
+function ajustesExtra(g, casilla){
+  const titulo = t => g.append(Object.assign(document.createElement('div'), {className: 'aj-tit', textContent: t}));
+  const fila = () => Object.assign(document.createElement('div'), {className: 'fila'});
+  const peque = el => { el.style.cssText = 'width:auto;flex:none;min-width:0;padding:6px 8px'; return el; };
+
+  // Voz
+  titulo('🗣 Voz');
+  g.append(casilla('ajHoraVoz', 'Decir la hora en voz después de las campanadas', !!ajustes.horaVoz, v => { ajustes.horaVoz = v; guardaAjustes(); }));
+  g.append(casilla('ajRecVoz', 'Leer en voz alta los recordatorios y el paseo', ajustes.recVoz !== false, v => { ajustes.recVoz = v; guardaAjustes(); }));
+  const fh = fila(); fh.append(boton('🔊 Decir la hora ahora', diHora, 'btn')); g.append(fh);
+
+  // Emisora según la hora
+  titulo('🕒 Emisora según la hora');
+  g.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'A esa hora, si está sonando una emisora, la radio cambia sola a la que elijas.'}));
+  const opciones = [];
+  [...favs, ...mems].forEach(s => { if (s && s.stationuuid && !opciones.some(o => o.stationuuid === s.stationuuid)) opciones.push(slim(s)); });
+  const cajaH = document.createElement('div'); g.append(cajaH);
+  const pintaH = () => {
+    cajaH.replaceChildren();
+    (ajustes.horario || []).forEach((p, i) => {
+      const f = fila();
+      const h = peque(Object.assign(document.createElement('input'), {type: 'time', className: 'field', value: p.h}));
+      h.onchange = () => { p.h = h.value; guardaAjustes(); };
+      const s = Object.assign(document.createElement('select'), {className: 'field'}); s.style.cssText = 'flex:1 1 160px;width:auto;min-width:0;padding:6px 8px';
+      opciones.forEach((o, j) => s.append(new Option((o._label || o.name).trim(), j)));
+      const j = opciones.findIndex(o => p.s && o.stationuuid === p.s.stationuuid);
+      if (j < 0 && p.s){ opciones.push(p.s); s.append(new Option((p.s._label || p.s.name).trim(), opciones.length - 1)); s.value = opciones.length - 1; } else s.value = j;
+      s.onchange = () => { p.s = opciones[+s.value]; guardaAjustes(); };
+      f.append(h, s, boton('✕', () => { ajustes.horario.splice(i, 1); guardaAjustes(); pintaH(); }, 'chip'));
+      cajaH.append(f);
+    });
+    if (!opciones.length) cajaH.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Primero guarda alguna emisora en Favoritas o en las memorias.'}));
+    else { const f = fila(); f.append(boton('＋ Añadir un cambio', () => { (ajustes.horario = ajustes.horario || []).push({h: '08:00', s: (cur && opciones.find(o => o.stationuuid === cur.stationuuid)) || opciones[0]}); guardaAjustes(); pintaH(); }, 'btn')); cajaH.append(f); }
+  };
+  pintaH();
+
+  // Recordatorios
+  titulo('🔔 Recordatorios');
+  const cajaR = document.createElement('div'); g.append(cajaR);
+  const pintaR = () => {
+    cajaR.replaceChildren();
+    [...recuerdos].sort((a, b) => (a.f || '0').localeCompare(b.f || '0') || a.h.localeCompare(b.h)).forEach(r => {
+      const f = fila();
+      const cuando = r.f ? new Date(r.f + 'T12:00').toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric', month: 'short'}) : 'Todos los días';
+      f.append(Object.assign(document.createElement('span'), {textContent: `${cuando} · ${r.h} · ${r.t}`, style: 'flex:1 1 200px'}),
+        boton('✕', () => { recuerdos = recuerdos.filter(x => x.id !== r.id); guardaRecuerdos(); pintaR(); }, 'chip'));
+      cajaR.append(f);
+    });
+    const f1 = fila();
+    const t = Object.assign(document.createElement('input'), {className: 'field', placeholder: 'Qué te recuerdo (por ejemplo: llamar a Laura)'});
+    t.style.cssText = 'flex:1 1 220px;width:auto';
+    f1.append(t);
+    const f2 = fila();
+    const h = peque(Object.assign(document.createElement('input'), {type: 'time', className: 'field', value: '10:00'}));
+    const dia = peque(Object.assign(document.createElement('input'), {type: 'date', className: 'field', value: fechaISO(new Date())}));
+    const todos = Object.assign(document.createElement('input'), {type: 'checkbox', id: 'recTodos'});
+    const lt = document.createElement('label'); lt.style.cssText = 'display:flex;align-items:center;gap:6px;flex:none'; lt.append(todos, ' todos los días');
+    todos.onchange = () => { dia.disabled = todos.checked; };
+    const msg = Object.assign(document.createElement('p'), {className: 'note'});
+    f2.append(h, dia, lt, boton('Añadir', () => {
+      if (!t.value.trim()){ msg.textContent = 'Escribe qué quieres que te recuerde.'; t.focus(); return; }
+      recuerdos.push({id: Date.now(), t: t.value.trim(), h: h.value || '10:00', f: todos.checked ? '' : dia.value});
+      guardaRecuerdos(); pintaR();
+    }, 'btn'));
+    cajaR.append(f1, f2, msg);
+    if (!recuerdos.length) cajaR.prepend(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Sin recordatorios. Escribe uno abajo y pulsa Añadir. Sonará con la radio abierta.'}));
+  };
+  pintaR();
+
+  // Copia en el NAS
+  titulo('💾 Copia de seguridad en el NAS');
+  const msg = Object.assign(document.createElement('p'), {className: 'note'});
+  if (!enNAS()){
+    msg.textContent = 'Solo funciona abriendo la radio desde el NAS (http://192.168.178.130/radio/). Aquí usa «Pasar ajustes» de Favoritas.';
+    g.append(msg);
+  } else {
+    const f = fila();
+    let segT = 0;
+    const rec = boton('Recuperar del NAS', () => {
+      if (!segT){ rec.textContent = '¿Sustituir lo de aquí?'; segT = setTimeout(() => { segT = 0; rec.textContent = 'Recuperar del NAS'; }, 4000); return; }
+      clearTimeout(segT); copiaRecuperar(msg);
+    }, 'btn');
+    f.append(boton('Guardar en el NAS', () => copiaGuardar(msg), 'btn'), rec);
+    g.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Guarda favoritas, memorias, fotos, cumpleaños, listas, recordatorios y ajustes. Las grabaciones no.'}), f, msg);
+    copiaFecha(msg);
+  }
+}
 
 /* ---------- Arranque ---------- */
 try {
