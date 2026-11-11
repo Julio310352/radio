@@ -2185,7 +2185,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '52', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '53', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -3795,13 +3795,38 @@ async function titulares(lang){
   }
   return [];
 }
+// Traducción al español con dos traductores gratuitos: si uno no responde o ha llegado a su límite del día, se usa el otro.
+// Lo ya traducido se guarda en el aparato, para no gastar el límite traduciendo lo mismo dos veces.
+let tradGuardadas = {}, traductorFalla = false;
+try { tradGuardadas = JSON.parse(localStorage.getItem('radio.trad')) || {}; } catch(e){}
+function guardaTrad(k, v){
+  tradGuardadas[k] = v;
+  const ks = Object.keys(tradGuardadas); if (ks.length > 400) ks.slice(0, ks.length - 400).forEach(x => delete tradGuardadas[x]);
+  try { localStorage.setItem('radio.trad', JSON.stringify(tradGuardadas)); } catch(e){}
+}
+async function traduceGoogle(texto, de){
+  const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=' + de + '&tl=es&q=' + encodeURIComponent(texto.slice(0, 1500)));
+  if (!r.ok) throw new Error(r.status);
+  const j = await r.json();
+  const t = (j[0] || []).map(x => x[0]).join('');
+  if (!t) throw new Error('vacío');
+  return t;
+}
+async function traduceMyMemory(texto, de){
+  const r = await (await fetch('https://api.mymemory.translated.net/get?langpair=' + de + '|es&q=' + encodeURIComponent(texto.slice(0, 480)))).json();
+  const t = r && r.responseData && r.responseData.translatedText;
+  if (!t || r.responseStatus != 200 || /MYMEMORY WARNING|QUERY LENGTH LIMIT/i.test(t)) throw new Error('límite');
+  return sinEtiquetas(t);
+}
 async function traduce(texto, de){
-  // MyMemory: traductor gratuito; si falla, se deja el texto original
-  try {
-    const r = await (await fetch('https://api.mymemory.translated.net/get?langpair=' + de + '|es&q=' + encodeURIComponent(texto.slice(0, 480)))).json();
-    const t = r && r.responseData && r.responseData.translatedText;
-    return t && r.responseStatus == 200 ? sinEtiquetas(t) : texto;
-  } catch(e){ return texto; }
+  if (!texto || de === 'es') return texto;
+  const k = de + '|' + texto;
+  if (tradGuardadas[k]) return tradGuardadas[k];
+  for (const f of [traduceGoogle, traduceMyMemory]){
+    try { const t = await f(texto, de); traductorFalla = false; guardaTrad(k, t); return t; } catch(e){}
+  }
+  traductorFalla = true;                       // ninguno ha respondido: se deja el original y se avisa
+  return texto;
 }
 async function teletipo(pais){
   const caja = $('tele');
@@ -3816,14 +3841,14 @@ async function teletipo(pais){
   if (items.length && fuente[2]){                                    // periódico extranjero: traducción al español
     const clave = 'es-rss-' + ajustes.teleFuente;
     if (cacheTele[clave] && Date.now() - cacheTele[clave].t < 30 * 60000) items = cacheTele[clave].items;
-    else { items = await Promise.all(items.slice(0, 8).map(async x => ({t: await traduce(x.t, fuente[2]), u: x.u}))); cacheTele[clave] = {t: Date.now(), items}; }
+    else { items = await Promise.all(items.slice(0, 8).map(async x => ({t: await traduce(x.t, fuente[2]), u: x.u}))); if (!traductorFalla) cacheTele[clave] = {t: Date.now(), items}; }
     traducido = true; langTxt = fuente[2];
   }
   if (!items.length) items = await titulares(lang);
   if (teleFuenteNom === 'Wikipedia' && lang !== 'es' && items.length){
     const clave = 'es-' + lang;
     if (cacheTele[clave] && Date.now() - cacheTele[clave].t < 30 * 60000) items = cacheTele[clave].items;
-    else { items = await Promise.all(items.map(async x => ({t: await traduce(x.t, lang), u: x.u}))); cacheTele[clave] = {t: Date.now(), items}; }
+    else { items = await Promise.all(items.map(async x => ({t: await traduce(x.t, lang), u: x.u}))); if (!traductorFalla) cacheTele[clave] = {t: Date.now(), items}; }
     traducido = true;
   }
   if (!items.length && lang !== 'es'){ items = await titulares('es'); traducido = false; }
@@ -3832,8 +3857,9 @@ async function teletipo(pais){
   items = items.concat(await efemerides());                         // tal día como hoy
   if (teleIdioma !== lang) return;
   if (!items.length){ caja.hidden = true; return; }
+  if (traducido && traductorFalla) traducido = false;              // el traductor no ha respondido: no decir que está traducido
   teleItems = items; teleTrad = traducido ? langTxt : '';
-  const txt = items.map(x => x.t).join('   ◆   ') + '   ◆   Fuente: ' + teleFuenteNom + (traducido ? ' · traducido al español' : '') + '   ◆   Toca para leer';
+  const txt = items.map(x => x.t).join('   ◆   ') + '   ◆   Fuente: ' + teleFuenteNom + (traducido ? ' · traducido al español' : traductorFalla ? ' · sin traducir: el traductor no responde, se volverá a intentar' : '') + '   ◆   Toca para leer';
   $('teleTxt').textContent = txt;
   $('teleTag').textContent = traducido ? 'TELETIPO · ' + langTxt.toUpperCase() + '→ES' : 'TELETIPO';
   caja.style.setProperty('--tele-dur', Math.max(30, Math.round(txt.length / 7)) + 's');   // velocidad de lectura cómoda
