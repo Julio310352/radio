@@ -2118,7 +2118,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '45', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '46', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4364,7 +4364,10 @@ const OC = [
   const ul = document.createElement('ul'); ul.className = 'list';
   OC.forEach(([f, m, n, d]) => {
     const li = document.createElement('li'); li.className = 'st';
-    const a = Object.assign(document.createElement('a'), {className: 'st-main', href: `http://websdr.ewi.utwente.nl:8901/?tune=${f}${m}`, target: '_blank', rel: 'noopener'});
+    const web = `websdr.ewi.utwente.nl:8901/?tune=${f}${m}`;
+    const a = Object.assign(document.createElement('a'), {className: 'st-main', href: 'http://' + web, target: '_blank', rel: 'noopener'});
+    // En el iPhone, si se pide, se abre en Chrome (googlechrome://) en vez de Safari
+    a.onclick = e => { if (ajustes.ocChrome && /iPhone|iPad|iPod/.test(navigator.userAgent)){ e.preventDefault(); location.href = 'googlechrome://' + web; } };
     const info = document.createElement('div'); info.className = 'info';
     info.append(Object.assign(document.createElement('div'), {className: 'name', textContent: `${n} · ${f} kHz ${m.toUpperCase()}`}),
                 Object.assign(document.createElement('div'), {className: 'sub', textContent: d}));
@@ -4570,6 +4573,8 @@ function ajustesExtra2(g, casilla){
     g.append(f);
   });
 
+  titulo('📡 Onda corta');
+  g.append(casilla('ajOcChrome', 'En el iPhone, abrir el receptor de onda corta en Chrome en vez de Safari', !!ajustes.ocChrome, v => { ajustes.ocChrome = v; guardaAjustes(); }));
   if (enNAS()){
     titulo('💾 Copia automática');
     g.append(casilla('ajCopiaAuto', 'Guardar sola una copia en el NAS cada día', ajustes.copiaAuto !== false, v => { ajustes.copiaAuto = v; guardaAjustes(); }));
