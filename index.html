@@ -314,6 +314,108 @@ h1 span{color:var(--dial)}
 .timer,.rec,.chip,.btn,.tab,.field,select.mini,.mbtn{border-width:1.5px!important}
 .timer,.rec,.chip{color:var(--text);font-weight:600}
 .btn,.mini,.status,.sub,.note{font-weight:500}
+
+/* ================= Modelos de radio (aspecto) ================= */
+/* Letras sobre el mueble: en los modelos nuevos se calculan contra el color del mueble */
+html[data-modelo]:not([data-modelo="clasica"]) header.cab h1,
+html[data-modelo]:not([data-modelo="clasica"]) header.cab .vlab,
+html[data-modelo]:not([data-modelo="clasica"]) header.cab .knob-label{color:var(--cab-txt)}
+html[data-modelo]:not([data-modelo="clasica"]) header.cab h1 span,
+html[data-modelo]:not([data-modelo="clasica"]) header.cab .qbtn,
+html[data-modelo]:not([data-modelo="clasica"]) header.cab .skinsel{color:var(--cab-acc);border-color:color-mix(in srgb,var(--cab-txt) 45%,transparent)}
+
+/* --- Capilla años 30: mueble en arco, rejilla de tela con columnas de madera, dial en ventana --- */
+html[data-modelo="capilla"] header.cab{margin:6px 6px 0;padding-top:calc(env(safe-area-inset-top,0px) + 34px);
+  border-radius:50% 50% 16px 16px / 64px 64px 16px 16px;border:4px solid color-mix(in srgb,var(--cab2),black 35%);
+  background:repeating-linear-gradient(90deg,rgba(0,0,0,.09) 0 3px,transparent 3px 14px),radial-gradient(ellipse at 50% 0%,color-mix(in srgb,var(--cab1),white 12%),var(--cab1) 45%,var(--cab2));
+  box-shadow:inset 0 0 0 5px color-mix(in srgb,var(--cab1),black 25%),inset 0 0 0 7px color-mix(in srgb,var(--brass) 55%,transparent)}
+html[data-modelo="capilla"] h1{font-family:Georgia,"Times New Roman",serif;text-transform:none;font-style:italic;letter-spacing:.01em}
+html[data-modelo="capilla"] .tubes{position:relative;height:96px;margin:10px 30px 8px;padding-bottom:6px;border-radius:70px 70px 6px 6px;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px),repeating-linear-gradient(-45deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px),color-mix(in srgb,var(--brass),black 45%);
+  box-shadow:inset 0 0 18px rgba(0,0,0,.7);border:3px solid color-mix(in srgb,var(--cab2),black 30%)}
+html[data-modelo="capilla"] .tubes::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0 24px,color-mix(in srgb,var(--cab1),black 15%) 24px 32px)}
+html[data-modelo="capilla"] .tube{opacity:.85}
+html[data-modelo="capilla"] .dial{border-radius:60px 60px 8px 8px;height:56px;margin:4px 18px 0;border:3px solid color-mix(in srgb,var(--brass),black 25%)}
+html[data-modelo="capilla"] .dial .n{top:12px}
+
+/* --- Transistor años 60: caja redondeada con marco cromado y altavoz de agujeros --- */
+html[data-modelo="transistor"] header.cab{margin:6px 8px 0;border-radius:28px 28px 20px 20px;border:4px solid #c9ced4;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cab1),white 8%),var(--cab2));
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 6px 14px rgba(0,0,0,.35)}
+html[data-modelo="transistor"] h1{font-style:italic;letter-spacing:.06em}
+html[data-modelo="transistor"] .tubes{position:relative;height:86px;margin:10px 4px 8px;border-radius:16px;border:3px solid #e6e9ec;
+  background:radial-gradient(circle,rgba(0,0,0,.6) 2.3px,transparent 2.8px) 0 0/11px 11px,linear-gradient(180deg,#dfe3e7,#a3aab2);
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.35)}
+html[data-modelo="transistor"] .tubes::after{content:"7 TRANSISTORES";position:absolute;right:12px;bottom:6px;font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.18em;color:#2b3036;background:#e9ecef;padding:1px 6px;border-radius:3px}
+html[data-modelo="transistor"] .tube{display:none}
+html[data-modelo="transistor"] .dial{background:linear-gradient(180deg,#f6f7f8,#c4c9cf);border:2px solid #8e959d;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);border-radius:10px}
+html[data-modelo="transistor"] .dial .n{color:#1d2228}
+html[data-modelo="transistor"] .dial::before{background:repeating-linear-gradient(90deg,#3a4048 0 1px,transparent 1px 10px)}
+html[data-modelo="transistor"] .knob-rot{background:repeating-conic-gradient(from 0deg,rgba(0,0,0,.45) 0 3deg,rgba(255,255,255,.12) 3deg 6deg),radial-gradient(circle at 35% 30%,#e9ecef,#8d949c 72%)}
+html[data-modelo="transistor"] .knob-cap{background:radial-gradient(circle at 35% 30%,#ffffff,#c9ced4 55%,#7d848c)}
+html[data-modelo="transistor"] .knob-cap::after{background:var(--needle)}
+html[data-modelo="transistor"] .seek{background:radial-gradient(circle at 35% 30%,#fff,#d3d8dd 55%,#8d949c);color:#1d2228}
+
+/* --- Radiocasete años 80: aluminio cepillado, ecualizador de barras y teclas rectangulares --- */
+html[data-modelo="radiocasete"] header.cab{border-bottom:3px solid #4a4f55;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.08) 0 1px,transparent 1px 3px),linear-gradient(180deg,#e4e7eb,#9aa1a9)}
+html[data-modelo="radiocasete"] h1{font-style:italic;font-weight:800;letter-spacing:.12em}
+html[data-modelo="radiocasete"] .tubes{gap:6px;height:76px;margin:10px 0 8px;padding:8px 10px;background:#0b0d0f;border:3px solid #2c3035;border-radius:6px;align-items:stretch;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.9),0 1px 0 rgba(255,255,255,.6)}
+html[data-modelo="radiocasete"] .tube,html[data-modelo="radiocasete"] .tube.big{flex:1;width:auto;height:auto;border:0;border-radius:2px;box-shadow:none;
+  background:repeating-linear-gradient(0deg,#0b0d0f 0 2px,transparent 2px 7px),linear-gradient(0deg,#2ee66b 0 55%,#ffd23a 55% 80%,#ff3b3b 80%);
+  clip-path:inset(calc((1 - var(--lv,.08)) * 100%) 0 0 0);transition:clip-path .1s linear}
+html[data-modelo="radiocasete"] .tube::before,html[data-modelo="radiocasete"] .tube::after,html[data-modelo="radiocasete"] .tube i{display:none}
+html[data-modelo="radiocasete"] .dial{background:#0b0d0f;border:3px solid #2c3035;border-radius:4px}
+html[data-modelo="radiocasete"] .dial .n{color:#5fe3ff;text-shadow:0 0 6px rgba(95,227,255,.6)}
+html[data-modelo="radiocasete"] .dial::before{background:repeating-linear-gradient(90deg,#5fe3ff 0 1px,transparent 1px 10px);opacity:.6}
+html[data-modelo="radiocasete"] .knob{box-shadow:0 6px 14px rgba(0,0,0,.5),0 0 0 5px #4a4f55}
+html[data-modelo="radiocasete"] .knob-rot{background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.08) 0 3deg,transparent 3deg 8deg),radial-gradient(circle at 35% 30%,#3a3f45,#0d0f11 72%)}
+html[data-modelo="radiocasete"] .knob-cap{background:radial-gradient(circle at 35% 30%,#fff,#c3c8ce 55%,#6d747c)}
+html[data-modelo="radiocasete"] .seek,html[data-modelo="radiocasete"] .mbtn{border-radius:4px;background:linear-gradient(180deg,#fafbfc,#c2c7cd 60%,#8e959d);color:#111;border:1px solid #4a4f55}
+html[data-modelo="radiocasete"] .lcd,html[data-modelo="radiocasete"] .memsel,html[data-modelo="radiocasete"] .eqpanel{border-radius:4px;border-color:#2c3035}
+
+/* --- Moderna: plana, limpia y con letras grandes --- */
+html[data-modelo="moderna"] header.cab{background:var(--panel);border-bottom:1px solid var(--line)}
+html[data-modelo="moderna"] .tubes{display:none}
+html[data-modelo="moderna"] .dial{margin-top:12px;height:44px;background:transparent;box-shadow:none;border:0;border-bottom:2px solid var(--line);border-radius:0}
+html[data-modelo="moderna"] .dial::before{opacity:.5}
+html[data-modelo="moderna"] .dial .n{font-family:var(--f-body);font-size:14px}
+html[data-modelo="moderna"] .lcd{box-shadow:none;text-shadow:none;border:1.5px solid var(--line);border-radius:14px;font-family:var(--f-body)}
+html[data-modelo="moderna"] .freq{font-weight:700;font-size:52px}
+html[data-modelo="moderna"] .ps{font-weight:700;letter-spacing:.02em;font-size:32px}
+html[data-modelo="moderna"] .rt{font-size:17px}
+html[data-modelo="moderna"] .knob{box-shadow:none;border:2px solid var(--line)}
+html[data-modelo="moderna"] .knob-rot{background:var(--bg)}
+html[data-modelo="moderna"] .knob-cap{background:var(--panel);box-shadow:none;border:2px solid var(--line)}
+html[data-modelo="moderna"] .knob-cap::after{background:var(--dial)}
+html[data-modelo="moderna"] .seek,html[data-modelo="moderna"] .mbtn{background:var(--bg);color:var(--text);border:1.5px solid var(--line);box-shadow:none;border-radius:12px}
+html[data-modelo="moderna"] .memsel,html[data-modelo="moderna"] .eqpanel{background:var(--bg);color:var(--text);box-shadow:none;border:1.5px solid var(--line);border-radius:12px;font-family:var(--f-body);font-size:17px}
+html[data-modelo="moderna"] .vus canvas{border-width:1.5px;box-shadow:none}
+
+#pVoz.activo{border-color:var(--dial);color:var(--dial)}
+.nieto-btn{background:none;border:0;padding:0 1px;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted 1px;text-underline-offset:3px}
+details.oc{margin:4px 0 12px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--panel)}
+details.oc a.st-main{color:inherit;text-decoration:none}
+details.oc summary{cursor:pointer;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.04em;color:var(--dial)}
+.es-barras{display:flex;align-items:flex-end;gap:8px;height:180px;margin:10px 0 20px}
+.es-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.es-col i{display:block;width:100%;min-height:2px;background:var(--dial);border-radius:4px 4px 0 0}
+.es-val,.es-dia{font-size:13px}
+.es-fila{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-bottom:1px solid color-mix(in srgb,currentColor 15%,transparent)}
+.es-n{flex:0 0 38%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.es-b{flex:1;height:12px;border-radius:6px;background:color-mix(in srgb,currentColor 12%,transparent);overflow:hidden}
+.es-b i{display:block;height:100%;background:var(--dial)}
+.es-t{flex:none;font-size:13px;min-width:70px;text-align:right}
+.mo-modo,.mo-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:10px 0}
+.mo-modo .chip[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
+.mo-form{display:flex;gap:8px;max-width:420px;margin:0 auto}.mo-form .field{flex:1;font-size:22px;text-transform:uppercase;text-align:center}.mo-form .btn{margin-top:0}
+.mo-res{font-size:24px;margin:14px 0 4px;min-height:1.3em}.mo-cod{font-family:var(--f-body);font-size:30px;font-weight:700;letter-spacing:.08em;min-height:1.2em;white-space:pre-wrap}
+.despierta{isolation:isolate;position:fixed}
+.despierta.amanecer::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at 50% 115%,#ffe2a0 0%,#ffa64d 28%,#c8507a 55%,#2a1640 80%,#000 100%);animation:amanecer 90s ease-in forwards}
+@keyframes amanecer{to{opacity:1}}
 #pPaseo.activo{border-color:var(--dial);color:var(--dial)}
 .not-cab .leer{margin-left:auto;margin-right:8px}
 .mesa-hora{cursor:pointer}
@@ -401,7 +503,7 @@ body.noche #nocheVelo{opacity:.5}
 </style>
 <script>
   // Interruptor: si la radio se apagó, al abrirla solo aparece el botón de encender
-  try { if (localStorage.getItem('radio.encendida') === '0') document.documentElement.classList.add('apagada'); } catch(e){}
+  try { if (localStorage.getItem('radio.encendida') === '0') document.documentElement.classList.add('apagada'); document.documentElement.dataset.modelo = localStorage.getItem('radio.modelo') || 'clasica'; } catch(e){}
 </script>
 <style>
   html.apagada .apagado{display:flex!important}
@@ -415,6 +517,7 @@ body.noche #nocheVelo{opacity:.5}
     <div class="top">
       <div class="titulo"><button class="pwr" id="pwr" type="button" aria-label="Apagar la radio">⏻</button><h1>Mi <span>Radio</span></h1></div>
       <div class="topbtns">
+        <select class="skinsel" id="modeloSel" aria-label="Modelo de radio"></select>
         <select class="skinsel" id="skin" aria-label="Color de la radio"></select>
         <button class="qbtn" id="skinAzar" type="button" aria-label="Color de la radio al azar">🎲</button>
         <button class="qbtn" id="qBtn" type="button">Calidad alta</button>
@@ -616,6 +719,20 @@ body.noche #nocheVelo{opacity:.5}
   <div class="not-cab"><h2>⚙ Ajustes</h2><button class="d-btn not-cerrar" id="ajCerrar" type="button">Cerrar</button></div>
   <div id="ajOut"></div>
 </div>
+<div class="noticias ajustesPan" id="morsePan" hidden role="dialog" aria-label="Practicar Morse">
+  <div class="not-cab"><h2>·− Practicar Morse</h2><button class="d-btn not-cerrar" id="moCerrar" type="button">Cerrar</button></div>
+  <div class="mo-modo" id="moModo"><button type="button" class="chip" data-m="letras">Letras</button><button type="button" class="chip" data-m="palabras">Palabras</button></div>
+  <p class="mt-sub">Escucha y escribe lo que oyes.</p>
+  <form id="moForm" class="mo-form"><input class="field" id="moIn" autocomplete="off" autocapitalize="characters" placeholder="¿Qué has oído?"><button class="btn" type="submit">Comprobar</button></form>
+  <div class="mo-res" id="moRes"></div><div class="mo-cod" id="moCod"></div>
+  <div class="mo-btns"><button class="btn" id="moRep" type="button">🔁 Repetir</button><button class="btn" id="moOtra" type="button">➡ Otra</button><button class="btn" id="moVer" type="button">👁 Ver respuesta</button></div>
+  <div class="mo-btns"><button class="btn" id="moMenos" type="button">− Más lento</button><span id="moVel"></span><button class="btn" id="moMas" type="button">＋ Más rápido</button></div>
+  <p class="mt-sub" id="moPunt"></p>
+</div>
+<div class="noticias ajustesPan" id="estadPan" hidden role="dialog" aria-label="Lo que más escuchas">
+  <div class="not-cab"><h2>📊 Mis horas de radio</h2><button class="d-btn not-cerrar" id="esCerrar" type="button">Cerrar</button></div>
+  <div id="estOut"></div>
+</div>
 <div class="noticias ajustesPan" id="paseoPan" hidden role="dialog" aria-label="Paseo">
   <div class="not-cab"><h2>🚶 Mi paseo</h2><button class="d-btn not-cerrar" id="paCerrar" type="button">Cerrar</button></div>
   <div id="paOut"></div>
@@ -654,6 +771,9 @@ body.noche #nocheVelo{opacity:.5}
     <button class="timer" id="pSubs" type="button" aria-label="Subtítulos traducidos">Subtítulos</button>
     <button class="timer" id="pSencillo" type="button" aria-label="Modo sencillo">Sencillo</button>
     <button class="timer" id="pPaseo" type="button" aria-label="Contador del paseo">Paseo</button>
+    <button class="timer" id="pVoz" type="button" aria-pressed="false" aria-label="Voz clara">Voz clara</button>
+    <button class="timer" id="pMorse" type="button" aria-label="Practicar Morse">Morse</button>
+    <button class="timer" id="pEstad" type="button" aria-label="Lo que más escuchas">Mis horas</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -1838,9 +1958,14 @@ function legible(color, fondos, minimo){
   }
   return meta;
 }
+const MODELOS = [['clasica', 'Clásica de lámparas'], ['capilla', 'Capilla años 30'], ['transistor', 'Transistor años 60'], ['radiocasete', 'Radiocasete años 80'], ['moderna', 'Moderna']];
+let modelo = document.documentElement.dataset.modelo || 'clasica';
 function ponPiel(i){
   const p = PIELES[i] || PIELES[0];
   const v = {}; CLAVES.forEach((k, j) => v[k] = p[j + 1]);
+  // algunos modelos tienen el mueble de su propio material
+  if (modelo === 'radiocasete'){ v['--cab1'] = '#e4e7eb'; v['--cab2'] = '#9aa1a9'; }
+  if (modelo === 'moderna'){ v['--cab1'] = v['--panel']; v['--cab2'] = v['--panel']; }
   const fondos = [v['--bg'], v['--panel']];
   v['--text']  = legible(v['--text'], fondos, 12);                // letras principales: lo más marcadas posible
   v['--muted'] = legible(v['--muted'], fondos, 7.5);               // letras secundarias y botones pequeños, también bien marcadas
@@ -1853,6 +1978,7 @@ function ponPiel(i){
   // Letras sobre el mueble (SINTONÍA, versión, botones de las fotos) y cristal de las lámparas
   const mueble = [v['--cab1'], v['--cab2']];
   document.documentElement.style.setProperty('--cab-txt', legible(mezcla(v['--brass'], v['--text'], .45), mueble, 7));
+  document.documentElement.style.setProperty('--cab-acc', legible(v['--dial'], mueble, 5));
   const muebleClaro = (luz(v['--cab1']) + luz(v['--cab2'])) / 2 > .18;
   document.documentElement.style.setProperty('--tubo-borde', muebleClaro ? 'rgba(60,40,20,.45)' : 'rgba(255,235,200,.28)');
   document.documentElement.style.setProperty('--tubo-vidrio', muebleClaro ? 'rgba(60,40,20,.10)' : 'rgba(255,255,255,.06)');
@@ -1864,6 +1990,15 @@ function ponPiel(i){
   try { localStorage.setItem('radio.piel', i); } catch(e){}
 }
 PIELES.forEach(([n], i) => { const o = document.createElement('option'); o.value = i; o.textContent = n; $('skin').append(o); });
+// Modelo de radio: cambia la forma del aparato; las pieles siguen dando el color
+MODELOS.forEach(([v, n]) => $('modeloSel').append(new Option(n, v)));
+$('modeloSel').value = modelo;
+$('modeloSel').onchange = () => {
+  modelo = $('modeloSel').value; document.documentElement.dataset.modelo = modelo;
+  try { localStorage.setItem('radio.modelo', modelo); } catch(e){}
+  ponPiel(+$('skin').value || 0);
+  $('lRT').textContent = 'Modelo: ' + MODELOS.find(m => m[0] === modelo)[1];
+};
 let pielGuardada = 0;
 try { pielGuardada = +(localStorage.getItem('radio.piel') || 0); } catch(e){}
 $('skin').value = pielGuardada; ponPiel(pielGuardada);
@@ -1983,7 +2118,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '44', FECHA_VERSION = '10-11-2026';   // cambiar en cada versión nueva
+const VERSION = '45', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -3849,6 +3984,7 @@ function panelOpciones(){
   g.append(f2, m2);
   ajustesNuevos(g, casilla);
   ajustesExtra(g, casilla);
+  ajustesExtra2(g, casilla);
   d.append(g);
   return d;
 }
@@ -4149,6 +4285,294 @@ function ajustesExtra(g, casilla){
     f.append(boton('Guardar en el NAS', () => copiaGuardar(msg), 'btn'), rec);
     g.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Guarda favoritas, memorias, fotos, cumpleaños, listas, recordatorios y ajustes. Las grabaciones no.'}), f, msg);
     copiaFecha(msg);
+  }
+}
+
+
+/* ================= Mejoras de la versión 45 ================= */
+const diaISO = (d = new Date()) => fechaISO(d);
+const sinAcentos = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/* ---------- 1. Buenos días: hora, fecha, cumpleaños, tiempo y titulares, y luego la emisora ---------- */
+async function textoBuenosDias(){
+  const d = new Date(), h = d.getHours();
+  const saludo = h >= 21 ? 'Buenas noches' : h >= 13 && h < 21 ? 'Buenas tardes' : 'Buenos días';
+  const nombre = (ajustes.nombre ?? 'Julio').trim();
+  let t = `${saludo}${nombre ? ', ' + nombre : ''}. Hoy es ${d.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'long'})}. ${horaEnVoz(d)} `;
+  const hoyMD = diaISO(d).slice(5);
+  const deHoy = Object.entries(cumples).filter(([, f]) => f && f.slice(5) === hoyMD).map(([n]) => n);
+  if (deHoy.length) t += `¡Hoy es el cumpleaños de ${deHoy.join(' y ')}! `;
+  if (ajustes.lat != null){ const tv = await tiempoEnVoz(); if (tv) t += tv + ' '; }
+  try {
+    const tit = (await titulares('es')).slice(0, 4).map(x => x.t.replace(/\s*\(.*?\)\s*/g, ' ').trim());
+    if (tit.length) t += 'Las noticias: ' + tit.join('. ') + '. ';
+  } catch(e){}
+  return t + 'Que tengas un buen día.';
+}
+async function buenosDias(despues){
+  setStatus('Buenos días…');
+  const t = await textoBuenosDias();
+  let empezo = false, hecho = false;
+  const sigue = () => { if (hecho) return; hecho = true; if (despues) despues(); };
+  habla(t, sigue);
+  setTimeout(() => { empezo = hablando || speechSynthesis.speaking; if (!empezo) sigue(); }, 3000);   // si el teléfono no deja hablar, pone la radio
+}
+const sonarAlarmaBase = sonarAlarma;
+sonarAlarma = function(){
+  if (ajustes.amanecer !== false) $('despierta').classList.add('amanecer');
+  if (ajustes.buenosDias){ abreDespierta(); buenosDias(sonarAlarmaBase); }
+  else sonarAlarmaBase();
+};
+$('dPosponer').addEventListener('click', () => { callar(); $('despierta').classList.remove('amanecer'); });
+$('dApagar').addEventListener('click', () => { $('despierta').classList.remove('amanecer'); });
+
+/* ---------- 3. Voz clara: realza las voces para entender mejor ---------- */
+const VOZ_CLARA = [-8, -3, 4, 6, 2];
+function marcaVozClara(){ $('pVoz').setAttribute('aria-pressed', !!ajustes.vozClara); $('pVoz').classList.toggle('activo', !!ajustes.vozClara); }
+$('pVoz').onclick = () => {
+  if (!ajustes.vozClara){
+    ajustes.eqAntes = {on: eq.on, g: [...eq.g]};
+    VOZ_CLARA.forEach((v, i) => setBanda(i, v, true));
+    if (!eq.on){ $('eqOn').checked = true; $('eqOn').dispatchEvent(new Event('change')); }
+    ajustes.vozClara = true; setStatus('Voz clara: voces realzadas');
+  } else {
+    const a = ajustes.eqAntes || {on: false, g: [0, 0, 0, 0, 0]};
+    a.g.forEach((v, i) => setBanda(i, v, true));
+    if (eq.on !== a.on){ $('eqOn').checked = a.on; $('eqOn').dispatchEvent(new Event('change')); }
+    ajustes.vozClara = false; setStatus('Voz clara apagada');
+  }
+  guardaAjustes(); marcaVozClara();
+};
+marcaVozClara();
+
+/* ---------- 4. Onda corta en directo (receptor de la Universidad de Twente) ---------- */
+const OC = [
+  ['6070', 'am', 'Radio en 49 m', 'Emisoras europeas, a veces música'],
+  ['7300', 'am', 'Radio en 41 m', 'Radios internacionales'],
+  ['9500', 'am', 'Radio en 31 m', 'Radios internacionales, mejor de día'],
+  ['3650', 'lsb', 'Radioaficionados 80 m', 'Conversaciones europeas, sobre todo de noche'],
+  ['7100', 'lsb', 'Radioaficionados 40 m', 'Conversaciones en Europa'],
+  ['14200', 'usb', 'Radioaficionados 20 m', 'Todo el mundo, de día'],
+  ['7020', 'cw', 'Morse en 40 m', 'Telegrafía de radioaficionados'],
+  ['14030', 'cw', 'Morse en 20 m', 'Telegrafía de lejos'],
+  ['4625', 'usb', 'El Zumbador (UVB-76)', 'Emisora misteriosa rusa que zumba desde los años 70']
+];
+(function(){
+  const det = document.createElement('details'); det.className = 'oc';
+  det.innerHTML = '<summary>📡 Onda corta en directo</summary>';
+  det.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Un receptor de verdad en la Universidad de Twente (Países Bajos). Toca una frecuencia y se abre ya sintonizada. Por la tarde y por la noche se oye más lejos.'}));
+  const ul = document.createElement('ul'); ul.className = 'list';
+  OC.forEach(([f, m, n, d]) => {
+    const li = document.createElement('li'); li.className = 'st';
+    const a = Object.assign(document.createElement('a'), {className: 'st-main', href: `http://websdr.ewi.utwente.nl:8901/?tune=${f}${m}`, target: '_blank', rel: 'noopener'});
+    const info = document.createElement('div'); info.className = 'info';
+    info.append(Object.assign(document.createElement('div'), {className: 'name', textContent: `${n} · ${f} kHz ${m.toUpperCase()}`}),
+                Object.assign(document.createElement('div'), {className: 'sub', textContent: d}));
+    a.append(Object.assign(document.createElement('div'), {className: 'logo', textContent: m === 'cw' ? '·−' : '📡'}), info);
+    li.append(a); ul.append(li);
+  });
+  det.append(ul);
+  $('vMu').prepend(det);
+})();
+
+/* ---------- 5. Practicar Morse ---------- */
+const MORSE = {A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
+  '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.'};
+const PALABRAS_MORSE = ['SOS', 'HOLA', 'RADIO', 'CASA', 'SOL', 'MAR', 'PAZ', 'LUNA', 'PAN', 'MESA', 'TREN', 'AMOR', 'ABUELO', 'ABUELA', 'NIETOS', ...NIETOS.map(n => sinAcentos(n).toUpperCase())];
+let morse = {modo: 'palabras', wpm: +(localStorage.getItem('radio.morseWpm') || 12), actual: '', aciertos: 0, intentos: 0, sonando: false};
+const aMorse = t => t.split('').map(c => (MORSE[c] || '').replace(/\./g, '·').replace(/-/g, '−')).join('   ');
+async function tocaMorse(texto){
+  ensureAudioCtx(); if (!actx) return;
+  if (actx.state === 'suspended') try { await actx.resume(); } catch(e){}
+  const pt = 1.2 / morse.wpm;                                     // duración de un punto, en segundos
+  let t = actx.currentTime + .15;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.frequency.value = 650; o.type = 'sine'; g.gain.value = 0; o.connect(g); g.connect(actx.destination); o.start(t);
+  const pita = dur => { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.25, t + .005); g.gain.setValueAtTime(.25, t + dur - .005); g.gain.linearRampToValueAtTime(0, t + dur); t += dur; };
+  texto.split('').forEach((c, i) => {
+    if (i) t += pt * 3;                                           // espacio entre letras
+    (MORSE[c] || '').split('').forEach((s, j) => { if (j) t += pt; pita(s === '.' ? pt : pt * 3); });
+  });
+  o.stop(t + .1);
+  morse.sonando = true; setTimeout(() => morse.sonando = false, (t - actx.currentTime) * 1000);
+}
+function nuevaMorse(){
+  const letras = Object.keys(MORSE).filter(c => /[A-Z]/.test(c));
+  morse.actual = morse.modo === 'letras' ? letras[Math.floor(Math.random() * letras.length)] : PALABRAS_MORSE[Math.floor(Math.random() * PALABRAS_MORSE.length)];
+  $('moRes').textContent = ''; $('moCod').textContent = ''; $('moIn').value = ''; $('moIn').focus();
+  tocaMorse(morse.actual);
+}
+function pintaMorse(){
+  $('moVel').textContent = morse.wpm + ' palabras por minuto';
+  $('moPunt').textContent = morse.intentos ? `Aciertos: ${morse.aciertos} de ${morse.intentos}` : '';
+  document.querySelectorAll('#moModo button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === morse.modo));
+}
+$('pMorse').onclick = () => { $('morsePan').hidden = false; pintaMorse(); nuevaMorse(); };
+$('moCerrar').onclick = () => { $('morsePan').hidden = true; };
+$('moOtra').onclick = nuevaMorse;
+$('moRep').onclick = () => tocaMorse(morse.actual);
+$('moVer').onclick = () => { $('moRes').textContent = 'Era: ' + morse.actual; $('moCod').textContent = aMorse(morse.actual); };
+$('moMenos').onclick = () => { morse.wpm = Math.max(5, morse.wpm - 1); try { localStorage.setItem('radio.morseWpm', morse.wpm); } catch(e){} pintaMorse(); };
+$('moMas').onclick = () => { morse.wpm = Math.min(25, morse.wpm + 1); try { localStorage.setItem('radio.morseWpm', morse.wpm); } catch(e){} pintaMorse(); };
+document.querySelectorAll('#moModo button').forEach(b => b.onclick = () => { morse.modo = b.dataset.m; pintaMorse(); nuevaMorse(); });
+$('moForm').onsubmit = e => {
+  e.preventDefault();
+  const r = sinAcentos($('moIn').value.trim()).toUpperCase(); if (!r) return;
+  morse.intentos++;
+  if (r === morse.actual){ morse.aciertos++; $('moRes').textContent = '✓ ¡Bien! Era ' + morse.actual; $('moCod').textContent = aMorse(morse.actual); setTimeout(nuevaMorse, 1800); }
+  else { $('moRes').textContent = '✗ No es «' + r + '». Escucha otra vez.'; setTimeout(() => tocaMorse(morse.actual), 600); }
+  pintaMorse();
+};
+
+/* ---------- 6. «Oye Siri, pon la SER»: enlaces que encienden una emisora ---------- */
+async function ponDesdeEnlace(){
+  const q = new URLSearchParams(location.search).get('pon');
+  if (!q) return;
+  history.replaceState(null, '', location.pathname);
+  const b = sinAcentos(q);
+  let st = [...favs, ...mems].find(s => s && sinAcentos((s._label || s.name || '')).includes(b));
+  if (!st){
+    try {
+      const r = await api('/json/stations/search?name=' + encodeURIComponent(q) + '&order=votes&reverse=true&limit=10&hidebroken=true');
+      st = r.filter(usable)[0];
+    } catch(e){}
+  }
+  if (!st){ setStatus(`No encuentro la emisora «${q}»`); return; }
+  play(st);
+  setTimeout(() => { if (audio.paused) setStatus(`Toca ▶ para escuchar ${(st._label || st.name).trim()}`, 'live'); }, 2500);
+}
+if (!APAGADA) setTimeout(ponDesdeEnlace, 800);
+const enlacePon = nombre => location.origin + location.pathname + '?pon=' + encodeURIComponent(nombre);
+
+/* ---------- 7. Lo que más escuchas ---------- */
+let diario = {};
+try { diario = JSON.parse(localStorage.getItem('radio.diario')) || {}; } catch(e){}
+let diarioSucio = 0;
+setInterval(() => {
+  if (!cab.classList.contains('on') || audio.paused) return;
+  const k = diaISO(); diario[k] = (diario[k] || 0) + 10;
+  if (++diarioSucio >= 3){
+    diarioSucio = 0;
+    const limite = diaISO(new Date(Date.now() - 60 * 86400000));
+    Object.keys(diario).forEach(d => { if (d < limite) delete diario[d]; });   // guarda solo los dos últimos meses
+    try { localStorage.setItem('radio.diario', JSON.stringify(diario)); } catch(e){}
+  }
+}, 10000);
+function pintaEstad(){
+  const out = $('estOut'); out.replaceChildren();
+  const dias = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d; });
+  const seg = dias.map(d => diario[diaISO(d)] || 0), max = Math.max(3600, ...seg);
+  const total = seg.reduce((a, b) => a + b, 0);
+  out.append(texto('mt-mid', 'Esta semana: ' + fmtHoras(total)));
+  const g = document.createElement('div'); g.className = 'es-barras';
+  dias.forEach((d, i) => {
+    const c = document.createElement('div'); c.className = 'es-col';
+    const v = Object.assign(document.createElement('span'), {className: 'es-val', textContent: seg[i] ? fmtHoras(seg[i]).replace(' min', '′') : ''});
+    const b = document.createElement('i'); b.style.height = Math.round(seg[i] / max * 100) + '%';
+    const l = Object.assign(document.createElement('span'), {className: 'es-dia', textContent: d.toLocaleDateString('es-ES', {weekday: 'short'}).replace('.', '')});
+    c.append(v, b, l); g.append(c);
+  });
+  out.append(g);
+  const top = Object.values(estad).filter(e => e.t > 0).sort((a, b) => b.t - a.t).slice(0, 8);
+  if (top.length){
+    out.append(texto('mt-mid', 'Tus emisoras más escuchadas'));
+    const maxT = top[0].t;
+    top.forEach(e => {
+      const f = document.createElement('div'); f.className = 'es-fila';
+      const n = Object.assign(document.createElement('span'), {className: 'es-n', textContent: (e.s._label || e.s.name || '').trim()});
+      const bar = document.createElement('span'); bar.className = 'es-b'; const i = document.createElement('i'); i.style.width = Math.round(e.t / maxT * 100) + '%'; bar.append(i);
+      f.append(n, bar, Object.assign(document.createElement('span'), {className: 'es-t', textContent: fmtHoras(e.t)}));
+      f.onclick = () => { $('estadPan').hidden = true; play(e.s); };
+      out.append(f);
+    });
+  } else out.append(texto('mt-sub', 'Todavía no hay datos. Se van guardando mientras escuchas.'));
+  $('estadPan').hidden = false;
+}
+$('pEstad').onclick = pintaEstad;
+$('esCerrar').onclick = () => { $('estadPan').hidden = true; };
+
+/* ---------- 8. Copia automática en el NAS, una vez al día ---------- */
+async function copiaAutomatica(){
+  if (!enNAS() || ajustes.copiaAuto === false || APAGADA) return;
+  let ultima = 0; try { ultima = +localStorage.getItem('radio.copiaHecha') || 0; } catch(e){}
+  if (Date.now() - ultima < 20 * 3600000) return;
+  const msg = {textContent: ''};
+  await copiaGuardar(msg);
+  if (/guardada/.test(msg.textContent)) try { localStorage.setItem('radio.copiaHecha', Date.now()); } catch(e){}
+}
+setTimeout(copiaAutomatica, 30000);
+setInterval(copiaAutomatica, 3600000);
+
+/* ---------- 9. La emisora de cada nieto: toca su nombre en la placa ---------- */
+(function(){
+  const d3 = document.querySelector('.placa .ded3'); if (!d3) return;
+  d3.replaceChildren();
+  NIETOS.forEach((n, i) => {
+    if (i) d3.append(' · ');
+    const b = Object.assign(document.createElement('button'), {type: 'button', className: 'nieto-btn', textContent: n});
+    b.setAttribute('aria-label', 'La emisora de ' + n);
+    b.onclick = () => {
+      const st = (ajustes.nietoEm || {})[n];
+      if (!st){ mostrarAviso(`♥ Elige en Ajustes la emisora de ${n}`, null, 6); return; }
+      play(st); mostrarAviso(`♥ La emisora de ${n}`, null, 5);
+    };
+    d3.append(b);
+  });
+})();
+
+/* ---------- Ajustes de estas mejoras ---------- */
+function ajustesExtra2(g, casilla){
+  const titulo = t => g.append(Object.assign(document.createElement('div'), {className: 'aj-tit', textContent: t}));
+  const fila = () => Object.assign(document.createElement('div'), {className: 'fila'});
+  const nota = t => Object.assign(document.createElement('p'), {className: 'note', textContent: t});
+  const opciones = [];
+  [...favs, ...mems].forEach(s => { if (s && s.stationuuid && !opciones.some(o => o.stationuuid === s.stationuuid)) opciones.push(slim(s)); });
+
+  titulo('☀ Buenos días');
+  const fn = fila();
+  const nom = Object.assign(document.createElement('input'), {className: 'field', value: ajustes.nombre ?? 'Julio', placeholder: 'Tu nombre'});
+  nom.style.cssText = 'flex:1 1 140px;width:auto';
+  nom.onchange = () => { ajustes.nombre = nom.value.trim(); guardaAjustes(); };
+  fn.append(Object.assign(document.createElement('label'), {textContent: 'Me llamo'}), nom);
+  g.append(fn);
+  g.append(casilla('ajBD', 'Al sonar el despertador, primero los Buenos días (hora, tiempo, cumpleaños y noticias)', !!ajustes.buenosDias, v => { ajustes.buenosDias = v; guardaAjustes(); }));
+  g.append(casilla('ajAmanecer', 'Despertar suave: la pantalla se ilumina como un amanecer y el volumen sube poco a poco', ajustes.amanecer !== false, v => { ajustes.amanecer = v; guardaAjustes(); }));
+  const fb = fila(); fb.append(boton('☀ Escuchar los Buenos días ahora', () => buenosDias(), 'btn')); g.append(fb);
+
+  titulo('♥ La emisora de cada nieto');
+  g.append(nota('Al tocar su nombre en la placa, suena la emisora que elijas.'));
+  ajustes.nietoEm = ajustes.nietoEm || {};
+  NIETOS.forEach(n => {
+    const f = fila();
+    const s = Object.assign(document.createElement('select'), {className: 'field'}); s.style.cssText = 'flex:1 1 160px;width:auto;min-width:0;padding:6px 8px';
+    s.append(new Option('— Sin elegir —', ''));
+    const actual = ajustes.nietoEm[n];
+    const ops = [...opciones]; if (actual && !ops.some(o => o.stationuuid === actual.stationuuid)) ops.push(actual);
+    ops.forEach((o, j) => s.append(new Option((o._label || o.name).trim(), j)));
+    s.value = actual ? String(ops.findIndex(o => o.stationuuid === actual.stationuuid)) : '';
+    s.onchange = () => { if (s.value === '') delete ajustes.nietoEm[n]; else ajustes.nietoEm[n] = ops[+s.value]; guardaAjustes(); };
+    f.append(Object.assign(document.createElement('label'), {textContent: n, style: 'min-width:60px'}), s);
+    g.append(f);
+  });
+  if (!opciones.length) g.append(nota('Primero guarda alguna emisora en Favoritas o en las memorias.'));
+
+  titulo('📱 Siri y accesos directos');
+  g.append(nota('Cada emisora tiene su enlace. En el iPhone: abre la app Atajos → ＋ → Añadir acción → «Abrir URL», pega el enlace y ponle de nombre, por ejemplo, «Pon la SER». Después basta decir «Oye Siri, pon la SER». También puedes añadir el atajo a la pantalla de inicio.'));
+  if (!opciones.length) g.append(nota('Guarda emisoras en Favoritas para tener aquí sus enlaces.'));
+  opciones.slice(0, 20).forEach(o => {
+    const n = (o._label || o.name).trim(), f = fila();
+    const b = boton('Copiar enlace', async () => {
+      try { await navigator.clipboard.writeText(enlacePon(n)); b.textContent = '✓ Copiado'; }
+      catch(e){ prompt('Copia este enlace:', enlacePon(n)); }
+      setTimeout(() => b.textContent = 'Copiar enlace', 2500);
+    }, 'chip');
+    f.append(Object.assign(document.createElement('span'), {textContent: n, style: 'flex:1 1 160px'}), b);
+    g.append(f);
+  });
+
+  if (enNAS()){
+    titulo('💾 Copia automática');
+    g.append(casilla('ajCopiaAuto', 'Guardar sola una copia en el NAS cada día', ajustes.copiaAuto !== false, v => { ajustes.copiaAuto = v; guardaAjustes(); }));
   }
 }
 
