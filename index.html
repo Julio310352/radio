@@ -397,7 +397,10 @@ html[data-modelo="moderna"] .vus canvas{border-width:1.5px;box-shadow:none}
 #pVoz.activo{border-color:var(--dial);color:var(--dial)}
 .nieto-btn{background:none;border:0;padding:0 1px;font:inherit;color:inherit;cursor:pointer;text-decoration:underline dotted 1px;text-underline-offset:3px}
 details.oc{margin:4px 0 12px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--panel)}
-details.oc a.st-main{color:inherit;text-decoration:none}
+details.oc a.st-main{color:var(--text);text-decoration:none}
+details.oc a.st-main .name{color:var(--text);font-weight:600}
+details.oc a.st-main .sub{color:var(--muted)}
+details.oc a.st-main:hover .name{color:var(--dial)}
 details.oc summary{cursor:pointer;font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:.04em;color:var(--dial)}
 .es-barras{display:flex;align-items:flex-end;gap:8px;height:180px;margin:10px 0 20px}
 .es-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
@@ -2118,7 +2121,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '46', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '47', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
