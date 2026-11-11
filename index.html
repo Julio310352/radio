@@ -84,7 +84,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .lcd-main{display:flex;align-items:baseline;gap:8px}
 .freq{font-size:60px;line-height:.95;font-variant-numeric:tabular-nums}
 .mhz{font-size:22px}
-.ps{font-size:38px;line-height:1.05;letter-spacing:.14em;white-space:pre;overflow:hidden}
+.ps{font-size:32px;line-height:1.1;letter-spacing:.08em;white-space:pre;overflow:hidden}
 .rt{font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .controls{display:flex;align-items:center;justify-content:center;gap:20px}
 .seek{width:58px;height:58px;border-radius:50%;border:1px solid var(--frame);color:var(--ink);font-size:15px;font-weight:700;
@@ -1602,19 +1602,30 @@ function showLCD(s, tuning){
 }
 // RDS: el nombre se muestra en bloques de 8 letras que van cambiando, como en las radios de verdad
 let psTimer;
+// Cuántas letras caben en la línea grande de la pantalla (antes eran 8 fijas, y las palabras largas salían partidas)
+let psMedidor = null;
+function psCaben(){
+  const el = $('lPS'), cs = getComputedStyle(el);
+  psMedidor = psMedidor || document.createElement('canvas').getContext('2d');
+  psMedidor.font = `${cs.fontSize} ${cs.fontFamily}`;
+  const ancho = psMedidor.measureText('M').width + (parseFloat(cs.letterSpacing) || 0);
+  const n = Math.floor((el.clientWidth - 4) / ancho);
+  return Math.max(8, Math.min(16, n || 8));
+}
 function setPS(text){
   clearInterval(psTimer);
+  const N = psCaben();
   const t = text.trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const parts = [];
   let curp = '';
   for (let w of t.split(/\s+/)){
-    while (w.length > 8){ if (curp){ parts.push(curp); curp = ''; } parts.push(w.slice(0, 8)); w = w.slice(8); }
+    while (w.length > N){ if (curp){ parts.push(curp); curp = ''; } parts.push(w.slice(0, N)); w = w.slice(N); }
     if (!w) continue;
-    if ((curp ? curp.length + 1 : 0) + w.length <= 8) curp = curp ? curp + ' ' + w : w;
+    if ((curp ? curp.length + 1 : 0) + w.length <= N) curp = curp ? curp + ' ' + w : w;
     else { parts.push(curp); curp = w; }
   }
   if (curp) parts.push(curp);
-  const center = p => { const pad = 8 - p.length; return ' '.repeat(Math.floor(pad / 2)) + p + ' '.repeat(Math.ceil(pad / 2)); };
+  const center = p => { const pad = Math.max(0, N - p.length); return ' '.repeat(Math.floor(pad / 2)) + p + ' '.repeat(Math.ceil(pad / 2)); };
   let i = 0;
   $('lPS').textContent = center(parts[0] || '');
   if (parts.length > 1) psTimer = setInterval(() => { i = (i + 1) % parts.length; $('lPS').textContent = center(parts[i]); }, 1500);
@@ -2127,7 +2138,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '48', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '49', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
