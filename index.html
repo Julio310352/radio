@@ -464,6 +464,11 @@ body.sonando .st.on .vivo i{animation:barra .9s ease-in-out infinite alternate}
 #pName{cursor:pointer}
 .star{flex:none;width:44px;height:44px;background:none;border:0;font-size:22px;color:var(--muted)}
 .star[aria-pressed="true"]{color:var(--dial)}
+/* Estrella: sin marcar es solo el contorno; marcada, rellena de oro, más grande y con brillo */
+.star:not(.mas){color:transparent;-webkit-text-stroke:1.6px var(--muted);transition:transform .15s,color .15s}
+.star:not(.mas)[aria-pressed="true"]{color:var(--estrella,#f5b400);-webkit-text-stroke:1.6px var(--estrella,#f5b400);transform:scale(1.25);
+  text-shadow:0 0 10px color-mix(in srgb,var(--estrella,#f5b400) 70%,transparent)}
+.star:not(.mas):active{transform:scale(.85)}
 .msg{color:var(--muted);padding:24px 0;text-align:center;line-height:1.5}
 .btn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin-top:10px}
 .more{display:block;width:100%;margin:12px 0}
@@ -1974,7 +1979,8 @@ function ponPiel(i){
   v['--muted'] = legible(v['--muted'], fondos, 7.5);               // letras secundarias y botones pequeños, también bien marcadas
   v['--dial']  = legible(v['--dial'], fondos, 5.5);                // títulos y botón ▶ (su icono va en el color del fondo)
   v['--line']  = legible(v['--line'], fondos, 3.2);                // bordes de botones y casillas, que se vean nítidos
-  v['--lcd']   = legible(v['--lcd'], [v['--lcd-bg']], 9);          // pantalla RDS
+  v['--lcd']   = legible(v['--lcd'], [v['--lcd-bg']], 9);
+  document.documentElement.style.setProperty('--estrella', legible('#f5b400', fondos, 3));   // oro de las estrellas marcadas          // pantalla RDS
   CLAVES.forEach(k => document.documentElement.style.setProperty(k, v[k]));
   // Mandos y textos: oscuros sobre mandos claros
   document.documentElement.style.setProperty('--ink', legible('#1e150c', [v['--brass']], 7));
@@ -2121,7 +2127,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '47', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '48', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -2564,7 +2570,7 @@ function filaMus(icono, nombre, sub, fn, ruta, extra){
     star.setAttribute('aria-label', 'Añadir a Mis canciones'); star.textContent = '★';
     star.setAttribute('aria-pressed', (musListas[FAVCAN] || []).includes(ruta));
     star.onclick = () => { alternaEnLista(FAVCAN, ruta); star.setAttribute('aria-pressed', (musListas[FAVCAN] || []).includes(ruta)); };
-    const mas = document.createElement('button'); mas.type = 'button'; mas.className = 'star'; mas.textContent = '＋';
+    const mas = document.createElement('button'); mas.type = 'button'; mas.className = 'star mas'; mas.textContent = '＋';
     mas.setAttribute('aria-label', 'Añadir a una lista');
     mas.onclick = () => eligeLista(li, ruta);
     li.append(star, mas);
@@ -2659,7 +2665,7 @@ function verLista(n){
   const lista = (musListas[n] || []).filter(r => musLista.includes(r));   // las que ya no están en el NAS no salen
   const ul = document.createElement('ul'); ul.className = 'list';
   lista.forEach((r, i) => {
-    const quitar = boton('✕', () => { alternaEnLista(n, r); verLista(n); }, 'star');
+    const quitar = boton('✕', () => { alternaEnLista(n, r); verLista(n); }, 'star mas');
     quitar.setAttribute('aria-label', 'Quitar de la lista');
     ul.append(filaMus('♪', musTitulo(r), musArtista(r), () => { musAzar = false; marcaAzar(); ponCola(lista, i); }, r, quitar));
   });
