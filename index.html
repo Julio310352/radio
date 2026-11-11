@@ -2138,7 +2138,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '49', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '50', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4563,7 +4563,7 @@ function ajustesExtra2(g, casilla){
   const fb = fila(); fb.append(boton('☀ Escuchar los Buenos días ahora', () => buenosDias(), 'btn')); g.append(fb);
 
   titulo('♥ La emisora de cada nieto');
-  g.append(nota('Al tocar su nombre en la placa, suena la emisora que elijas.'));
+  g.append(nota('Al tocar su nombre en la placa, suena la emisora que elijas. En la lista salen tus Favoritas (★), tus memorias y la emisora que esté sonando. Para tener otra, márcala antes con la ★.'));
   ajustes.nietoEm = ajustes.nietoEm || {};
   NIETOS.forEach(n => {
     const f = fila();
@@ -4571,9 +4571,11 @@ function ajustesExtra2(g, casilla){
     s.append(new Option('— Sin elegir —', ''));
     const actual = ajustes.nietoEm[n];
     const ops = [...opciones]; if (actual && !ops.some(o => o.stationuuid === actual.stationuuid)) ops.push(actual);
-    ops.forEach((o, j) => s.append(new Option((o._label || o.name).trim(), j)));
+    // la que está sonando ahora, aunque no esté en Favoritas
+    if (cur && cur.stationuuid && !playingRec && !ops.some(o => o.stationuuid === cur.stationuuid)) ops.unshift(Object.assign(slim(cur), {_ahora: true}));
+    ops.forEach((o, j) => s.append(new Option((o._ahora ? '▶ La que suena ahora: ' : '') + (o._label || o.name).trim(), j)));
     s.value = actual ? String(ops.findIndex(o => o.stationuuid === actual.stationuuid)) : '';
-    s.onchange = () => { if (s.value === '') delete ajustes.nietoEm[n]; else ajustes.nietoEm[n] = ops[+s.value]; guardaAjustes(); };
+    s.onchange = () => { if (s.value === '') delete ajustes.nietoEm[n]; else { const o = Object.assign({}, ops[+s.value]); delete o._ahora; ajustes.nietoEm[n] = o; } guardaAjustes(); };
     f.append(Object.assign(document.createElement('label'), {textContent: n, style: 'min-width:60px'}), s);
     g.append(f);
   });
