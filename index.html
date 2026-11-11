@@ -419,6 +419,51 @@ details.oc summary{cursor:pointer;font-family:var(--f-display);font-weight:700;f
 .despierta.amanecer::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:0;
   background:radial-gradient(ellipse at 50% 115%,#ffe2a0 0%,#ffa64d 28%,#c8507a 55%,#2a1640 80%,#000 100%);animation:amanecer 90s ease-in forwards}
 @keyframes amanecer{to{opacity:1}}
+
+/* Teclas de emisora 1-6 */
+.teclas{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:10px}
+.tecla{min-width:0;padding:6px 2px 5px;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:transform .1s}
+.tecla b{font-size:16px}
+.tecla span{font-family:var(--f-body);font-weight:600;font-size:10.5px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tecla.vacia{opacity:.65}
+.tecla.on{transform:translateY(2px);box-shadow:inset 0 3px 7px rgba(0,0,0,.5);outline:2px solid var(--dial);outline-offset:1px}
+/* Botones de abajo con dibujo, todos del mismo tamaño */
+.player .row2{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px}
+.player .row2 > button{min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 4px;white-space:nowrap;overflow:hidden}
+.player .row2 > button[data-ico]::before{content:attr(data-ico);font-size:14px;line-height:1}
+.player .row2 .recinfo{grid-column:1/-1}
+/* Ajustes en apartados plegables */
+.ajgrid{grid-template-columns:minmax(0,1fr)}
+details.aj-grupo .fila{min-width:0}
+details.aj-grupo .fila > *{min-width:0}
+details.aj-grupo{min-width:0;max-width:100%;border:1.5px solid var(--line);border-radius:10px;padding:0 12px;background:var(--bg)}
+details.aj-grupo[open]{padding-bottom:12px}
+details.aj-grupo > summary{cursor:pointer;list-style:none;padding:12px 0;font-weight:700;font-size:17px;color:var(--dial);display:flex;justify-content:space-between;align-items:center}
+details.aj-grupo > summary::-webkit-details-marker{display:none}
+details.aj-grupo > summary::after{content:"▸";transition:transform .2s}
+details.aj-grupo[open] > summary::after{transform:rotate(90deg)}
+details.aj-grupo > :not(summary){margin-top:10px}
+/* Ojo mágico (solo en el modelo Gran Gala) */
+.ojo{display:none}
+/* --- Gran Gala años 50: mueble marfil con oro, rejilla cromada, ojo mágico y teclas de piano --- */
+html[data-modelo="gala"] header.cab{margin:6px 6px 0;border-radius:22px 22px 12px 12px;border:3px solid #b8954a;
+  background:linear-gradient(180deg,#f6eed9,#dccaa0);box-shadow:inset 0 0 0 4px #efe2c0,inset 0 0 0 6px #b8954a,0 6px 14px rgba(0,0,0,.35)}
+html[data-modelo="gala"] h1{font-family:Georgia,"Times New Roman",serif;font-style:italic;text-transform:none;letter-spacing:.02em}
+html[data-modelo="gala"] .tubes{position:relative;align-items:center;height:84px;margin:10px 6px 8px;border-radius:12px;border:3px solid #b8954a;
+  background:repeating-linear-gradient(180deg,#eef0f2 0 3px,#a9b0b8 3px 5px,#3a312a 5px 9px);box-shadow:inset 0 2px 8px rgba(0,0,0,.45)}
+html[data-modelo="gala"] .tube{display:none}
+html[data-modelo="gala"] .ojo{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;border:5px solid #d3d8dd;
+  background:conic-gradient(from calc(var(--abre,1) * -90deg),#0a2a12 0deg calc(var(--abre,1) * 180deg),#5dff8e calc(var(--abre,1) * 180deg) 360deg);
+  box-shadow:0 0 16px rgba(93,255,142,.6),0 2px 4px rgba(0,0,0,.5);transition:filter .6s}
+html[data-modelo="gala"] .ojo i{width:38%;height:38%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#555,#000 70%)}
+html[data-modelo="gala"] .ojo.ojo-off{filter:grayscale(1) brightness(.45);box-shadow:0 2px 4px rgba(0,0,0,.5)}
+html[data-modelo="gala"] .dial{background:linear-gradient(180deg,#fdf8ea,#eadcb8);border:2px solid #b8954a;box-shadow:inset 0 1px 4px rgba(0,0,0,.25)}
+html[data-modelo="gala"] .dial .n{color:#5a3d12}
+html[data-modelo="gala"] .dial::before{background:repeating-linear-gradient(90deg,#5a3d12 0 1px,transparent 1px 10px)}
+html[data-modelo="gala"] .tecla{background:linear-gradient(180deg,#fffdf6,#efe6cf 70%,#d6c9a8);color:#2a2014;border:1px solid #b8a77f;border-radius:3px 3px 9px 9px;box-shadow:0 4px 0 #b8a77f,0 6px 8px rgba(0,0,0,.3)}
+html[data-modelo="gala"] .tecla.on{transform:translateY(4px);box-shadow:0 0 0 #b8a77f,inset 0 2px 5px rgba(0,0,0,.3)}
+html[data-modelo="gala"] .seek,html[data-modelo="gala"] .mbtn:not(.tecla){background:radial-gradient(circle at 35% 30%,#fff6d8,#d9b25e 55%,#8a6a24);color:#2a2014}
+
 #pPaseo.activo{border-color:var(--dial);color:var(--dial)}
 .not-cab .leer{margin-left:auto;margin-right:8px}
 .mesa-hora{cursor:pointer}
@@ -534,7 +579,7 @@ body.noche #nocheVelo{opacity:.5}
       </div>
     </div>
     <div class="tubes" aria-hidden="true">
-      <span class="tube"><i></i></span><span class="tube big"><i></i></span><span class="tube"><i></i></span><span class="tube big"><i></i></span><span class="tube"><i></i></span>
+      <span class="tube"><i></i></span><span class="tube big"><i></i></span><span class="ojo" id="ojo"><i></i></span><span class="tube"><i></i></span><span class="tube big"><i></i></span><span class="tube"><i></i></span>
     </div>
     <div class="dial" aria-hidden="true">
       <span class="n" style="left:6%">88</span><span class="n" style="left:23.6%">92</span>
@@ -543,6 +588,7 @@ body.noche #nocheVelo{opacity:.5}
       <div id="marks"></div>
       <div class="needle" id="needle"></div>
     </div>
+    <div class="teclas" id="teclas" aria-label="Teclas de emisora"></div>
     <div class="face">
       <div class="lcd" aria-live="polite">
         <div class="lcd-top"><span class="ind on">FM</span><span class="ind" id="iRDS">RDS</span><span class="ind" id="iST">ST</span><span class="ind recl" id="iREC">REC</span><span class="ind" id="iALM">ALM</span><span class="sig" id="iSig" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
@@ -769,19 +815,19 @@ body.noche #nocheVelo{opacity:.5}
     </button>
   </div>
   <div class="wrap row2">
-    <button class="timer" id="pTimer" type="button" aria-label="Temporizador para dormir">Dormir</button>
+    <button class="timer" id="pTimer" data-ico="⏾" type="button" aria-label="Temporizador para dormir">Dormir</button>
     <button class="rec" id="pRec" type="button"><span class="dot"></span><span id="pRecTxt">Grabar</span></button>
-    <button class="timer" id="pAzar" type="button" aria-label="Emisora al azar">Sorpresa</button>
-    <button class="timer" id="pNoche" type="button" aria-label="Modo noche">Noche</button>
-    <button class="timer" id="pMesa" type="button" aria-label="Modo mesilla">Mesilla</button>
-    <button class="timer" id="pEnviar" type="button" aria-label="Enviar emisora">Enviar</button>
-    <button class="timer" id="pMeteo" type="button" aria-label="Estación meteorológica">Tiempo</button>
-    <button class="timer" id="pSubs" type="button" aria-label="Subtítulos traducidos">Subtítulos</button>
-    <button class="timer" id="pSencillo" type="button" aria-label="Modo sencillo">Sencillo</button>
-    <button class="timer" id="pPaseo" type="button" aria-label="Contador del paseo">Paseo</button>
-    <button class="timer" id="pVoz" type="button" aria-pressed="false" aria-label="Voz clara">Voz clara</button>
-    <button class="timer" id="pMorse" type="button" aria-label="Practicar Morse">Morse</button>
-    <button class="timer" id="pEstad" type="button" aria-label="Lo que más escuchas">Mis horas</button>
+    <button class="timer" id="pAzar" data-ico="🎲" type="button" aria-label="Emisora al azar">Sorpresa</button>
+    <button class="timer" id="pNoche" data-ico="🌙" type="button" aria-label="Modo noche">Noche</button>
+    <button class="timer" id="pMesa" data-ico="🛏" type="button" aria-label="Modo mesilla">Mesilla</button>
+    <button class="timer" id="pEnviar" data-ico="📤" type="button" aria-label="Enviar emisora">Enviar</button>
+    <button class="timer" id="pMeteo" data-ico="⛅" type="button" aria-label="Estación meteorológica">Tiempo</button>
+    <button class="timer" id="pSubs" data-ico="💬" type="button" aria-label="Subtítulos traducidos">Subtítulos</button>
+    <button class="timer" id="pSencillo" data-ico="🔲" type="button" aria-label="Modo sencillo">Sencillo</button>
+    <button class="timer" id="pPaseo" data-ico="🚶" type="button" aria-label="Contador del paseo">Paseo</button>
+    <button class="timer" id="pVoz" data-ico="🗣" type="button" aria-pressed="false" aria-label="Voz clara">Voz clara</button>
+    <button class="timer" id="pMorse" data-ico="·−" type="button" aria-label="Practicar Morse">Morse</button>
+    <button class="timer" id="pEstad" data-ico="📊" type="button" aria-label="Lo que más escuchas">Mis horas</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -1977,7 +2023,7 @@ function legible(color, fondos, minimo){
   }
   return meta;
 }
-const MODELOS = [['clasica', 'Clásica de lámparas'], ['capilla', 'Capilla años 30'], ['transistor', 'Transistor años 60'], ['radiocasete', 'Radiocasete años 80'], ['moderna', 'Moderna']];
+const MODELOS = [['clasica', 'Clásica de lámparas'], ['capilla', 'Capilla años 30'], ['transistor', 'Transistor años 60'], ['radiocasete', 'Radiocasete años 80'], ['moderna', 'Moderna'], ['gala', 'Gran Gala años 50']];
 let modelo = document.documentElement.dataset.modelo || 'clasica';
 function ponPiel(i){
   const p = PIELES[i] || PIELES[0];
@@ -1985,6 +2031,7 @@ function ponPiel(i){
   // algunos modelos tienen el mueble de su propio material
   if (modelo === 'radiocasete'){ v['--cab1'] = '#e4e7eb'; v['--cab2'] = '#9aa1a9'; }
   if (modelo === 'moderna'){ v['--cab1'] = v['--panel']; v['--cab2'] = v['--panel']; }
+  if (modelo === 'gala'){ v['--cab1'] = '#f3e9d2'; v['--cab2'] = '#dccaa0'; }
   const fondos = [v['--bg'], v['--panel']];
   v['--text']  = legible(v['--text'], fondos, 12);                // letras principales: lo más marcadas posible
   v['--muted'] = legible(v['--muted'], fondos, 7.5);               // letras secundarias y botones pequeños, también bien marcadas
@@ -2138,7 +2185,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '51', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '52', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4664,6 +4711,84 @@ function ajustesExtra2(g, casilla){
     g.append(casilla('ajCopiaAuto', 'Guardar sola una copia en el NAS cada día', ajustes.copiaAuto !== false, v => { ajustes.copiaAuto = v; guardaAjustes(); }));
   }
 }
+
+
+/* ================= Versión 52: la radio «perfecta» ================= */
+
+/* ---------- Teclas de emisora 1 a 6, como las radios de antes ---------- */
+// Tocar = poner la emisora. Mantener pulsada (1 segundo) = guardar ahí la que suena.
+let teclas = [];
+try { teclas = JSON.parse(localStorage.getItem('radio.teclas')) || []; } catch(e){}
+const guardaTeclas = () => { try { localStorage.setItem('radio.teclas', JSON.stringify(teclas)); } catch(e){} };
+function nombreCorto(s){ const n = (s._label || s.name || '').trim(); return n.length > 11 ? n.slice(0, 10) + '…' : n; }
+function pintaTeclas(){
+  const caja = $('teclas'); caja.replaceChildren();
+  for (let i = 0; i < 6; i++){
+    const s = teclas[i];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'mbtn tecla';
+    b.classList.toggle('vacia', !s);
+    b.classList.toggle('on', !!(s && cur && cur.stationuuid === s.stationuuid && !playingRec));
+    b.innerHTML = `<b>${i + 1}</b><span></span>`;
+    b.querySelector('span').textContent = s ? nombreCorto(s) : '—';
+    b.setAttribute('aria-label', s ? `Tecla ${i + 1}: ${(s._label || s.name).trim()}` : `Tecla ${i + 1} vacía`);
+    let t = 0, larga = false;
+    const suelta = () => clearTimeout(t);
+    b.addEventListener('pointerdown', () => {
+      larga = false;
+      t = setTimeout(() => {
+        larga = true;
+        if (!cur || playingRec){ mostrarAviso('Pon primero una emisora y luego mantén pulsada la tecla', null, 5); return; }
+        teclas[i] = slim(cur); guardaTeclas(); pintaTeclas();
+        try { navigator.vibrate && navigator.vibrate(60); } catch(e){}
+        mostrarAviso(`Guardada en la tecla ${i + 1}: ${(cur._label || cur.name).trim()}`, null, 4);
+      }, 900);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, suelta));
+    b.addEventListener('contextmenu', e => e.preventDefault());
+    b.onclick = () => {
+      if (larga) return;
+      if (!s){ mostrarAviso(`Tecla ${i + 1} vacía: pon una emisora y mantén pulsada la tecla para guardarla`, null, 6); return; }
+      ensureAudioCtx(); play(s);
+    };
+    caja.append(b);
+  }
+}
+pintaTeclas();
+setInterval(() => document.querySelectorAll('#teclas .tecla').forEach((b, i) => b.classList.toggle('on', !!(teclas[i] && cur && cur.stationuuid === teclas[i].stationuuid && !playingRec && !audio.paused))), 2000);
+
+/* ---------- Ojo mágico (modelo Gran Gala): se cierra cuando la emisora está bien sintonizada ---------- */
+const ojo = $('ojo');
+(function ojoLoop(){
+  requestAnimationFrame(ojoLoop);
+  if (document.documentElement.dataset.modelo !== 'gala') return;
+  const on = cab.classList.contains('on');
+  const abre = on ? Math.min(1, .08 + desafino * .8 + Math.random() * .03) : 1;
+  ojo.style.setProperty('--abre', abre.toFixed(3));
+  ojo.classList.toggle('ojo-off', !on);
+})();
+
+/* ---------- Ajustes en apartados plegables, para no tener que bajar tanto ---------- */
+function plegarAjustes(raiz){
+  const g = raiz.querySelector('.ajgrid'); if (!g) return;
+  let abierto = ''; try { abierto = localStorage.getItem('radio.ajAbierto') || ''; } catch(e){}
+  const hijos = [...g.children];
+  const grupos = []; let actual = {tit: '📰 Noticias, tiempo y sonido', els: []};
+  hijos.forEach(el => {
+    if (el.classList.contains('aj-tit')){ grupos.push(actual); actual = {tit: el.textContent, els: []}; el.remove(); }
+    else actual.els.push(el);
+  });
+  grupos.push(actual);
+  g.replaceChildren();
+  grupos.filter(x => x.els.length).forEach((x, i) => {
+    const det = document.createElement('details'); det.className = 'aj-grupo';
+    const sum = document.createElement('summary'); sum.textContent = x.tit;
+    det.append(sum, ...x.els);
+    det.open = abierto ? abierto === x.tit : i === 0;
+    det.addEventListener('toggle', () => { if (det.open){ try { localStorage.setItem('radio.ajAbierto', x.tit); } catch(e){} } });
+    g.append(det);
+  });
+}
+$('ajBtn').onclick = () => { const p = panelOpciones(); plegarAjustes(p); $('ajOut').replaceChildren(p); $('ajPan').hidden = false; };
 
 /* ---------- Arranque ---------- */
 try {
