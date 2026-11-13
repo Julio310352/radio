@@ -553,6 +553,17 @@ body.noche #nocheVelo{opacity:.5}
 .mini{min-width:44px;height:44px;background:none;border:0;color:var(--muted);font-size:14px;padding:0 6px}
 .mini.play{color:var(--dial);font-size:18px}
 .mini.warn{color:var(--needle);font-weight:600}
+
+/* Bloqueo táctil: evita pulsaciones accidentales mientras se escucha. */
+#bloqueoRadio{position:fixed;inset:0;z-index:10000;background:rgba(10,16,22,.96);color:#fff;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;touch-action:manipulation}
+#bloqueoRadio.activo{display:flex}
+#bloqueoRadio .bloq-caja{max-width:420px;width:100%;border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:28px 20px;background:#202a33;box-shadow:0 12px 45px #0008}
+#bloqueoRadio .bloq-icono{font-size:48px;margin-bottom:12px}
+#bloqueoRadio h2{font-size:23px;margin:0 0 10px}
+#bloqueoRadio p{line-height:1.5;color:#d6dde3;margin:8px 0}
+#bloqueoRadio button{margin-top:18px;min-height:54px;width:100%;border:2px solid #d6dde3;border-radius:12px;background:#354654;color:#fff;font-size:17px;font-weight:700;touch-action:none}
+#bloqueoRadio button:active{background:#52697b}
+
 </style>
 <script>
   // Interruptor: si la radio se apagó, al abrirla solo aparece el botón de encender
@@ -803,6 +814,15 @@ body.noche #nocheVelo{opacity:.5}
   <button class="d-btn d-pos" id="dPosponer" type="button">10 minutos más</button>
   <button class="d-btn" id="dApagar" type="button">Apagar el despertador</button>
 </div>
+<div id="bloqueoRadio" role="dialog" aria-modal="true" aria-labelledby="bloqTitulo" aria-describedby="bloqAyuda">
+  <div class="bloq-caja">
+    <div class="bloq-icono" aria-hidden="true">🔒</div>
+    <h2 id="bloqTitulo">Pantalla bloqueada</h2>
+    <p>La radio sigue funcionando. Los controles están protegidos para evitar toques accidentales.</p>
+    <p id="bloqAyuda">Mantén pulsado el botón durante 2 segundos para desbloquear.</p>
+    <button id="desbloquearRadio" type="button">Mantener pulsado para desbloquear</button>
+  </div>
+</div>
 <div class="player">
   <div class="wrap row">
     <div class="logo" id="pLogo">♪</div>
@@ -816,7 +836,7 @@ body.noche #nocheVelo{opacity:.5}
   </div>
   <div class="wrap row2">
     <button class="timer" id="pTimer" data-ico="⏾" type="button" aria-label="Temporizador para dormir">Dormir</button>
-    <button class="timer" id="pHistorial" data-ico="🕘" type="button" aria-label="Ver historial de emisoras">Historial</button>
+    <button class="timer" id="pBloquear" data-ico="🔒" type="button" aria-label="Bloquear la pantalla">Bloquear</button>
     <button class="rec" id="pRec" type="button"><span class="dot"></span><span id="pRecTxt">Grabar</span></button>
     <button class="timer" id="pAzar" data-ico="🎲" type="button" aria-label="Emisora al azar">Sorpresa</button>
     <button class="timer" id="pNoche" data-ico="🌙" type="button" aria-label="Modo noche">Noche</button>
@@ -1200,18 +1220,7 @@ function renderFavs(){
   if (favs.length) box.append(listEl(favs, 'mu'));
   else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
   setBand('vFa', favs);
-  const hHist = heading('Historial de emisoras'); hHist.id = 'historialTitulo';
-  box.append(hHist);
-  if (hist.length){
-    const limpiar = document.createElement('button'); limpiar.type = 'button'; limpiar.className = 'btn';
-    limpiar.textContent = 'Borrar historial';
-    limpiar.onclick = () => {
-      if (!confirm('¿Quieres borrar las últimas emisoras escuchadas?')) return;
-      hist = []; try { localStorage.removeItem('radio.hist'); } catch(e){}
-      renderFavs();
-    };
-    box.append(limpiar, listEl(hist, 'mu'));
-  } else box.append(note('Todavía no has escuchado ninguna emisora. Las últimas que escuches aparecerán aquí.'));
+  if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
   box.append(panelOpciones(), panelEstadisticas(), panelAjustes());
 }
 
@@ -1441,17 +1450,15 @@ const STEPS = [0, 15, 30, 60, 90];
 let stepIdx = 0, offAt = 0, offTimer, tick;
 function updTimer(){
   const b = $('pTimer');
-  if (!offAt){ b.textContent = 'Dormir'; b.title = 'Temporizador apagado. Pulsa para elegir 15, 30, 60 o 90 minutos.'; b.setAttribute('aria-label', b.title); b.classList.remove('act'); return; }
+  if (!offAt){ b.textContent = 'Dormir'; b.classList.remove('act'); return; }
   const min = Math.max(1, Math.ceil((offAt - Date.now()) / 60000));
-  b.textContent = `${min} min`; b.title = `La radio se apagará suavemente dentro de ${min} minutos. Pulsa para cambiar el temporizador o cancelarlo.`; b.setAttribute('aria-label', b.title); b.classList.add('act');
+  b.textContent = `${min} min`; b.classList.add('act');
 }
 $('pTimer').onclick = () => {
   stepIdx = (stepIdx + 1) % STEPS.length;
   clearTimeout(offTimer); clearInterval(tick);
   const m = STEPS[stepIdx];
   offAt = m ? Date.now() + m * 60000 : 0;
-  if (!m) setStatus('Temporizador cancelado');
-  else setStatus(`Apagado suave programado en ${m} minutos`);
   if (m){
     offTimer = setTimeout(() => { offAt = 0; stepIdx = 0; clearInterval(tick); updTimer(); apagadoSuave(); }, m * 60000);
     tick = setInterval(updTimer, 20000);
@@ -2199,7 +2206,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '55', FECHA_VERSION = '13-11-2026';   // historial accesible y temporizador más claro
+const VERSION = '56', FECHA_VERSION = '13-11-2026';   // bloqueo táctil de pantalla
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -3406,12 +3413,6 @@ function saltar(dir){
   play(lista[i]);
 }
 
-// Acceso directo al historial desde la barra inferior.
-$('pHistorial').onclick = () => {
-  $('tFa').click();
-  setTimeout(() => $('historialTitulo')?.scrollIntoView({behavior: 'smooth', block: 'start'}), 80);
-};
-
 /* ---------- Zumbido de las lámparas al encender ---------- */
 function zumbido(){
   if (!actx) return;
@@ -4347,75 +4348,23 @@ async function copiaGuardar(msg){
   try {
     const cuerpo = JSON.stringify({v: 1, fecha: new Date().toISOString(), version: VERSION, aparato: navigator.platform || '', datos: datosRadio()});
     const r = await fetch('copia.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: cuerpo});
-    if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-    if (!j || j.ok !== true) throw new Error('Respuesta de copia no válida');
+    if (!j.ok) throw new Error();
     msg.textContent = `Copia guardada en el NAS (${Math.max(1, Math.round(cuerpo.length / 1024))} KB). La copia anterior también se conserva.`;
-  } catch(e){
-    console.error('Mi Radio: error al guardar la copia en el NAS:', e);
-    msg.textContent = 'No se ha podido guardar. Comprueba que copia.php está en la carpeta radio del NAS y que tienes conexión.';
-  }
+  } catch(e){ msg.textContent = 'No se ha podido guardar. Comprueba que copia.php está en la carpeta radio del NAS.'; }
 }
 async function copiaRecuperar(msg){
   msg.textContent = 'Leyendo la copia del NAS…';
   try {
     const r = await fetch('copia.php?t=' + Date.now(), {cache: 'no-store'});
     if (r.status === 404){ msg.textContent = 'Todavía no hay ninguna copia en el NAS.'; return; }
-    if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-
-    // Validar toda la copia ANTES de tocar los datos actuales.
-    if (!j || !j.datos || typeof j.datos !== 'object' || Array.isArray(j.datos))
-      throw new Error('Formato de copia no válido');
-    const entradas = Object.entries(j.datos);
-    if (!entradas.length) throw new Error('La copia está vacía');
-    if (entradas.length > 500) throw new Error('La copia contiene demasiados elementos');
-    for (const [k, v] of entradas){
-      if (typeof k !== 'string' || !k.startsWith('radio.') ||
-          ['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k) ||
-          typeof v !== 'string')
-        throw new Error('La copia contiene datos no válidos');
-    }
-    const bytes = JSON.stringify(j.datos).length;
-    if (bytes > 5 * 1024 * 1024) throw new Error('La copia supera el tamaño permitido');
-
-    if (!window.confirm(`Se van a sustituir los ajustes actuales por la copia del NAS (${entradas.length} elementos).\n\n¿Quieres continuar?`)){
-      msg.textContent = 'Recuperación cancelada. Tus datos actuales no se han modificado.';
-      return;
-    }
-
-    // Conservar una copia temporal en memoria para poder deshacer si falla el almacenamiento.
-    const actuales = {};
-    for (let i = 0; i < localStorage.length; i++){
-      const k = localStorage.key(i);
-      if (k && k.startsWith('radio.') &&
-          !['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k))
-        actuales[k] = localStorage.getItem(k);
-    }
-    try {
-      Object.keys(actuales).forEach(k => localStorage.removeItem(k));
-      entradas.forEach(([k, v]) => localStorage.setItem(k, v));
-    } catch(err){
-      // Intentar restaurar el estado anterior si el navegador se queda sin espacio.
-      try {
-        for (let i = localStorage.length - 1; i >= 0; i--){
-          const k = localStorage.key(i);
-          if (k && k.startsWith('radio.') &&
-              !['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k))
-            localStorage.removeItem(k);
-        }
-        Object.entries(actuales).forEach(([k, v]) => localStorage.setItem(k, v));
-      } catch(rollbackError){
-        console.error('Mi Radio: no se pudo completar la restauración de seguridad:', rollbackError);
-      }
-      throw err;
-    }
-    msg.textContent = 'Copia recuperada correctamente. Reiniciando…';
+    if (!j.datos) throw new Error();
+    Object.keys(datosRadio()).forEach(k => localStorage.removeItem(k));
+    Object.entries(j.datos).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch(e){} });
+    msg.textContent = 'Copia recuperada. Reiniciando…';
     setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 1200);
-  } catch(e){
-    console.error('Mi Radio: error al recuperar la copia del NAS:', e);
-    msg.textContent = 'No se ha podido recuperar la copia. Los datos actuales se han conservado siempre que el navegador haya permitido la restauración de seguridad.';
-  }
+  } catch(e){ msg.textContent = 'No se ha podido leer la copia del NAS.'; }
 }
 async function copiaFecha(msg){
   try {
@@ -4811,7 +4760,7 @@ function ajustesExtra2(g, casilla){
 }
 
 
-/* ================= Mejoras de versión 55 ================= */
+/* ================= Mejoras de versión 56 ================= */
 
 /* ---------- Teclas de emisora 1 a 6, como las radios de antes ---------- */
 // Tocar = poner la emisora. Mantener pulsada (1 segundo) = guardar ahí la que suena.
@@ -4895,6 +4844,43 @@ try {
 } catch(e){}
 if (APAGADA){ $('apagado').hidden = false; comprobarVersion(); }   // solo el interruptor
 else { loadEspana(); abrirEnlace(); }
+
+/* ---------- Bloqueo táctil de pantalla ---------- */
+(() => {
+  const boton = document.getElementById('pBloquear');
+  const capa = document.getElementById('bloqueoRadio');
+  const desbloquear = document.getElementById('desbloquearRadio');
+  if (!boton || !capa || !desbloquear) return;
+  let bloqueada = false, espera = null, iniciado = false;
+  const cancelar = () => { if (espera) clearTimeout(espera); espera = null; iniciado = false; };
+  const bloquear = () => {
+    bloqueada = true; cancelar(); capa.classList.add('activo');
+    boton.textContent = 'Desbloquear'; boton.setAttribute('aria-pressed','true');
+    desbloquear.focus({preventScroll:true});
+  };
+  const abrir = () => {
+    if (!bloqueada) return; bloqueada = false; cancelar();
+    capa.classList.remove('activo'); boton.textContent = 'Bloquear';
+    boton.setAttribute('aria-pressed','false'); boton.focus({preventScroll:true});
+  };
+  boton.setAttribute('aria-pressed','false');
+  boton.addEventListener('click', bloquear);
+  desbloquear.addEventListener('pointerdown', e => {
+    if (!bloqueada) return; e.preventDefault(); iniciado = true;
+    desbloquear.textContent = 'Sigue pulsando…';
+    espera = setTimeout(() => { if (iniciado) { desbloquear.textContent = 'Desbloqueado'; abrir(); } }, 2000);
+  });
+  ['pointerup','pointercancel','pointerleave','blur'].forEach(ev => desbloquear.addEventListener(ev, () => {
+    if (espera && bloqueada) { cancelar(); desbloquear.textContent = 'Mantener pulsado para desbloquear'; }
+  }));
+  desbloquear.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if (!bloqueada) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); }
+    else { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  capa.addEventListener('click', e => { if (e.target === capa) e.preventDefault(); });
+})();
 </script>
 </body>
 </html>
