@@ -2185,7 +2185,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '53', FECHA_VERSION = '11-11-2026';   // cambiar en cada versión nueva
+const VERSION = '54', FECHA_VERSION = '13-11-2026';   // versión mejorada: validación y recuperación segura de copias
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4327,23 +4327,75 @@ async function copiaGuardar(msg){
   try {
     const cuerpo = JSON.stringify({v: 1, fecha: new Date().toISOString(), version: VERSION, aparato: navigator.platform || '', datos: datosRadio()});
     const r = await fetch('copia.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: cuerpo});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-    if (!j.ok) throw new Error();
+    if (!j || j.ok !== true) throw new Error('Respuesta de copia no válida');
     msg.textContent = `Copia guardada en el NAS (${Math.max(1, Math.round(cuerpo.length / 1024))} KB). La copia anterior también se conserva.`;
-  } catch(e){ msg.textContent = 'No se ha podido guardar. Comprueba que copia.php está en la carpeta radio del NAS.'; }
+  } catch(e){
+    console.error('Mi Radio: error al guardar la copia en el NAS:', e);
+    msg.textContent = 'No se ha podido guardar. Comprueba que copia.php está en la carpeta radio del NAS y que tienes conexión.';
+  }
 }
 async function copiaRecuperar(msg){
   msg.textContent = 'Leyendo la copia del NAS…';
   try {
     const r = await fetch('copia.php?t=' + Date.now(), {cache: 'no-store'});
     if (r.status === 404){ msg.textContent = 'Todavía no hay ninguna copia en el NAS.'; return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
-    if (!j.datos) throw new Error();
-    Object.keys(datosRadio()).forEach(k => localStorage.removeItem(k));
-    Object.entries(j.datos).forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch(e){} });
-    msg.textContent = 'Copia recuperada. Reiniciando…';
+
+    // Validar toda la copia ANTES de tocar los datos actuales.
+    if (!j || !j.datos || typeof j.datos !== 'object' || Array.isArray(j.datos))
+      throw new Error('Formato de copia no válido');
+    const entradas = Object.entries(j.datos);
+    if (!entradas.length) throw new Error('La copia está vacía');
+    if (entradas.length > 500) throw new Error('La copia contiene demasiados elementos');
+    for (const [k, v] of entradas){
+      if (typeof k !== 'string' || !k.startsWith('radio.') ||
+          ['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k) ||
+          typeof v !== 'string')
+        throw new Error('La copia contiene datos no válidos');
+    }
+    const bytes = JSON.stringify(j.datos).length;
+    if (bytes > 5 * 1024 * 1024) throw new Error('La copia supera el tamaño permitido');
+
+    if (!window.confirm(`Se van a sustituir los ajustes actuales por la copia del NAS (${entradas.length} elementos).\n\n¿Quieres continuar?`)){
+      msg.textContent = 'Recuperación cancelada. Tus datos actuales no se han modificado.';
+      return;
+    }
+
+    // Conservar una copia temporal en memoria para poder deshacer si falla el almacenamiento.
+    const actuales = {};
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (k && k.startsWith('radio.') &&
+          !['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k))
+        actuales[k] = localStorage.getItem(k);
+    }
+    try {
+      Object.keys(actuales).forEach(k => localStorage.removeItem(k));
+      entradas.forEach(([k, v]) => localStorage.setItem(k, v));
+    } catch(err){
+      // Intentar restaurar el estado anterior si el navegador se queda sin espacio.
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--){
+          const k = localStorage.key(i);
+          if (k && k.startsWith('radio.') &&
+              !['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k))
+            localStorage.removeItem(k);
+        }
+        Object.entries(actuales).forEach(([k, v]) => localStorage.setItem(k, v));
+      } catch(rollbackError){
+        console.error('Mi Radio: no se pudo completar la restauración de seguridad:', rollbackError);
+      }
+      throw err;
+    }
+    msg.textContent = 'Copia recuperada correctamente. Reiniciando…';
     setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 1200);
-  } catch(e){ msg.textContent = 'No se ha podido leer la copia del NAS.'; }
+  } catch(e){
+    console.error('Mi Radio: error al recuperar la copia del NAS:', e);
+    msg.textContent = 'No se ha podido recuperar la copia. Los datos actuales se han conservado siempre que el navegador haya permitido la restauración de seguridad.';
+  }
 }
 async function copiaFecha(msg){
   try {
@@ -4739,7 +4791,7 @@ function ajustesExtra2(g, casilla){
 }
 
 
-/* ================= Versión 52: la radio «perfecta» ================= */
+/* ================= Mejoras de versión 54 ================= */
 
 /* ---------- Teclas de emisora 1 a 6, como las radios de antes ---------- */
 // Tocar = poner la emisora. Mantener pulsada (1 segundo) = guardar ahí la que suena.
