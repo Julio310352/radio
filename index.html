@@ -464,6 +464,26 @@ html[data-modelo="gala"] .tecla{background:linear-gradient(180deg,#fffdf6,#efe6c
 html[data-modelo="gala"] .tecla.on{transform:translateY(4px);box-shadow:0 0 0 #b8a77f,inset 0 2px 5px rgba(0,0,0,.3)}
 html[data-modelo="gala"] .seek,html[data-modelo="gala"] .mbtn:not(.tecla){background:radial-gradient(circle at 35% 30%,#fff6d8,#d9b25e 55%,#8a6a24);color:#2a2014}
 
+/* Búsqueda avanzada y emisoras propias */
+.av-grid{display:grid;gap:10px;margin:10px 0 4px}
+.av-grid label,.prop-form label{display:flex;flex-direction:column;gap:4px;font-size:15px}
+.av-grid .field,.prop-form .field{width:100%}
+.prop-form{margin-top:10px}
+details.lista-em summary{font-size:16px}
+#cnOut a.st-main{color:var(--text);text-decoration:none}
+.cn-dia{list-style:none;margin:14px 0 4px;font-family:var(--f-display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--dial)}
+/* Tarjeta «Ahora suena» */
+.ahora{display:flex;align-items:center;gap:14px;width:100%;margin:12px 0 4px;padding:10px;text-align:left;cursor:pointer;
+  background:var(--lcd-bg);color:var(--lcd);border:1.5px solid var(--line);border-radius:14px;box-shadow:inset 0 0 18px rgba(0,0,0,.5);font-family:var(--f-body)}
+.ahora[hidden]{display:none}
+.ahora img{width:96px;height:96px;flex:none;border-radius:8px;object-fit:cover;box-shadow:0 3px 10px rgba(0,0,0,.6)}
+.ah-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ah-txt small{font-size:11px;letter-spacing:.16em;opacity:.8}
+.ah-txt b{font-size:20px;line-height:1.2;color:var(--lcd);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#ahArt{font-size:17px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ahDisco{font-size:13px;font-style:normal;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cnOut a.st-main .name{font-weight:600}
+#cnOut a.st-main .sub{color:var(--muted)}
 #pPaseo.activo{border-color:var(--dial);color:var(--dial)}
 .not-cab .leer{margin-left:auto;margin-right:8px}
 .mesa-hora{cursor:pointer}
@@ -553,28 +573,6 @@ body.noche #nocheVelo{opacity:.5}
 .mini{min-width:44px;height:44px;background:none;border:0;color:var(--muted);font-size:14px;padding:0 6px}
 .mini.play{color:var(--dial);font-size:18px}
 .mini.warn{color:var(--needle);font-weight:600}
-
-/* Bloqueo táctil: evita pulsaciones accidentales mientras se escucha. */
-#bloqueoRadio{position:fixed;inset:0;z-index:10000;background:rgba(10,16,22,.96);color:#fff;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;touch-action:manipulation}
-#bloqueoRadio.activo{display:flex}
-#bloqueoRadio .bloq-caja{max-width:420px;width:100%;border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:28px 20px;background:#202a33;box-shadow:0 12px 45px #0008}
-#bloqueoRadio .bloq-icono{font-size:48px;margin-bottom:12px}
-#bloqueoRadio h2{font-size:23px;margin:0 0 10px}
-#bloqueoRadio p{line-height:1.5;color:#d6dde3;margin:8px 0}
-#bloqueoRadio button{margin-top:18px;min-height:54px;width:100%;border:2px solid #d6dde3;border-radius:12px;background:#354654;color:#fff;font-size:17px;font-weight:700;touch-action:none}
-#bloqueoRadio button:active{background:#52697b}
-
-
-/* Herramientas añadidas en v58 */
-.panel{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025)}
-.panel>.field,.panel>input,.panel>select{display:block;width:100%;margin:8px 0;padding:11px;border:1px solid var(--line);border-radius:8px;background:var(--lcd-bg)}
-.panel>.btn{margin:6px 6px 6px 0}
-.checkline{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--line)}
-.checkline input{width:20px;height:20px}
-.chartrow{display:grid;grid-template-columns:minmax(90px,1fr) minmax(60px,2fr) auto;gap:9px;align-items:center;margin:9px 0;font-size:13px}
-.chartbar{height:12px;border-radius:8px;background:var(--dial);min-width:3px;box-shadow:0 0 8px color-mix(in srgb,var(--dial),transparent 65%)}
-.chartrow small{color:var(--muted);white-space:nowrap}
-
 </style>
 <script>
   // Interruptor: si la radio se apagó, al abrirla solo aparece el botón de encender
@@ -657,6 +655,10 @@ body.noche #nocheVelo{opacity:.5}
         </div>
       </div>
     </div>
+    <button class="ahora" id="ahora" type="button" hidden aria-label="Ahora suena: ver las últimas canciones">
+      <img id="ahImg" alt="" hidden>
+      <span class="ah-txt"><small>AHORA SUENA</small><b id="ahTit"></b><span id="ahArt"></span><em id="ahDisco"></em></span>
+    </button>
     <div class="vus" id="vus" aria-hidden="true"><canvas id="vuL"></canvas><canvas id="vuR"></canvas></div>
     <div class="placa" id="placa" role="note" aria-label="Dedicatoria">
       <div class="placa-foto" id="marcoFoto" hidden>
@@ -805,6 +807,10 @@ body.noche #nocheVelo{opacity:.5}
   <div class="mo-btns"><button class="btn" id="moMenos" type="button">− Más lento</button><span id="moVel"></span><button class="btn" id="moMas" type="button">＋ Más rápido</button></div>
   <p class="mt-sub" id="moPunt"></p>
 </div>
+<div class="noticias ajustesPan" id="cnPan" hidden role="dialog" aria-label="Últimas canciones">
+  <div class="not-cab"><h2>🎵 Últimas canciones</h2><button class="d-btn not-cerrar" id="cnCerrar" type="button">Cerrar</button></div>
+  <div id="cnOut"></div>
+</div>
 <div class="noticias ajustesPan" id="estadPan" hidden role="dialog" aria-label="Lo que más escuchas">
   <div class="not-cab"><h2>📊 Mis horas de radio</h2><button class="d-btn not-cerrar" id="esCerrar" type="button">Cerrar</button></div>
   <div id="estOut"></div>
@@ -825,15 +831,6 @@ body.noche #nocheVelo{opacity:.5}
   <button class="d-btn d-pos" id="dPosponer" type="button">10 minutos más</button>
   <button class="d-btn" id="dApagar" type="button">Apagar el despertador</button>
 </div>
-<div id="bloqueoRadio" role="dialog" aria-modal="true" aria-labelledby="bloqTitulo" aria-describedby="bloqAyuda">
-  <div class="bloq-caja">
-    <div class="bloq-icono" aria-hidden="true">🔒</div>
-    <h2 id="bloqTitulo">Pantalla bloqueada</h2>
-    <p>La radio sigue funcionando. Los controles están protegidos para evitar toques accidentales.</p>
-    <p id="bloqAyuda">Mantén pulsado el botón durante 2 segundos para desbloquear.</p>
-    <button id="desbloquearRadio" type="button">Mantener pulsado para desbloquear</button>
-  </div>
-</div>
 <div class="player">
   <div class="wrap row">
     <div class="logo" id="pLogo">♪</div>
@@ -845,13 +842,8 @@ body.noche #nocheVelo{opacity:.5}
       <svg viewBox="0 0 24 24" id="pIcon"><path d="M8 5v14l11-7z"/></svg>
     </button>
   </div>
-  <div id="ahoraSuena" class="wrap" style="display:flex;align-items:center;gap:12px;padding:8px 14px;background:rgba(255,255,255,.06);border-radius:10px;margin-top:6px">
-    <img id="ahoraCaratula" alt="Carátula" hidden style="width:54px;height:54px;object-fit:cover;border-radius:7px">
-    <div style="min-width:0;flex:1"><div id="ahoraTitulo" style="font-weight:700">Ahora suena</div><div id="ahoraArtista" class="status">Elige una emisora para consultar sus metadatos</div><div id="ahoraEstado" class="status">La emisora debe facilitar información y permitir el acceso desde el navegador.</div></div>
-  </div>
   <div class="wrap row2">
     <button class="timer" id="pTimer" data-ico="⏾" type="button" aria-label="Temporizador para dormir">Dormir</button>
-    <button class="timer" id="pBloquear" data-ico="🔒" type="button" aria-label="Bloquear la pantalla">Bloquear</button>
     <button class="rec" id="pRec" type="button"><span class="dot"></span><span id="pRecTxt">Grabar</span></button>
     <button class="timer" id="pAzar" data-ico="🎲" type="button" aria-label="Emisora al azar">Sorpresa</button>
     <button class="timer" id="pNoche" data-ico="🌙" type="button" aria-label="Modo noche">Noche</button>
@@ -864,6 +856,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="timer" id="pVoz" data-ico="🗣" type="button" aria-pressed="false" aria-label="Voz clara">Voz clara</button>
     <button class="timer" id="pMorse" data-ico="·−" type="button" aria-label="Practicar Morse">Morse</button>
     <button class="timer" id="pEstad" data-ico="📊" type="button" aria-label="Lo que más escuchas">Mis horas</button>
+    <button class="timer" id="pCanc" data-ico="🎵" type="button" aria-label="Últimas canciones">Canciones</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -959,7 +952,7 @@ let favs = loadFavs();
 const isFav = id => favs.some(f => f.stationuuid === id);
 function slim(s){
   const {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label} = s;
-  return {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label,custom:!!s.custom,genre:s.genre||'',songTitle:s.songTitle||'',songArtist:s.songArtist||''};
+  return {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label};
 }
 function toggleFav(s){
   if (isFav(s.stationuuid)) favs = favs.filter(f => f.stationuuid !== s.stationuuid);
@@ -1227,90 +1220,16 @@ async function loadEspecial(kind, seq){
   }
 }
 
-/* ---------- Herramientas nuevas v58 ---------- */
-const RADIO_LISTAS_KEY='radio.favlistas', RADIO_CANCIONES_KEY='radio.canciones', RADIO_BACKUP_KEY='radio.autoBackup';
-function cargaJSON(k,def){try{return JSON.parse(localStorage.getItem(k))??def}catch(_){return def}}
-function guardaJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(_){return false}}
-let favListas=cargaJSON(RADIO_LISTAS_KEY,{}), cancionesLog=cargaJSON(RADIO_CANCIONES_KEY,[]);
-function panelEmisorasPropias(){
- const d=document.createElement('div'); d.className='panel'; d.append(heading('Mis emisoras · añadir y administrar'));
- d.append(note('Añade una emisora pegando la dirección de su emisión (URL). Se guardará en Favoritas.'));
- const nombre=document.createElement('input'); nombre.className='field'; nombre.placeholder='Nombre de la emisora';
- const url=document.createElement('input'); url.className='field'; url.type='url'; url.placeholder='https://… dirección del audio';
- const ciudad=document.createElement('input'); ciudad.className='field'; ciudad.placeholder='Ciudad o país (opcional)';
- const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent='Añadir emisora';
- const msg=document.createElement('p'); msg.className='note';
- b.onclick=()=>{const n=nombre.value.trim(),u=url.value.trim(); if(!n||!/^https?:\/\//i.test(u)){msg.textContent='Escribe un nombre y una dirección http:// o https:// válida.';return;}
- const st={stationuuid:'propia-'+Date.now(),name:n,_label:n,url:u,url_resolved:u,favicon:'',countrycode:'',state:ciudad.value.trim(),codec:'',bitrate:0,custom:true};
- if(favs.some(x=>x.stationuuid===st.stationuuid||x.url===u)){msg.textContent='Esa emisora ya está guardada.';return;} favs.push(slim(st));saveFavs();nombre.value='';url.value='';ciudad.value='';msg.textContent='Emisora añadida a Favoritas.';renderFavs();};
- d.append(nombre,url,ciudad,b,msg);
- const propias=favs.filter(x=>x.custom); if(propias.length){d.append(heading('Emisoras añadidas por ti')); propias.forEach(st=>{const r=document.createElement('div');r.className='estad';const t=document.createElement('span');t.textContent=st.name;const edit=document.createElement('button');edit.className='btn';edit.type='button';edit.textContent='Editar';edit.onclick=()=>{const nn=prompt('Nombre de la emisora:',st.name);if(nn===null)return;const uu=prompt('Dirección de emisión:',st.url);if(uu===null)return;if(!nn.trim()||!/^https?:\/\//i.test(uu.trim())){alert('Nombre o dirección no válidos.');return;}st.name=st._label=nn.trim();st.url=st.url_resolved=uu.trim();saveFavs();renderFavs();};const del=document.createElement('button');del.className='btn';del.type='button';del.textContent='Eliminar';del.onclick=()=>{if(confirm('¿Eliminar '+st.name+' de Favoritas?')){favs=favs.filter(x=>x.stationuuid!==st.stationuuid);saveFavs();renderFavs();}};r.append(t,edit,del);d.append(r);});}
- return d;
-}
-function panelListasFavoritas(){
- const d=document.createElement('div');d.className='panel';d.append(heading('Organizar favoritas en listas'));
- const sel=document.createElement('select');sel.className='field';sel.innerHTML='<option value="">Todas las favoritas</option>';
- Object.keys(favListas).sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.append(o)});
- const crear=document.createElement('button');crear.className='btn';crear.type='button';crear.textContent='Crear lista';crear.onclick=()=>{const n=prompt('Nombre de la nueva lista:');if(n&&n.trim()&&!favListas[n.trim()]){favListas[n.trim()]=[];guardaJSON(RADIO_LISTAS_KEY,favListas);renderFavs();}};
- const asignar=document.createElement('button');asignar.className='btn';asignar.type='button';asignar.textContent='Guardar favoritas seleccionadas en esta lista';
- const items=document.createElement('div');const pinta=()=>{items.replaceChildren();const list=sel.value;favs.forEach(st=>{const lab=document.createElement('label');lab.className='checkline';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!(list&&favListas[list]?.includes(st.stationuuid));cb.disabled=!list;cb.onchange=()=>{const a=favListas[list]||(favListas[list]=[]);favListas[list]=cb.checked?[...new Set([...a,st.stationuuid])]:a.filter(x=>x!==st.stationuuid);guardaJSON(RADIO_LISTAS_KEY,favListas)};lab.append(cb,document.createTextNode(st._label||st.name));items.append(lab);});};
- sel.onchange=pinta;asignar.onclick=()=>{if(!sel.value){alert('Primero elige o crea una lista.');return;}msg.textContent='Marca o desmarca emisoras para actualizar la lista.';};const msg=document.createElement('p');msg.className='note';d.append(sel,crear,asignar,items,msg);pinta();return d;
-}
-function panelDiarioCanciones(){
- const d=document.createElement('div');d.className='panel';d.append(heading('Información automática de canciones'));
- d.append(note('Para activar la lectura automática, la emisora debe ofrecer una dirección de metadatos JSON accesible desde este navegador (CORS). No basta con la dirección del audio.'));
- const metaUrl=document.createElement('input');metaUrl.className='field';metaUrl.type='url';metaUrl.placeholder='URL del endpoint JSON de metadatos de esta emisora';
- const metaSave=document.createElement('button');metaSave.className='btn';metaSave.type='button';metaSave.textContent='Guardar URL para la emisora actual';
- const metaTest=document.createElement('button');metaTest.className='btn';metaTest.type='button';metaTest.textContent='Probar metadatos';const metaMsg=document.createElement('p');metaMsg.className='note';
- if(cur)metaUrl.value=metaUrls()[cur.stationuuid]||'';
- metaSave.onclick=()=>{if(!cur){metaMsg.textContent='Primero selecciona una emisora.';return;}if(!/^https:\/\//i.test(metaUrl.value.trim())){metaMsg.textContent='Introduce una URL HTTPS válida.';return;}const all=metaUrls();all[cur.stationuuid]=metaUrl.value.trim();localStorage.setItem(META_URLS_KEY,JSON.stringify(all));iniciaMeta(cur);metaMsg.textContent='Dirección guardada para '+(cur.name||'la emisora')+'.';};
- metaTest.onclick=()=>{if(!cur){metaMsg.textContent='Primero selecciona una emisora.';return;}consultaMeta(cur).then(()=>metaMsg.textContent=$('ahoraEstado').textContent);};
- d.append(metaUrl,metaSave,metaTest,metaMsg);
- d.append(heading('Canciones escuchadas · diario personal'));
- d.append(note('La radio web no siempre permite leer automáticamente el título que envía la emisora. Puedes anotar aquí canción y artista cuando los conozcas.'));
- const titulo=document.createElement('input');titulo.className='field';titulo.placeholder='Título de la canción';const artista=document.createElement('input');artista.className='field';artista.placeholder='Artista';
- const b=document.createElement('button');b.className='btn';b.type='button';b.textContent='Guardar canción escuchada';const msg=document.createElement('p');msg.className='note';
- b.onclick=()=>{if(!titulo.value.trim()){msg.textContent='Escribe al menos el título.';return;}cancionesLog.unshift({titulo:titulo.value.trim(),artista:artista.value.trim(),emisora:cur?(cur._label||cur.name):'Sin emisora',fecha:new Date().toISOString()});cancionesLog=cancionesLog.slice(0,300);guardaJSON(RADIO_CANCIONES_KEY,cancionesLog);titulo.value='';artista.value='';msg.textContent='Canción guardada.';renderFavs();};
- d.append(titulo,artista,b,msg);if(cancionesLog.length){const ul=document.createElement('ul');ul.className='list';cancionesLog.slice(0,30).forEach(x=>{const li=document.createElement('li');li.className='st';const tx=document.createElement('div');tx.className='info';const n=document.createElement('div');n.className='name';n.textContent=x.titulo+(x.artista?' — '+x.artista:'');const sub=document.createElement('div');sub.className='sub';sub.textContent=x.emisora+' · '+new Date(x.fecha).toLocaleString('es-ES');tx.append(n,sub);li.append(tx);ul.append(li)});d.append(ul);const exp=document.createElement('button');exp.className='btn';exp.type='button';exp.textContent='Exportar diario de canciones (CSV)';exp.onclick=()=>descargaCSV('mi_radio_canciones.csv',['Título','Artista','Emisora','Fecha'],cancionesLog.map(x=>[x.titulo,x.artista,x.emisora,new Date(x.fecha).toLocaleString('es-ES')]));d.append(exp);}return d;
-}
-function descargaCSV(nombre,cab,filas){const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='\ufeff'+[cab,...filas].map(r=>r.map(esc).join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-function panelCopiasAutomaticas(){
- const d=document.createElement('div');d.className='panel';d.append(heading('Copia de seguridad automática'));
- const msg=document.createElement('p');msg.className='note';const b=document.createElement('button');b.className='btn';b.type='button';b.textContent='Descargar copia de seguridad ahora';
- const rest=document.createElement('input');rest.type='file';rest.accept='application/json,.json';rest.className='field';const rb=document.createElement('button');rb.className='btn';rb.type='button';rb.textContent='Restaurar copia seleccionada';
- const backup=()=>{const data={app:'Mi Radio',version:59,fecha:new Date().toISOString(),datos:{}};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('radio.'))data.datos[k]=localStorage.getItem(k);}guardaJSON(RADIO_BACKUP_KEY,data);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='Mi_Radio_copia_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);msg.textContent='Copia creada y descargada. También se conserva una copia local automática.';};
- b.onclick=backup;rb.onclick=()=>{const f=rest.files?.[0];if(!f){msg.textContent='Selecciona primero un archivo de copia.';return;}const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);if(data.app!=='Mi Radio'||!data.datos||typeof data.datos!=='object')throw Error();if(!confirm('Se restaurarán los ajustes de Mi Radio. ¿Continuar?'))return;Object.entries(data.datos).forEach(([k,v])=>{if(k.startsWith('radio.')&&typeof v==='string')localStorage.setItem(k,v)});msg.textContent='Copia restaurada. Recargando…';setTimeout(()=>location.reload(),900);}catch(_){msg.textContent='El archivo no es una copia válida de Mi Radio.';}};rd.readAsText(f);};
- const last=cargaJSON(RADIO_BACKUP_KEY,null);msg.textContent=last?.fecha?'Última copia local: '+new Date(last.fecha).toLocaleString('es-ES'):'Se guardará una copia local periódica mientras uses la aplicación.';d.append(b,rest,rb,msg);return d;
-}
-function panelGraficoEstadisticas(){const d=document.createElement('div');d.className='panel';d.append(heading('Gráfico de emisoras más escuchadas'));const datos=Object.values(estad).filter(e=>e.t>=60).sort((a,b)=>b.t-a).slice(0,8);if(!datos.length){d.append(note('Aún no hay suficientes minutos de escucha para mostrar el gráfico.'));return d;}const max=Math.max(...datos.map(x=>x.t));datos.forEach(e=>{const r=document.createElement('div');r.className='chartrow';const l=document.createElement('span');l.textContent=(e.s._label||e.s.name).slice(0,32);const bar=document.createElement('div');bar.className='chartbar';bar.style.width=Math.max(3,e.t/max*100)+'%';const v=document.createElement('small');v.textContent=fmtHoras(e.t);r.append(l,bar,v);d.append(r)});return d;}
-function panelGestorMejoras(){const d=document.createElement('div');d.append(panelEmisorasPropias(),panelListasFavoritas(),panelDiarioCanciones(),panelCopiasAutomaticas(),panelGraficoEstadisticas());return d;}
-// Copia local automática cada cinco minutos durante el uso; el archivo descargable se genera a petición.
-setInterval(()=>{try{const datos={app:'Mi Radio',version:59,fecha:new Date().toISOString(),datos:{}};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('radio.'))datos.datos[k]=localStorage.getItem(k);}localStorage.setItem(RADIO_BACKUP_KEY,JSON.stringify(datos));}catch(_){}},300000);
-
 /* ---------- Pestaña Favoritas ---------- */
 function renderFavs(){
   const box = $('faOut');
-  const consulta = box.querySelector('#faBuscar')?.value || '';
   box.replaceChildren();
   box.append(heading('Mis favoritas'));
-  const buscar = document.createElement('input');
-  buscar.type = 'search'; buscar.id = 'faBuscar'; buscar.className = 'field';
-  buscar.placeholder = 'Filtrar mis favoritas por nombre, país o ciudad';
-  buscar.setAttribute('aria-label', 'Filtrar emisoras favoritas');
-  buscar.value = consulta;
-  const listado = document.createElement('div'); listado.id = 'faLista';
-  const pinta = () => {
-    const q = sinAcentos(buscar.value.trim());
-    const filtradas = favs.filter(f => sinAcentos([f._label, f.name, f.country, f.state, f.countrycode].filter(Boolean).join(' ')).includes(q));
-    listado.replaceChildren();
-    if (filtradas.length) listado.append(listEl(filtradas, 'mu'));
-    else listado.append(note(favs.length ? 'No hay favoritas que coincidan con la búsqueda.' : 'Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
-  };
-  buscar.addEventListener('input', pinta);
-  box.append(buscar, listado); pinta();
+  if (favs.length) box.append(listEl(favs, 'mu'));
+  else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
   setBand('vFa', favs);
   if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
-  box.append(panelOpciones(), panelEstadisticas(), panelGraficoEstadisticas(), panelGestorMejoras(), panelAjustes());
+  box.append(panelOpciones(), panelEstadisticas(), panelAjustes());
 }
 
 /* ---------- Pestañas ---------- */
@@ -1354,48 +1273,9 @@ function showStation(s){
   document.querySelectorAll('.memfila').forEach((f, i) => f.classList.toggle('on', !!mems[i] && mems[i].stationuuid === s.stationuuid));
   showLCD(s);
 }
-// Metadatos musicales: funciona con emisoras que publiquen un endpoint JSON accesible por CORS.
-let metaTimer=null, metaStationId=null, metaUltimaClave='';
-const META_URLS_KEY='radio.metadataUrls';
-function metaUrls(){try{return JSON.parse(localStorage.getItem(META_URLS_KEY)||'{}')}catch(_){return {}}}
-function muestraAhora(titulo,artista='',imagen='',estado='Metadatos recibidos'){
-  $('ahoraTitulo').textContent=titulo||'Sin información de canción'; $('ahoraArtista').textContent=artista||'Artista no indicado'; $('ahoraEstado').textContent=estado;
-  const im=$('ahoraCaratula'); if(imagen){im.src=imagen;im.hidden=false;im.onerror=()=>{im.hidden=true}}else{im.hidden=true;im.removeAttribute('src')}
-}
-function extraeMeta(x){
-  if(typeof x==='string'){
-    const z=x.trim(); if(z.includes(',')){const a=z.split(',');return {titulo:a.slice(1).join(',').trim(),artista:a[0].trim()}}
-    return {titulo:z,artista:''};
-  }
-  if(!x||typeof x!=='object')return null;
-  if(Array.isArray(x))return extraeMeta(x[0]);
-  if(x.icestats?.source)return extraeMeta(x.icestats.source);
-  if(Array.isArray(x.source))return extraeMeta(x.source[0]);
-  const titulo=x.title||x.song||x.now_playing?.song?.title||x.nowplaying||x.streamtitle||x.songtitle||'';
-  const artista=x.artist||x.now_playing?.song?.artist||x.performer||'';
-  const imagen=x.artwork||x.cover||x.image||x.albumart||x.now_playing?.song?.art||'';
-  if(titulo)return {titulo:String(titulo),artista:String(artista||''),imagen:String(imagen||'')};
-  if(x.songtitle)return extraeMeta(String(x.songtitle));
-  return null;
-}
-async function consultaMeta(s){
-  const url=metaUrls()[s.stationuuid]; if(!url)return;
-  try{
-    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),7000);
-    const r=await fetch(url,{signal:ctl.signal,cache:'no-store'});clearTimeout(to);if(!r.ok)throw Error('HTTP '+r.status);
-    const tipo=(r.headers.get('content-type')||'').toLowerCase();let dato;
-    if(tipo.includes('json'))dato=await r.json();else {const txt=await r.text();const m=txt.match(/<body[^>]*>([\s\S]*?)<\/body>/i);dato=extraeMeta(m?m[1].replace(/<[^>]+>/g,' ').trim():txt.replace(/<[^>]+>/g,' ').trim());}
-    const m=extraeMeta(dato);if(!m?.titulo)throw Error('No se encontró título en el JSON');
-    const clave=s.stationuuid+'|'+m.titulo+'|'+m.artista;
-    muestraAhora(m.titulo,m.artista,m.imagen,'Información automática · '+new Date().toLocaleTimeString('es-ES'));
-    if(clave!==metaUltimaClave){metaUltimaClave=clave;cancionesLog.unshift({titulo:m.titulo,artista:m.artista,emisora:s._label||s.name,fecha:new Date().toISOString(),automatica:true,imagen:m.imagen||''});cancionesLog=cancionesLog.slice(0,500);guardaJSON(RADIO_CANCIONES_KEY,cancionesLog);}
-  }catch(e){$('ahoraEstado').textContent='No se han podido leer metadatos. Comprueba la URL, el formato JSON y el permiso CORS.';}
-}
-function iniciaMeta(s){clearInterval(metaTimer);metaStationId=s.stationuuid;metaUltimaClave='';const url=metaUrls()[s.stationuuid];muestraAhora('Buscando información…', '', '',url?'Consultando metadatos cada 20 segundos':'Esta emisora no tiene una URL de metadatos configurada');if(url){consultaMeta(s);metaTimer=setInterval(()=>{if(cur?.stationuuid===s.stationuuid&&!audio.paused)consultaMeta(s)},20000)}}
 function play(s, opt = {}){
   if (cur !== s && !opt.reintento){ probadas = new Set(); }
   cur = s;
-  iniciaMeta(s);
   quiereSonar = true;
   playingRec = false;
   silencio = false; audioNormal.loop = false;
@@ -2334,7 +2214,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '59', FECHA_VERSION = '13-11-2026';   // gestión de emisoras, listas, diario de canciones, copias y gráficos
+const VERSION = '55', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4793,25 +4673,7 @@ function pintaEstad(){
       out.append(f);
     });
   } else out.append(texto('mt-sub', 'Todavía no hay datos. Se van guardando mientras escuchas.'));
-  const acciones = document.createElement('div');
-  acciones.className = 'mo-btns';
-  const exportar = document.createElement('button');
-  exportar.type = 'button'; exportar.className = 'btn'; exportar.textContent = '⬇ Exportar estadísticas a CSV';
-  exportar.addEventListener('click', exportaEstadisticasCSV);
-  acciones.append(exportar);
-  out.append(acciones);
   $('estadPan').hidden = false;
-}
-function exportaEstadisticasCSV(){
-  const filas = [['Tipo', 'Fecha o emisora', 'Tiempo escuchado']];
-  Object.keys(diario).sort().forEach(d => filas.push(['Día', d, fmtHoras(diario[d] || 0)]));
-  Object.values(estad).sort((a,b) => b.t-a.t).forEach(e => filas.push(['Emisora', (e.s?._label || e.s?.name || 'Emisora').trim(), fmtHoras(e.t || 0)]));
-  if (filas.length === 1){ alert('Todavía no hay estadísticas para exportar.'); return; }
-  const csv = '\uFEFF' + filas.map(f => f.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
-  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'Mi_Radio_estadisticas.csv';
-  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $('pEstad').onclick = pintaEstad;
 $('esCerrar').onclick = () => { $('estadPan').hidden = true; };
@@ -4906,7 +4768,7 @@ function ajustesExtra2(g, casilla){
 }
 
 
-/* ================= Mejoras de versión 56 ================= */
+/* ================= Versión 52: la radio «perfecta» ================= */
 
 /* ---------- Teclas de emisora 1 a 6, como las radios de antes ---------- */
 // Tocar = poner la emisora. Mantener pulsada (1 segundo) = guardar ahí la que suena.
@@ -4983,6 +4845,333 @@ function plegarAjustes(raiz){
 }
 $('ajBtn').onclick = () => { const p = panelOpciones(); plegarAjustes(p); $('ajOut').replaceChildren(p); $('ajPan').hidden = false; };
 
+
+/* ================= Versión 54: listas de emisoras, emisoras propias, búsqueda avanzada y canciones ================= */
+
+/* ---------- Listas personales de emisoras («Para la mañana», «Deportes»…) ---------- */
+let listasEm = {};
+try { listasEm = JSON.parse(localStorage.getItem('radio.listasEm')) || {}; } catch(e){}
+const guardaListasEm = () => { try { localStorage.setItem('radio.listasEm', JSON.stringify(listasEm)); } catch(e){} };
+function enListaEm(n, s){ return (listasEm[n] || []).some(x => x.stationuuid === s.stationuuid); }
+function alternaListaEm(n, s){
+  const l = listasEm[n] || (listasEm[n] = []);
+  const i = l.findIndex(x => x.stationuuid === s.stationuuid);
+  if (i >= 0) l.splice(i, 1); else l.push(slim(s));
+  guardaListasEm();
+}
+// Al pulsar ＋ en una emisora sale un recuadro debajo con tus listas
+function eligeListaEm(li, s){
+  const sig = li.nextElementSibling;
+  if (sig && sig.classList.contains('mus-elige')){ sig.remove(); return; }
+  document.querySelectorAll('.mus-elige').forEach(x => x.remove());
+  const caja = document.createElement('li'); caja.className = 'mus-elige';
+  caja.append(Object.assign(document.createElement('span'), {textContent: 'Añadir a la lista: '}));
+  Object.keys(listasEm).forEach(n => {
+    const dentro = enListaEm(n, s);
+    caja.append(boton((dentro ? '✓ ' : '') + n, () => { alternaListaEm(n, s); caja.remove(); setStatus(dentro ? `Quitada de «${n}»` : `Añadida a «${n}»`); if (!$('vFa').hidden) renderFavs(); }, 'chip'));
+  });
+  const nueva = Object.assign(document.createElement('input'), {className: 'field', placeholder: 'Nueva lista (por ejemplo: Para la mañana)'});
+  nueva.style.cssText = 'flex:1 1 180px;width:auto;padding:6px 10px';
+  const ok = boton('Crear', () => {
+    const n = nueva.value.trim(); if (!n) return;
+    if (!listasEm[n]) listasEm[n] = [];
+    if (!enListaEm(n, s)) alternaListaEm(n, s);
+    caja.remove(); setStatus(`Añadida a «${n}»`); if (!$('vFa').hidden) renderFavs();
+  }, 'chip');
+  nueva.onkeydown = e => { if (e.key === 'Enter') ok.click(); };
+  caja.append(nueva, ok);
+  li.after(caja);
+}
+// Cada emisora de cualquier lista lleva ahora el botón ＋
+const rowBase = row;
+row = function(s, mode){
+  const li = rowBase(s, mode);
+  const mas = document.createElement('button'); mas.type = 'button'; mas.className = 'star mas'; mas.textContent = '＋';
+  mas.setAttribute('aria-label', 'Añadir a una de mis listas');
+  mas.onclick = () => eligeListaEm(li, s);
+  li.append(mas);
+  return li;
+};
+
+/* ---------- Emisoras propias: añadir, cambiar y borrar a mano ---------- */
+let propias = [];
+try { propias = JSON.parse(localStorage.getItem('radio.propias')) || []; } catch(e){}
+const guardaPropias = () => { try { localStorage.setItem('radio.propias', JSON.stringify(propias)); } catch(e){} };
+function formPropia(caja, edita){
+  caja.replaceChildren();
+  const f = document.createElement('div'); f.className = 'ajgrid prop-form';
+  const campo = (et, val, ph, tipo = 'text') => {
+    const l = Object.assign(document.createElement('label'), {textContent: et});
+    const i = Object.assign(document.createElement('input'), {type: tipo, className: 'field', value: val || '', placeholder: ph || ''});
+    l.append(i); f.append(l); return i;
+  };
+  const nom = campo('Nombre', edita && edita.name, 'Por ejemplo: Radio de mi pueblo');
+  const url = campo('Dirección de la emisión (stream)', edita && edita.url, 'https://…/stream.mp3', 'url');
+  const logo = campo('Logo (dirección de una imagen, opcional)', edita && edita.favicon, 'https://…/logo.png', 'url');
+  const gen = campo('Género o tipo (opcional)', edita && edita.tags, 'noticias, música, deportes…');
+  const msg = Object.assign(document.createElement('p'), {className: 'note'});
+  const fila = document.createElement('div'); fila.className = 'fila';
+  const probar = boton('▶ Probar', () => { if (!url.value.trim()) return; play({stationuuid: 'prueba', name: nom.value.trim() || 'Prueba', url: url.value.trim(), url_resolved: url.value.trim(), favicon: logo.value.trim()}); }, 'btn');
+  const guardar = boton(edita ? 'Guardar cambios' : 'Añadir emisora', () => {
+    const n = nom.value.trim(), u = url.value.trim();
+    if (!n || !/^https?:\/\//i.test(u)){ msg.textContent = 'Pon un nombre y una dirección que empiece por http:// o https://'; return; }
+    const datos = {name: n, url: u, url_resolved: u, favicon: logo.value.trim(), tags: gen.value.trim(), countrycode: 'ES', codec: '', bitrate: 0, _propia: true};
+    if (edita) Object.assign(edita, datos);
+    else propias.push({stationuuid: 'propia-' + Date.now(), ...datos});
+    guardaPropias(); renderFavs();
+  }, 'btn');
+  fila.append(probar, guardar, boton('Cancelar', () => caja.replaceChildren(), 'btn'));
+  f.append(fila, msg);
+  if (HTTPS) f.append(note('Ojo: en la radio de GitHub solo suenan las direcciones que empiezan por https://. Las que empiezan por http:// suenan en la radio de casa (la del NAS).'));
+  caja.append(f);
+  nom.focus();
+}
+function bloquePropias(){
+  const d = document.createElement('div');
+  d.append(heading('Mis emisoras añadidas a mano'));
+  const ul = document.createElement('ul'); ul.className = 'list';
+  propias.forEach(s => {
+    const li = row(s, 'mu');
+    const ed = boton('✎', () => formPropia(caja, s), 'star mas'); ed.setAttribute('aria-label', 'Cambiar esta emisora');
+    let seg = 0;
+    const del = boton('✕', () => {
+      if (!seg){ del.textContent = '¿?'; seg = setTimeout(() => { seg = 0; del.textContent = '✕'; }, 3000); return; }
+      propias = propias.filter(x => x !== s); guardaPropias(); renderFavs();
+    }, 'star mas'); del.setAttribute('aria-label', 'Borrar esta emisora (pulsa dos veces)');
+    li.append(ed, del); ul.append(li);
+  });
+  const caja = document.createElement('div');
+  if (propias.length) d.append(ul); else d.append(note('Aquí puedes añadir una emisora que no aparezca en las listas, si conoces su dirección de emisión.'));
+  d.append(boton('＋ Añadir una emisora a mano', () => formPropia(caja), 'btn'), caja);
+  return d;
+}
+function bloqueListasEm(){
+  const d = document.createElement('div');
+  const nombres = Object.keys(listasEm);
+  d.append(heading('Mis listas de emisoras'));
+  if (!nombres.length){ d.append(note('Pulsa ＋ en cualquier emisora para crear una lista, por ejemplo «Para la mañana» o «Deportes».')); return d; }
+  nombres.forEach(n => {
+    const det = document.createElement('details'); det.className = 'oc lista-em';
+    det.append(Object.assign(document.createElement('summary'), {textContent: `${n} (${listasEm[n].length})`}));
+    if (listasEm[n].length) det.append(listEl(listasEm[n], 'mu')); else det.append(note('Lista vacía: pulsa ＋ en una emisora para añadirla.'));
+    let seg = 0;
+    const borra = boton('Borrar esta lista', () => {
+      if (!seg){ borra.textContent = '¿Seguro? Pulsa otra vez'; seg = setTimeout(() => { seg = 0; borra.textContent = 'Borrar esta lista'; }, 4000); return; }
+      delete listasEm[n]; guardaListasEm(); renderFavs();
+    }, 'btn');
+    det.append(borra);
+    det.addEventListener('toggle', () => { if (det.open) setBand('vFa', listasEm[n]); });
+    d.append(det);
+  });
+  return d;
+}
+const renderFavsBase = renderFavs;
+renderFavs = function(){
+  renderFavsBase();
+  const box = $('faOut'), h = box.querySelector('h2 ~ h2, h2 ~ .ajgrid, h2 ~ div');   // tras Mis favoritas
+  const listas = bloqueListasEm(), prop = bloquePropias();
+  const despues = box.querySelector('ul.list') || box.querySelector('p.note');
+  if (despues) despues.after(listas, prop); else box.append(listas, prop);
+};
+
+/* ---------- Búsqueda avanzada: país, ciudad o región, idioma y género ---------- */
+const IDIOMAS = [['', 'Cualquier idioma'], ['spanish', 'Español'], ['english', 'Inglés'], ['french', 'Francés'], ['german', 'Alemán'], ['italian', 'Italiano'], ['portuguese', 'Portugués'],
+  ['catalan', 'Catalán'], ['galician', 'Gallego'], ['basque', 'Euskera'], ['dutch', 'Neerlandés'], ['arabic', 'Árabe'], ['russian', 'Ruso'], ['greek', 'Griego'], ['romanian', 'Rumano'], ['polish', 'Polaco'], ['japanese', 'Japonés'], ['chinese', 'Chino']];
+const GENEROS = ['noticias', 'news', 'talk', 'pop', 'rock', 'jazz', 'classical', 'flamenco', 'country', 'blues', 'oldies', '80s', '70s', '60s', 'dance', 'latin', 'salsa', 'reggae', 'folk', 'sports', 'religious', 'ambient', 'chillout', 'soul', 'opera'];
+(function(){
+  const det = document.createElement('details'); det.className = 'oc'; det.id = 'avBox';
+  det.innerHTML = '<summary>🔎 Búsqueda avanzada</summary>';
+  const g = document.createElement('div'); g.className = 'av-grid';
+  const lab = (t, el) => { const l = Object.assign(document.createElement('label'), {textContent: t}); l.append(el); g.append(l); return el; };
+  const nom = lab('Nombre', Object.assign(document.createElement('input'), {className: 'field', id: 'avNom', placeholder: 'Cualquier nombre'}));
+  const pa = lab('País', Object.assign(document.createElement('select'), {className: 'field', id: 'avPais'}));
+  const est = lab('Ciudad o región', Object.assign(document.createElement('input'), {className: 'field', id: 'avEstado', placeholder: 'Por ejemplo: Andalucía, Bayern, Texas'}));
+  const idi = lab('Idioma', Object.assign(document.createElement('select'), {className: 'field', id: 'avIdioma'}));
+  IDIOMAS.forEach(([v, n]) => idi.append(new Option(n, v)));
+  const gen = lab('Género', Object.assign(document.createElement('input'), {className: 'field', id: 'avTag', placeholder: 'rock, jazz, noticias…'}));
+  gen.setAttribute('list', 'avGeneros');
+  const dl = document.createElement('datalist'); dl.id = 'avGeneros'; GENEROS.forEach(x => dl.append(new Option(x))); g.append(dl);
+  const ord = lab('Ordenar por', Object.assign(document.createElement('select'), {className: 'field', id: 'avOrden'}));
+  [['votes', 'Las más votadas'], ['clickcount', 'Las más escuchadas'], ['name', 'Nombre (A-Z)'], ['bitrate', 'Mejor calidad']].forEach(([v, n]) => ord.append(new Option(n, v)));
+  const fila = document.createElement('div'); fila.className = 'fila';
+  const buscar = boton('🔎 Buscar', buscaAvanzada, 'btn'); buscar.id = 'avBuscar';
+  fila.append(buscar, boton('Borrar filtros', () => { nom.value = ''; pa.value = ''; est.value = ''; idi.value = ''; gen.value = ''; ord.value = 'votes'; }, 'btn'));
+  g.append(fila);
+  [nom, est, gen].forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') buscaAvanzada(); }));
+  det.append(g);
+  det.addEventListener('toggle', () => {                 // copia la lista de países la primera vez
+    if (det.open && pa.options.length < 2){ pa.replaceChildren(...[...$('pais').options].map(o => new Option(o.text, o.value))); }
+  });
+  $('vMu').querySelector('.tools').before(det);
+})();
+async function buscaAvanzada(){
+  const box = $('muOut'), seq = ++muSeq;
+  const p = new URLSearchParams({hidebroken: 'true', limit: '200'});
+  const v = id => $(id).value.trim();
+  if (v('avNom')) p.set('name', v('avNom'));
+  if (v('avPais')) p.set('countrycode', v('avPais'));
+  if (v('avEstado')) p.set('state', v('avEstado'));
+  if (v('avIdioma')) p.set('language', v('avIdioma'));
+  if (v('avTag')) p.set('tag', v('avTag').toLowerCase());
+  const o = v('avOrden') || 'votes'; p.set('order', o); p.set('reverse', o === 'name' ? 'false' : 'true');
+  message(box, 'Buscando…');
+  try {
+    const res = dedupe(await api('/json/stations/search?' + p));
+    if (seq !== muSeq) return;
+    setBand('vMu', res);
+    box.replaceChildren();
+    if (!res.length){ message(box, 'No hay emisoras con esos filtros. Prueba a quitar alguno.'); return; }
+    const partes = [v('avNom'), $('avPais').selectedOptions[0] && v('avPais') ? $('avPais').selectedOptions[0].text : '', v('avEstado'), v('avIdioma') ? $('avIdioma').selectedOptions[0].text : '', v('avTag')].filter(Boolean);
+    box.append(heading(`${res.length} emisoras · ${partes.join(' · ') || 'todas'}`));
+    pagedList(box, res, 'mu');
+    box.scrollIntoView({behavior: 'smooth', block: 'start'});
+  } catch(e){ if (seq === muSeq) message(box, 'No hay conexión con el servicio de emisoras.', buscaAvanzada); }
+}
+
+/* ---------- Ahora suena: título, artista, carátula e historial automático ---------- */
+// Cada emisora manda el título de una forma. La radio prueba, por este orden:
+//  1) el NAS (ahora.php), que sabe leer el título que va dentro de la señal (solo en la radio de casa);
+//  2) el servicio de las emisoras de Triton/StreamTheWorld (LOS40, Cadena SER, Dial, Rock FM…);
+//  3) la página de estado de los servidores Icecast, que usan muchas emisoras pequeñas.
+// Recuerda qué forma funciona con cada emisora, para no probar las demás cada vez.
+let canciones = [], cancionAhora = '', metodoEmisora = {};
+try { canciones = JSON.parse(localStorage.getItem('radio.canciones')) || []; } catch(e){}
+try { metodoEmisora = JSON.parse(localStorage.getItem('radio.metodoTit')) || {}; } catch(e){}
+const guardaCanciones = () => { try { localStorage.setItem('radio.canciones', JSON.stringify(canciones.slice(0, 150))); } catch(e){} };
+const guardaMetodo = () => { try { localStorage.setItem('radio.metodoTit', JSON.stringify(metodoEmisora)); } catch(e){} };
+function cancionValida(t, s){
+  if (!t || t.length < 3) return false;
+  const n = sinAcentos(t), e = sinAcentos((s._label || s.name || ''));
+  if (n === e || (n.length > 3 && e.includes(n)) || /^[\s\-–|]*$/.test(t)) return false;
+  return !/(adbreak|advert|publicidad|commercial|spot|^live$|en directo|^unknown|^\s*-\s*$)/i.test(t);
+}
+function separa(t){                                              // «Artista - Título»
+  const m = t.split(/\s+[-–]\s+/);
+  return m.length >= 2 ? {artista: m[0].trim(), titulo: m.slice(1).join(' - ').trim()} : {artista: '', titulo: t.trim()};
+}
+async function conTiempo(promesa, ms = 8000){ return Promise.race([promesa, new Promise((_, r) => setTimeout(() => r(new Error('tiempo')), ms))]); }
+async function tituloNAS(s){
+  const j = await conTiempo((await fetch('ahora.php?u=' + encodeURIComponent(streamUrl(s)))).json());
+  return (j.t || '').trim();
+}
+// Nombre de la emisora dentro de Triton (por ejemplo LOS40 o CADENASER), sacado de su dirección
+function montajesTriton(u){
+  const m = u.match(/streamtheworld\.com\/(?:api\/livestream-redirect\/)?([A-Z0-9_]+?)(?:_SC|_ADP)?(?:\.(?:mp3|aac))?(?:[?/]|$)/i);
+  if (!m) return [];
+  const t = m[1].toUpperCase();
+  return [...new Set([t, t.replace(/AAC$/, '')])].filter(Boolean);
+}
+async function tituloTriton(s){
+  const monts = [...new Set([...montajesTriton(streamUrl(s)), ...montajesTriton(s.url || '')])];
+  for (const mont of monts){
+    try {
+      const r = await conTiempo(fetch(`https://np.tritondigital.com/public/nowplaying?mountName=${mont}&numberToFetch=1&eventType=track`));
+      const x = new DOMParser().parseFromString(await r.text(), 'text/xml');
+      const prop = n => { const e = [...x.querySelectorAll('property')].find(p => p.getAttribute('name') === n); return e ? e.textContent.trim() : ''; };
+      const t = prop('cue_title'), a = prop('track_artist_name');
+      if (t) return a ? `${a} - ${t}` : t;
+    } catch(e){}
+  }
+  return '';
+}
+async function tituloIcecast(s){
+  const u = new URL(streamUrl(s));
+  if (HTTPS && u.protocol !== 'https:') return '';
+  const j = await conTiempo((await fetch(u.origin + '/status-json.xsl')).json());
+  let src = j.icestats && j.icestats.source; if (!src) return '';
+  if (!Array.isArray(src)) src = [src];
+  const f = src.find(x => x.listenurl && new URL(x.listenurl, u.origin).pathname === u.pathname) || (src.length === 1 ? src[0] : null);
+  if (!f) return '';
+  return (f.artist ? f.artist + ' - ' : '') + (f.title || '').trim();
+}
+const METODOS = {nas: tituloNAS, triton: tituloTriton, icecast: tituloIcecast};
+const fallosTit = {};
+async function leeTitulo(s){
+  const id = s.stationuuid;
+  let sabido = metodoEmisora[id];
+  // una emisora que no mandó nada se vuelve a probar al día siguiente
+  if (sabido && sabido.no && Date.now() - sabido.no > 86400000){ delete metodoEmisora[id]; sabido = undefined; }
+  const orden = (enNAS() ? ['nas'] : []).concat(['triton', 'icecast']);
+  const prueba = typeof sabido === 'string' ? [sabido] : sabido && sabido.no ? (enNAS() ? ['nas'] : []) : orden;
+  for (const m of prueba){
+    try { const t = await METODOS[m](s); if (t){ fallosTit[id] = 0; if (sabido !== m){ metodoEmisora[id] = m; guardaMetodo(); } return t; } } catch(e){}
+  }
+  if (!sabido && (fallosTit[id] = (fallosTit[id] || 0) + 1) >= 3){ metodoEmisora[id] = {no: Date.now()}; guardaMetodo(); }
+  return '';
+}
+async function caratulaCancion(t){
+  try {
+    const d = await apple('https://itunes.apple.com/search?media=music&entity=song&limit=1&country=ES&term=' + encodeURIComponent(t));
+    const r = d.results && d.results[0];
+    return r ? {img: (r.artworkUrl100 || '').replace('100x100', '600x600'), artista: r.artistName, titulo: r.trackName, disco: r.collectionName} : null;
+  } catch(e){ return null; }
+}
+function pintaAhora(c){
+  const box = $('ahora');
+  if (!c){ box.hidden = true; return; }
+  $('ahImg').hidden = !c.img; if (c.img) $('ahImg').src = c.img;
+  $('ahTit').textContent = c.titulo || c.t;
+  $('ahArt').textContent = c.artista || '';
+  $('ahDisco').textContent = [c.disco, c.est].filter(Boolean).join(' · ');
+  box.hidden = false;
+}
+async function miraCancion(){
+  if (!cur || playingRec || audio.paused || !cab.classList.contains('on')) return;
+  const s = cur;
+  const t = await leeTitulo(s);
+  if (cur !== s) return;
+  if (!cancionValida(t, s)){ if (!t){ cancionAhora = ''; pintaAhora(null); } return; }
+  if (t === cancionAhora) return;
+  cancionAhora = t;
+  const sep = separa(t);
+  const est = (s._label || s.name).trim();
+  const ent = {t, artista: sep.artista, titulo: sep.titulo, est, h: Date.now(), img: ''};
+  pintaAhora(ent);
+  $('lRT').textContent = '♪ ' + (sep.artista ? sep.artista + ' · ' : '') + sep.titulo;
+  setStatus('♪ ' + sep.titulo + (sep.artista ? ' · ' + sep.artista : ''), 'live');
+  const c = await caratulaCancion(t);
+  if (cur !== s || cancionAhora !== t) return;
+  if (c){ ent.img = c.img; ent.disco = c.disco; if (!sep.artista){ ent.artista = c.artista; ent.titulo = c.titulo; } }
+  pintaAhora(ent);
+  if (!canciones[0] || canciones[0].t !== t){ canciones.unshift(ent); guardaCanciones(); }
+  if (ent.img){ const el = $('pLogo'), nuevo = Object.assign(document.createElement('img'), {className: 'logo', alt: '', src: ent.img}); nuevo.id = 'pLogo'; el.replaceWith(nuevo); }
+  if ('mediaSession' in navigator) try {
+    navigator.mediaSession.metadata = new MediaMetadata({title: ent.titulo, artist: ent.artista || est, album: est, artwork: ent.img ? [{src: ent.img, sizes: '600x600'}] : []});
+  } catch(e){}
+}
+setInterval(miraCancion, 15000);
+const playBaseCancion = play;
+play = function(s, opt){ cancionAhora = ''; pintaAhora(null); const r = playBaseCancion(s, opt); setTimeout(miraCancion, 3500); return r; };
+function pintaCanciones(){
+  const out = $('cnOut'); out.replaceChildren();
+  if (!canciones.length){
+    out.append(note('Todavía no hay canciones. Pon una emisora musical: cuando la emisora manda el título, sale aquí solo.'));
+    if (!enNAS()) out.append(note('Consejo: en la radio de casa (http://192.168.178.130/radio/) se reconocen muchas más emisoras, porque el NAS sabe leer el título dentro de la señal.'));
+  } else {
+    const ul = document.createElement('ul'); ul.className = 'list';
+    let dia = '';
+    canciones.slice(0, 100).forEach(c => {
+      const d = new Date(c.h), dTxt = d.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'long'});
+      if (dTxt !== dia){ dia = dTxt; const h = document.createElement('li'); h.className = 'cn-dia'; h.textContent = dTxt; ul.append(h); }
+      const li = document.createElement('li'); li.className = 'st';
+      const a = Object.assign(document.createElement('a'), {className: 'st-main', href: 'https://music.youtube.com/search?q=' + encodeURIComponent(c.t), target: '_blank', rel: 'noopener'});
+      const logo = c.img ? Object.assign(document.createElement('img'), {className: 'logo', src: c.img, alt: ''}) : Object.assign(document.createElement('div'), {className: 'logo', textContent: '♪'});
+      const info = document.createElement('div'); info.className = 'info';
+      info.append(Object.assign(document.createElement('div'), {className: 'name', textContent: c.titulo || c.t}),
+        Object.assign(document.createElement('div'), {className: 'sub', textContent: [c.artista, `${hhmm(d)} · ${c.est}`].filter(Boolean).join(' · ')}));
+      a.append(logo, info); li.append(a); ul.append(li);
+    });
+    out.append(note('Toca una canción para buscarla y escucharla entera.'), ul);
+    let seg = 0;
+    const b = boton('Borrar la lista', () => { if (!seg){ b.textContent = '¿Seguro?'; seg = setTimeout(() => { seg = 0; b.textContent = 'Borrar la lista'; }, 4000); return; } canciones = []; guardaCanciones(); pintaCanciones(); }, 'btn');
+    out.append(b);
+  }
+  $('cnPan').hidden = false;
+}
+$('pCanc').onclick = pintaCanciones;
+$('cnCerrar').onclick = () => { $('cnPan').hidden = true; };
+$('ahora').onclick = pintaCanciones;
+
 /* ---------- Arranque ---------- */
 try {
   const last = JSON.parse(localStorage.getItem('radio.last'));
@@ -4990,43 +5179,6 @@ try {
 } catch(e){}
 if (APAGADA){ $('apagado').hidden = false; comprobarVersion(); }   // solo el interruptor
 else { loadEspana(); abrirEnlace(); }
-
-/* ---------- Bloqueo táctil de pantalla ---------- */
-(() => {
-  const boton = document.getElementById('pBloquear');
-  const capa = document.getElementById('bloqueoRadio');
-  const desbloquear = document.getElementById('desbloquearRadio');
-  if (!boton || !capa || !desbloquear) return;
-  let bloqueada = false, espera = null, iniciado = false;
-  const cancelar = () => { if (espera) clearTimeout(espera); espera = null; iniciado = false; };
-  const bloquear = () => {
-    bloqueada = true; cancelar(); capa.classList.add('activo');
-    boton.textContent = 'Desbloquear'; boton.setAttribute('aria-pressed','true');
-    desbloquear.focus({preventScroll:true});
-  };
-  const abrir = () => {
-    if (!bloqueada) return; bloqueada = false; cancelar();
-    capa.classList.remove('activo'); boton.textContent = 'Bloquear';
-    boton.setAttribute('aria-pressed','false'); boton.focus({preventScroll:true});
-  };
-  boton.setAttribute('aria-pressed','false');
-  boton.addEventListener('click', bloquear);
-  desbloquear.addEventListener('pointerdown', e => {
-    if (!bloqueada) return; e.preventDefault(); iniciado = true;
-    desbloquear.textContent = 'Sigue pulsando…';
-    espera = setTimeout(() => { if (iniciado) { desbloquear.textContent = 'Desbloqueado'; abrir(); } }, 2000);
-  });
-  ['pointerup','pointercancel','pointerleave','blur'].forEach(ev => desbloquear.addEventListener(ev, () => {
-    if (espera && bloqueada) { cancelar(); desbloquear.textContent = 'Mantener pulsado para desbloquear'; }
-  }));
-  desbloquear.addEventListener('contextmenu', e => e.preventDefault());
-  document.addEventListener('keydown', e => {
-    if (!bloqueada) return;
-    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); }
-    else { e.preventDefault(); e.stopImmediatePropagation(); }
-  }, true);
-  capa.addEventListener('click', e => { if (e.target === capa) e.preventDefault(); });
-})();
 </script>
 </body>
 </html>
