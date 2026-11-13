@@ -471,6 +471,9 @@ html[data-modelo="gala"] .seek,html[data-modelo="gala"] .mbtn:not(.tecla){backgr
 .prop-form{margin-top:10px}
 details.lista-em summary{font-size:16px}
 #cnOut a.st-main{color:var(--text);text-decoration:none}
+.cn-diag{white-space:pre-wrap;word-break:break-all;font-family:var(--f-body);font-size:14px;line-height:1.5;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
+.cn-filtros{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:10px 0}
+.cn-filtros .chip[aria-pressed="true"]{border-color:var(--estrella,#f5b400);color:var(--estrella,#f5b400)}
 .cn-dia{list-style:none;margin:14px 0 4px;font-family:var(--f-display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--dial)}
 /* Tarjeta «Ahora suena» */
 .ahora{display:flex;align-items:center;gap:14px;width:100%;margin:12px 0 4px;padding:10px;text-align:left;cursor:pointer;
@@ -2214,7 +2217,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '55', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
+const VERSION = '57', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -5133,7 +5136,7 @@ async function miraCancion(){
   if (cur !== s || cancionAhora !== t) return;
   if (c){ ent.img = c.img; ent.disco = c.disco; if (!sep.artista){ ent.artista = c.artista; ent.titulo = c.titulo; } }
   pintaAhora(ent);
-  if (!canciones[0] || canciones[0].t !== t){ canciones.unshift(ent); guardaCanciones(); }
+  if (!canciones[0] || canciones[0].t !== t){ canciones.unshift(ent); guardaCanciones(); apuntaEnNAS(ent); }
   if (ent.img){ const el = $('pLogo'), nuevo = Object.assign(document.createElement('img'), {className: 'logo', alt: '', src: ent.img}); nuevo.id = 'pLogo'; el.replaceWith(nuevo); }
   if ('mediaSession' in navigator) try {
     navigator.mediaSession.metadata = new MediaMetadata({title: ent.titulo, artist: ent.artista || est, album: est, artwork: ent.img ? [{src: ent.img, sizes: '600x600'}] : []});
@@ -5142,31 +5145,110 @@ async function miraCancion(){
 setInterval(miraCancion, 15000);
 const playBaseCancion = play;
 play = function(s, opt){ cancionAhora = ''; pintaAhora(null); const r = playBaseCancion(s, opt); setTimeout(miraCancion, 3500); return r; };
-function pintaCanciones(){
-  const out = $('cnOut'); out.replaceChildren();
-  if (!canciones.length){
-    out.append(note('Todavía no hay canciones. Pon una emisora musical: cuando la emisora manda el título, sale aquí solo.'));
-    if (!enNAS()) out.append(note('Consejo: en la radio de casa (http://192.168.178.130/radio/) se reconocen muchas más emisoras, porque el NAS sabe leer el título dentro de la señal.'));
-  } else {
-    const ul = document.createElement('ul'); ul.className = 'list';
-    let dia = '';
-    canciones.slice(0, 100).forEach(c => {
-      const d = new Date(c.h), dTxt = d.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'long'});
-      if (dTxt !== dia){ dia = dTxt; const h = document.createElement('li'); h.className = 'cn-dia'; h.textContent = dTxt; ul.append(h); }
-      const li = document.createElement('li'); li.className = 'st';
-      const a = Object.assign(document.createElement('a'), {className: 'st-main', href: 'https://music.youtube.com/search?q=' + encodeURIComponent(c.t), target: '_blank', rel: 'noopener'});
-      const logo = c.img ? Object.assign(document.createElement('img'), {className: 'logo', src: c.img, alt: ''}) : Object.assign(document.createElement('div'), {className: 'logo', textContent: '♪'});
-      const info = document.createElement('div'); info.className = 'info';
-      info.append(Object.assign(document.createElement('div'), {className: 'name', textContent: c.titulo || c.t}),
-        Object.assign(document.createElement('div'), {className: 'sub', textContent: [c.artista, `${hhmm(d)} · ${c.est}`].filter(Boolean).join(' · ')}));
-      a.append(logo, info); li.append(a); ul.append(li);
-    });
-    out.append(note('Toca una canción para buscarla y escucharla entera.'), ul);
-    let seg = 0;
-    const b = boton('Borrar la lista', () => { if (!seg){ b.textContent = '¿Seguro?'; seg = setTimeout(() => { seg = 0; b.textContent = 'Borrar la lista'; }, 4000); return; } canciones = []; guardaCanciones(); pintaCanciones(); }, 'btn');
-    out.append(b);
+// Diagnóstico: cómo emite la emisora que suena y por qué no da el título
+async function diagnostico(caja){
+  if (!cur){ caja.textContent = 'Pon primero una emisora.'; return; }
+  if (!enNAS()){ caja.textContent = 'El diagnóstico solo funciona en la radio de casa (http://192.168.178.130/radio/).'; return; }
+  caja.textContent = 'Comprobando ' + (cur._label || cur.name).trim() + '…';
+  try {
+    const j = await (await fetch('ahora.php?diag=1&u=' + encodeURIComponent(streamUrl(cur)))).json();
+    const l = [`Emisora: ${(cur._label || cur.name).trim()}`, `Dirección: ${j.direccion || streamUrl(cur)}`];
+    if (j.respuesta) l.push(`Respuesta: ${j.respuesta}`);
+    if (j.servidor) l.push(`Servidor: ${j.servidor}`);
+    if (j.tipo) l.push(`Tipo de sonido: ${j.tipo}`);
+    if (j.titulos_cada) l.push(`Manda títulos cada: ${j.titulos_cada}`);
+    if (j.triton) l.push(`Servicio Triton: ${j.triton}`);
+    l.push(j.t ? `✓ Ahora suena: ${j.t}` : `✗ Sin título${j.problema ? ': ' + j.problema : ''}`);
+    caja.textContent = l.join('\n');
+  } catch(e){ caja.textContent = 'No se ha podido comprobar (¿está ahora.php en el NAS?).'; }
+}
+// ---------- Historial de canciones: buscador, emisoras, ★ y descarga ----------
+let cancFav = {};
+try { cancFav = JSON.parse(localStorage.getItem('radio.cancFav')) || {}; } catch(e){}
+const guardaCancFav = () => { try { localStorage.setItem('radio.cancFav', JSON.stringify(cancFav)); } catch(e){} };
+let histFiltro = {q: '', est: '', fav: false}, histTodas = [];
+function apuntaEnNAS(ent){
+  if (!enNAS()) return;
+  fetch('historial.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(ent)}).catch(() => {});
+}
+async function cargaHistorial(){
+  let lista = canciones.slice();
+  if (enNAS()){
+    try { const n = await (await fetch('historial.php?t=' + Date.now(), {cache: 'no-store'})).json(); if (Array.isArray(n)) lista = lista.concat(n); } catch(e){}
   }
+  // juntar las de este aparato y las del NAS, sin repetir
+  const vistas = new Set();
+  return lista.filter(c => { const k = c.t + '|' + c.est + '|' + Math.round(c.h / 900000); if (vistas.has(k)) return false; vistas.add(k); return true; })
+              .sort((a, b) => b.h - a.h);
+}
+function csvHistorial(lista){
+  const q = v => '"' + String(v || '').replace(/"/g, '""') + '"';
+  const filas = [['Fecha', 'Hora', 'Canción', 'Artista', 'Disco', 'Emisora', 'Favorita'].map(q).join(';')];
+  lista.forEach(c => { const d = new Date(c.h); filas.push([d.toLocaleDateString('es-ES'), hhmm(d), c.titulo || c.t, c.artista, c.disco, c.est, cancFav[c.t] ? 'Sí' : ''].map(q).join(';')); });
+  const blob = new Blob(['﻿' + filas.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: `canciones_mi_radio_${fechaISO(new Date())}.csv`});
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function pintaListaHist(){
+  const caja = $('cnLista'); caja.replaceChildren();
+  const q = sinAcentos(histFiltro.q.trim());
+  const lista = histTodas.filter(c => (!histFiltro.est || c.est === histFiltro.est) && (!histFiltro.fav || cancFav[c.t]) &&
+    (!q || sinAcentos([c.t, c.artista, c.titulo, c.disco, c.est].join(' ')).includes(q)));
+  $('cnCuenta').textContent = `${lista.length} ${lista.length === 1 ? 'canción' : 'canciones'}`;
+  if (!lista.length){ caja.append(note(histTodas.length ? 'Ninguna canción coincide con lo que buscas.' : 'Todavía no hay canciones. Pon una emisora musical: cuando la emisora manda el título, se apunta aquí solo.')); return; }
+  const ul = document.createElement('ul'); ul.className = 'list';
+  let dia = '';
+  lista.slice(0, 400).forEach(c => {
+    const d = new Date(c.h), dTxt = d.toLocaleDateString('es-ES', {weekday: 'long', day: 'numeric', month: 'long'});
+    if (dTxt !== dia){ dia = dTxt; ul.append(Object.assign(document.createElement('li'), {className: 'cn-dia', textContent: dTxt})); }
+    const li = document.createElement('li'); li.className = 'st';
+    const a = Object.assign(document.createElement('a'), {className: 'st-main', href: 'https://music.youtube.com/search?q=' + encodeURIComponent(c.t), target: '_blank', rel: 'noopener'});
+    const logo = c.img ? Object.assign(document.createElement('img'), {className: 'logo', src: c.img, alt: '', loading: 'lazy'}) : Object.assign(document.createElement('div'), {className: 'logo', textContent: '♪'});
+    const info = document.createElement('div'); info.className = 'info';
+    info.append(Object.assign(document.createElement('div'), {className: 'name', textContent: c.titulo || c.t}),
+      Object.assign(document.createElement('div'), {className: 'sub', textContent: [c.artista, `${hhmm(d)} · ${c.est}`].filter(Boolean).join(' · ')}));
+    a.append(logo, info);
+    const star = document.createElement('button'); star.type = 'button'; star.className = 'star'; star.textContent = '★';
+    star.setAttribute('aria-label', 'Canción favorita'); star.setAttribute('aria-pressed', !!cancFav[c.t]);
+    star.onclick = () => { if (cancFav[c.t]) delete cancFav[c.t]; else cancFav[c.t] = 1; guardaCancFav(); star.setAttribute('aria-pressed', !!cancFav[c.t]); if (histFiltro.fav) pintaListaHist(); };
+    li.append(a, star); ul.append(li);
+  });
+  caja.append(ul);
+  if (lista.length > 400) caja.append(note(`Se ven las 400 más recientes. Usa el buscador para encontrar las demás, o descarga la lista completa.`));
+}
+async function pintaCanciones(){
+  const out = $('cnOut'); out.replaceChildren();
   $('cnPan').hidden = false;
+  if (cur && enNAS()){
+    const caja = Object.assign(document.createElement('pre'), {className: 'cn-diag'}); caja.hidden = true;
+    out.append(boton('🔍 Comprobar por qué esta emisora no da el título', () => { caja.hidden = false; diagnostico(caja); }, 'btn'), caja);
+  }
+  out.append(note(enNAS() ? 'Este historial se guarda en el NAS: es el mismo en el iPhone y en el ordenador.' : 'Este historial es solo de este aparato. En la radio de casa se guarda en el NAS y lo ven todos tus aparatos.'));
+  // filtros
+  const f = document.createElement('div'); f.className = 'cn-filtros';
+  const bus = Object.assign(document.createElement('input'), {type: 'search', className: 'field', placeholder: 'Buscar canción, artista o emisora', value: histFiltro.q});
+  bus.oninput = () => { histFiltro.q = bus.value; pintaListaHist(); };
+  const est = Object.assign(document.createElement('select'), {className: 'field'});
+  const fav = Object.assign(document.createElement('button'), {type: 'button', className: 'chip', textContent: '★ Solo mis favoritas'});
+  fav.setAttribute('aria-pressed', histFiltro.fav);
+  fav.onclick = () => { histFiltro.fav = !histFiltro.fav; fav.setAttribute('aria-pressed', histFiltro.fav); pintaListaHist(); };
+  f.append(bus, est, fav);
+  const cuenta = Object.assign(document.createElement('p'), {className: 'note', id: 'cnCuenta', textContent: 'Cargando…'});
+  const lista = Object.assign(document.createElement('div'), {id: 'cnLista'});
+  const pie = document.createElement('div'); pie.className = 'fila';
+  pie.append(boton('⬇ Descargar la lista (Excel)', () => csvHistorial(histTodas), 'btn'));
+  let seg = 0;
+  const borra = boton('Borrar el historial de este aparato', () => {
+    if (!seg){ borra.textContent = '¿Seguro? Pulsa otra vez'; seg = setTimeout(() => { seg = 0; borra.textContent = 'Borrar el historial de este aparato'; }, 4000); return; }
+    canciones = []; guardaCanciones(); pintaCanciones();
+  }, 'btn');
+  pie.append(borra);
+  out.append(f, cuenta, note('Toca una canción para buscarla y escucharla entera. La ★ la guarda en tus favoritas.'), lista, pie);
+  histTodas = await cargaHistorial();
+  const emisoras = [...new Set(histTodas.map(c => c.est))].sort((a, b) => a.localeCompare(b, 'es'));
+  est.append(new Option('Todas las emisoras', ''), ...emisoras.map(e => new Option(e, e)));
+  est.value = histFiltro.est; est.onchange = () => { histFiltro.est = est.value; pintaListaHist(); };
+  pintaListaHist();
 }
 $('pCanc').onclick = pintaCanciones;
 $('cnCerrar').onclick = () => { $('cnPan').hidden = true; };
