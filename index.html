@@ -816,6 +816,7 @@ body.noche #nocheVelo{opacity:.5}
   </div>
   <div class="wrap row2">
     <button class="timer" id="pTimer" data-ico="⏾" type="button" aria-label="Temporizador para dormir">Dormir</button>
+    <button class="timer" id="pHistorial" data-ico="🕘" type="button" aria-label="Ver historial de emisoras">Historial</button>
     <button class="rec" id="pRec" type="button"><span class="dot"></span><span id="pRecTxt">Grabar</span></button>
     <button class="timer" id="pAzar" data-ico="🎲" type="button" aria-label="Emisora al azar">Sorpresa</button>
     <button class="timer" id="pNoche" data-ico="🌙" type="button" aria-label="Modo noche">Noche</button>
@@ -1199,7 +1200,18 @@ function renderFavs(){
   if (favs.length) box.append(listEl(favs, 'mu'));
   else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
   setBand('vFa', favs);
-  if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
+  const hHist = heading('Historial de emisoras'); hHist.id = 'historialTitulo';
+  box.append(hHist);
+  if (hist.length){
+    const limpiar = document.createElement('button'); limpiar.type = 'button'; limpiar.className = 'btn';
+    limpiar.textContent = 'Borrar historial';
+    limpiar.onclick = () => {
+      if (!confirm('¿Quieres borrar las últimas emisoras escuchadas?')) return;
+      hist = []; try { localStorage.removeItem('radio.hist'); } catch(e){}
+      renderFavs();
+    };
+    box.append(limpiar, listEl(hist, 'mu'));
+  } else box.append(note('Todavía no has escuchado ninguna emisora. Las últimas que escuches aparecerán aquí.'));
   box.append(panelOpciones(), panelEstadisticas(), panelAjustes());
 }
 
@@ -1429,15 +1441,17 @@ const STEPS = [0, 15, 30, 60, 90];
 let stepIdx = 0, offAt = 0, offTimer, tick;
 function updTimer(){
   const b = $('pTimer');
-  if (!offAt){ b.textContent = 'Dormir'; b.classList.remove('act'); return; }
+  if (!offAt){ b.textContent = 'Dormir'; b.title = 'Temporizador apagado. Pulsa para elegir 15, 30, 60 o 90 minutos.'; b.setAttribute('aria-label', b.title); b.classList.remove('act'); return; }
   const min = Math.max(1, Math.ceil((offAt - Date.now()) / 60000));
-  b.textContent = `${min} min`; b.classList.add('act');
+  b.textContent = `${min} min`; b.title = `La radio se apagará suavemente dentro de ${min} minutos. Pulsa para cambiar el temporizador o cancelarlo.`; b.setAttribute('aria-label', b.title); b.classList.add('act');
 }
 $('pTimer').onclick = () => {
   stepIdx = (stepIdx + 1) % STEPS.length;
   clearTimeout(offTimer); clearInterval(tick);
   const m = STEPS[stepIdx];
   offAt = m ? Date.now() + m * 60000 : 0;
+  if (!m) setStatus('Temporizador cancelado');
+  else setStatus(`Apagado suave programado en ${m} minutos`);
   if (m){
     offTimer = setTimeout(() => { offAt = 0; stepIdx = 0; clearInterval(tick); updTimer(); apagadoSuave(); }, m * 60000);
     tick = setInterval(updTimer, 20000);
@@ -2185,7 +2199,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '54', FECHA_VERSION = '13-11-2026';   // versión mejorada: validación y recuperación segura de copias
+const VERSION = '55', FECHA_VERSION = '13-11-2026';   // historial accesible y temporizador más claro
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -3391,6 +3405,12 @@ function saltar(dir){
   i = i < 0 ? 0 : (i + dir + lista.length) % lista.length;
   play(lista[i]);
 }
+
+// Acceso directo al historial desde la barra inferior.
+$('pHistorial').onclick = () => {
+  $('tFa').click();
+  setTimeout(() => $('historialTitulo')?.scrollIntoView({behavior: 'smooth', block: 'start'}), 80);
+};
 
 /* ---------- Zumbido de las lámparas al encender ---------- */
 function zumbido(){
@@ -4791,7 +4811,7 @@ function ajustesExtra2(g, casilla){
 }
 
 
-/* ================= Mejoras de versión 54 ================= */
+/* ================= Mejoras de versión 55 ================= */
 
 /* ---------- Teclas de emisora 1 a 6, como las radios de antes ---------- */
 // Tocar = poner la emisora. Mantener pulsada (1 segundo) = guardar ahí la que suena.
