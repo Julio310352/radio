@@ -1215,10 +1215,24 @@ async function loadEspecial(kind, seq){
 /* ---------- Pestaña Favoritas ---------- */
 function renderFavs(){
   const box = $('faOut');
+  const consulta = box.querySelector('#faBuscar')?.value || '';
   box.replaceChildren();
   box.append(heading('Mis favoritas'));
-  if (favs.length) box.append(listEl(favs, 'mu'));
-  else box.append(note('Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
+  const buscar = document.createElement('input');
+  buscar.type = 'search'; buscar.id = 'faBuscar'; buscar.className = 'field';
+  buscar.placeholder = 'Filtrar mis favoritas por nombre, país o ciudad';
+  buscar.setAttribute('aria-label', 'Filtrar emisoras favoritas');
+  buscar.value = consulta;
+  const listado = document.createElement('div'); listado.id = 'faLista';
+  const pinta = () => {
+    const q = sinAcentos(buscar.value.trim());
+    const filtradas = favs.filter(f => sinAcentos([f._label, f.name, f.country, f.state, f.countrycode].filter(Boolean).join(' ')).includes(q));
+    listado.replaceChildren();
+    if (filtradas.length) listado.append(listEl(filtradas, 'mu'));
+    else listado.append(note(favs.length ? 'No hay favoritas que coincidan con la búsqueda.' : 'Aún no tienes favoritas. Toca la estrella ★ de cualquier emisora para guardarla aquí.'));
+  };
+  buscar.addEventListener('input', pinta);
+  box.append(buscar, listado); pinta();
   setBand('vFa', favs);
   if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
   box.append(panelOpciones(), panelEstadisticas(), panelAjustes());
@@ -2206,7 +2220,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '56', FECHA_VERSION = '13-11-2026';   // bloqueo táctil de pantalla
+const VERSION = '57', FECHA_VERSION = '13-11-2026';   // búsqueda de favoritas y exportación de estadísticas
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4665,7 +4679,25 @@ function pintaEstad(){
       out.append(f);
     });
   } else out.append(texto('mt-sub', 'Todavía no hay datos. Se van guardando mientras escuchas.'));
+  const acciones = document.createElement('div');
+  acciones.className = 'mo-btns';
+  const exportar = document.createElement('button');
+  exportar.type = 'button'; exportar.className = 'btn'; exportar.textContent = '⬇ Exportar estadísticas a CSV';
+  exportar.addEventListener('click', exportaEstadisticasCSV);
+  acciones.append(exportar);
+  out.append(acciones);
   $('estadPan').hidden = false;
+}
+function exportaEstadisticasCSV(){
+  const filas = [['Tipo', 'Fecha o emisora', 'Tiempo escuchado']];
+  Object.keys(diario).sort().forEach(d => filas.push(['Día', d, fmtHoras(diario[d] || 0)]));
+  Object.values(estad).sort((a,b) => b.t-a.t).forEach(e => filas.push(['Emisora', (e.s?._label || e.s?.name || 'Emisora').trim(), fmtHoras(e.t || 0)]));
+  if (filas.length === 1){ alert('Todavía no hay estadísticas para exportar.'); return; }
+  const csv = '\uFEFF' + filas.map(f => f.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(';')).join('\r\n');
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'Mi_Radio_estadisticas.csv';
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $('pEstad').onclick = pintaEstad;
 $('esCerrar').onclick = () => { $('estadPan').hidden = true; };
