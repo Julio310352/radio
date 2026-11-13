@@ -564,6 +564,17 @@ body.noche #nocheVelo{opacity:.5}
 #bloqueoRadio button{margin-top:18px;min-height:54px;width:100%;border:2px solid #d6dde3;border-radius:12px;background:#354654;color:#fff;font-size:17px;font-weight:700;touch-action:none}
 #bloqueoRadio button:active{background:#52697b}
 
+
+/* Herramientas añadidas en v58 */
+.panel{margin:18px 0;padding:14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025)}
+.panel>.field,.panel>input,.panel>select{display:block;width:100%;margin:8px 0;padding:11px;border:1px solid var(--line);border-radius:8px;background:var(--lcd-bg)}
+.panel>.btn{margin:6px 6px 6px 0}
+.checkline{display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--line)}
+.checkline input{width:20px;height:20px}
+.chartrow{display:grid;grid-template-columns:minmax(90px,1fr) minmax(60px,2fr) auto;gap:9px;align-items:center;margin:9px 0;font-size:13px}
+.chartbar{height:12px;border-radius:8px;background:var(--dial);min-width:3px;box-shadow:0 0 8px color-mix(in srgb,var(--dial),transparent 65%)}
+.chartrow small{color:var(--muted);white-space:nowrap}
+
 </style>
 <script>
   // Interruptor: si la radio se apagó, al abrirla solo aparece el botón de encender
@@ -944,7 +955,7 @@ let favs = loadFavs();
 const isFav = id => favs.some(f => f.stationuuid === id);
 function slim(s){
   const {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label} = s;
-  return {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label};
+  return {stationuuid,name,url,url_resolved,favicon,countrycode,state,codec,bitrate,_label,custom:!!s.custom,genre:s.genre||'',songTitle:s.songTitle||'',songArtist:s.songArtist||''};
 }
 function toggleFav(s){
   if (isFav(s.stationuuid)) favs = favs.filter(f => f.stationuuid !== s.stationuuid);
@@ -1212,6 +1223,57 @@ async function loadEspecial(kind, seq){
   }
 }
 
+/* ---------- Herramientas nuevas v58 ---------- */
+const RADIO_LISTAS_KEY='radio.favlistas', RADIO_CANCIONES_KEY='radio.canciones', RADIO_BACKUP_KEY='radio.autoBackup';
+function cargaJSON(k,def){try{return JSON.parse(localStorage.getItem(k))??def}catch(_){return def}}
+function guardaJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(_){return false}}
+let favListas=cargaJSON(RADIO_LISTAS_KEY,{}), cancionesLog=cargaJSON(RADIO_CANCIONES_KEY,[]);
+function panelEmisorasPropias(){
+ const d=document.createElement('div'); d.className='panel'; d.append(heading('Mis emisoras · añadir y administrar'));
+ d.append(note('Añade una emisora pegando la dirección de su emisión (URL). Se guardará en Favoritas.'));
+ const nombre=document.createElement('input'); nombre.className='field'; nombre.placeholder='Nombre de la emisora';
+ const url=document.createElement('input'); url.className='field'; url.type='url'; url.placeholder='https://… dirección del audio';
+ const ciudad=document.createElement('input'); ciudad.className='field'; ciudad.placeholder='Ciudad o país (opcional)';
+ const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent='Añadir emisora';
+ const msg=document.createElement('p'); msg.className='note';
+ b.onclick=()=>{const n=nombre.value.trim(),u=url.value.trim(); if(!n||!/^https?:\/\//i.test(u)){msg.textContent='Escribe un nombre y una dirección http:// o https:// válida.';return;}
+ const st={stationuuid:'propia-'+Date.now(),name:n,_label:n,url:u,url_resolved:u,favicon:'',countrycode:'',state:ciudad.value.trim(),codec:'',bitrate:0,custom:true};
+ if(favs.some(x=>x.stationuuid===st.stationuuid||x.url===u)){msg.textContent='Esa emisora ya está guardada.';return;} favs.push(slim(st));saveFavs();nombre.value='';url.value='';ciudad.value='';msg.textContent='Emisora añadida a Favoritas.';renderFavs();};
+ d.append(nombre,url,ciudad,b,msg);
+ const propias=favs.filter(x=>x.custom); if(propias.length){d.append(heading('Emisoras añadidas por ti')); propias.forEach(st=>{const r=document.createElement('div');r.className='estad';const t=document.createElement('span');t.textContent=st.name;const edit=document.createElement('button');edit.className='btn';edit.type='button';edit.textContent='Editar';edit.onclick=()=>{const nn=prompt('Nombre de la emisora:',st.name);if(nn===null)return;const uu=prompt('Dirección de emisión:',st.url);if(uu===null)return;if(!nn.trim()||!/^https?:\/\//i.test(uu.trim())){alert('Nombre o dirección no válidos.');return;}st.name=st._label=nn.trim();st.url=st.url_resolved=uu.trim();saveFavs();renderFavs();};const del=document.createElement('button');del.className='btn';del.type='button';del.textContent='Eliminar';del.onclick=()=>{if(confirm('¿Eliminar '+st.name+' de Favoritas?')){favs=favs.filter(x=>x.stationuuid!==st.stationuuid);saveFavs();renderFavs();}};r.append(t,edit,del);d.append(r);});}
+ return d;
+}
+function panelListasFavoritas(){
+ const d=document.createElement('div');d.className='panel';d.append(heading('Organizar favoritas en listas'));
+ const sel=document.createElement('select');sel.className='field';sel.innerHTML='<option value="">Todas las favoritas</option>';
+ Object.keys(favListas).sort().forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;sel.append(o)});
+ const crear=document.createElement('button');crear.className='btn';crear.type='button';crear.textContent='Crear lista';crear.onclick=()=>{const n=prompt('Nombre de la nueva lista:');if(n&&n.trim()&&!favListas[n.trim()]){favListas[n.trim()]=[];guardaJSON(RADIO_LISTAS_KEY,favListas);renderFavs();}};
+ const asignar=document.createElement('button');asignar.className='btn';asignar.type='button';asignar.textContent='Guardar favoritas seleccionadas en esta lista';
+ const items=document.createElement('div');const pinta=()=>{items.replaceChildren();const list=sel.value;favs.forEach(st=>{const lab=document.createElement('label');lab.className='checkline';const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!(list&&favListas[list]?.includes(st.stationuuid));cb.disabled=!list;cb.onchange=()=>{const a=favListas[list]||(favListas[list]=[]);favListas[list]=cb.checked?[...new Set([...a,st.stationuuid])]:a.filter(x=>x!==st.stationuuid);guardaJSON(RADIO_LISTAS_KEY,favListas)};lab.append(cb,document.createTextNode(st._label||st.name));items.append(lab);});};
+ sel.onchange=pinta;asignar.onclick=()=>{if(!sel.value){alert('Primero elige o crea una lista.');return;}msg.textContent='Marca o desmarca emisoras para actualizar la lista.';};const msg=document.createElement('p');msg.className='note';d.append(sel,crear,asignar,items,msg);pinta();return d;
+}
+function panelDiarioCanciones(){
+ const d=document.createElement('div');d.className='panel';d.append(heading('Canciones escuchadas · diario personal'));
+ d.append(note('La radio web no siempre permite leer automáticamente el título que envía la emisora. Puedes anotar aquí canción y artista cuando los conozcas.'));
+ const titulo=document.createElement('input');titulo.className='field';titulo.placeholder='Título de la canción';const artista=document.createElement('input');artista.className='field';artista.placeholder='Artista';
+ const b=document.createElement('button');b.className='btn';b.type='button';b.textContent='Guardar canción escuchada';const msg=document.createElement('p');msg.className='note';
+ b.onclick=()=>{if(!titulo.value.trim()){msg.textContent='Escribe al menos el título.';return;}cancionesLog.unshift({titulo:titulo.value.trim(),artista:artista.value.trim(),emisora:cur?(cur._label||cur.name):'Sin emisora',fecha:new Date().toISOString()});cancionesLog=cancionesLog.slice(0,300);guardaJSON(RADIO_CANCIONES_KEY,cancionesLog);titulo.value='';artista.value='';msg.textContent='Canción guardada.';renderFavs();};
+ d.append(titulo,artista,b,msg);if(cancionesLog.length){const ul=document.createElement('ul');ul.className='list';cancionesLog.slice(0,30).forEach(x=>{const li=document.createElement('li');li.className='st';const tx=document.createElement('div');tx.className='info';const n=document.createElement('div');n.className='name';n.textContent=x.titulo+(x.artista?' — '+x.artista:'');const sub=document.createElement('div');sub.className='sub';sub.textContent=x.emisora+' · '+new Date(x.fecha).toLocaleString('es-ES');tx.append(n,sub);li.append(tx);ul.append(li)});d.append(ul);const exp=document.createElement('button');exp.className='btn';exp.type='button';exp.textContent='Exportar diario de canciones (CSV)';exp.onclick=()=>descargaCSV('mi_radio_canciones.csv',['Título','Artista','Emisora','Fecha'],cancionesLog.map(x=>[x.titulo,x.artista,x.emisora,new Date(x.fecha).toLocaleString('es-ES')]));d.append(exp);}return d;
+}
+function descargaCSV(nombre,cab,filas){const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='\ufeff'+[cab,...filas].map(r=>r.map(esc).join(';')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=nombre;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function panelCopiasAutomaticas(){
+ const d=document.createElement('div');d.className='panel';d.append(heading('Copia de seguridad automática'));
+ const msg=document.createElement('p');msg.className='note';const b=document.createElement('button');b.className='btn';b.type='button';b.textContent='Descargar copia de seguridad ahora';
+ const rest=document.createElement('input');rest.type='file';rest.accept='application/json,.json';rest.className='field';const rb=document.createElement('button');rb.className='btn';rb.type='button';rb.textContent='Restaurar copia seleccionada';
+ const backup=()=>{const data={app:'Mi Radio',version:58,fecha:new Date().toISOString(),datos:{}};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('radio.'))data.datos[k]=localStorage.getItem(k);}guardaJSON(RADIO_BACKUP_KEY,data);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='Mi_Radio_copia_'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);msg.textContent='Copia creada y descargada. También se conserva una copia local automática.';};
+ b.onclick=backup;rb.onclick=()=>{const f=rest.files?.[0];if(!f){msg.textContent='Selecciona primero un archivo de copia.';return;}const rd=new FileReader();rd.onload=()=>{try{const data=JSON.parse(rd.result);if(data.app!=='Mi Radio'||!data.datos||typeof data.datos!=='object')throw Error();if(!confirm('Se restaurarán los ajustes de Mi Radio. ¿Continuar?'))return;Object.entries(data.datos).forEach(([k,v])=>{if(k.startsWith('radio.')&&typeof v==='string')localStorage.setItem(k,v)});msg.textContent='Copia restaurada. Recargando…';setTimeout(()=>location.reload(),900);}catch(_){msg.textContent='El archivo no es una copia válida de Mi Radio.';}};rd.readAsText(f);};
+ const last=cargaJSON(RADIO_BACKUP_KEY,null);msg.textContent=last?.fecha?'Última copia local: '+new Date(last.fecha).toLocaleString('es-ES'):'Se guardará una copia local periódica mientras uses la aplicación.';d.append(b,rest,rb,msg);return d;
+}
+function panelGraficoEstadisticas(){const d=document.createElement('div');d.className='panel';d.append(heading('Gráfico de emisoras más escuchadas'));const datos=Object.values(estad).filter(e=>e.t>=60).sort((a,b)=>b.t-a).slice(0,8);if(!datos.length){d.append(note('Aún no hay suficientes minutos de escucha para mostrar el gráfico.'));return d;}const max=Math.max(...datos.map(x=>x.t));datos.forEach(e=>{const r=document.createElement('div');r.className='chartrow';const l=document.createElement('span');l.textContent=(e.s._label||e.s.name).slice(0,32);const bar=document.createElement('div');bar.className='chartbar';bar.style.width=Math.max(3,e.t/max*100)+'%';const v=document.createElement('small');v.textContent=fmtHoras(e.t);r.append(l,bar,v);d.append(r)});return d;}
+function panelGestorMejoras(){const d=document.createElement('div');d.append(panelEmisorasPropias(),panelListasFavoritas(),panelDiarioCanciones(),panelCopiasAutomaticas(),panelGraficoEstadisticas());return d;}
+// Copia local automática cada cinco minutos durante el uso; el archivo descargable se genera a petición.
+setInterval(()=>{try{const datos={app:'Mi Radio',version:58,fecha:new Date().toISOString(),datos:{}};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('radio.'))datos.datos[k]=localStorage.getItem(k);}localStorage.setItem(RADIO_BACKUP_KEY,JSON.stringify(datos));}catch(_){}},300000);
+
 /* ---------- Pestaña Favoritas ---------- */
 function renderFavs(){
   const box = $('faOut');
@@ -1235,7 +1297,7 @@ function renderFavs(){
   box.append(buscar, listado); pinta();
   setBand('vFa', favs);
   if (hist.length) box.append(heading('Escuchadas hace poco'), listEl(hist, 'mu'));
-  box.append(panelOpciones(), panelEstadisticas(), panelAjustes());
+  box.append(panelOpciones(), panelEstadisticas(), panelGraficoEstadisticas(), panelGestorMejoras(), panelAjustes());
 }
 
 /* ---------- Pestañas ---------- */
@@ -2220,7 +2282,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '57', FECHA_VERSION = '13-11-2026';   // búsqueda de favoritas y exportación de estadísticas
+const VERSION = '58', FECHA_VERSION = '13-11-2026';   // gestión de emisoras, listas, diario de canciones, copias y gráficos
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
