@@ -265,7 +265,7 @@ select.mini{background:transparent;border:1px solid var(--line);border-radius:6p
 .foto-ctl input[type=text]{width:min(100%,260px);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px;font-size:15px;text-align:center}
 @media (max-width:420px){.placa.con-foto{gap:8px;padding-left:18px;padding-right:18px}.placa-foto{width:50px}.placa-foto img{width:46px;height:58px;border-width:2px}.placa-pie{font-size:10px}.placa.con-foto .ded3{font-size:17px}.placa.con-foto .ded1{font-size:21px}}
 .mesa-foto{max-height:28vh;max-width:70vw;margin-top:16px;border:4px solid #3a2312;opacity:.75;filter:sepia(.3)}
-.aviso{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--lcd) 18%,transparent);border:1px solid color-mix(in srgb,var(--lcd) 45%,transparent);font-family:var(--f-body);font-size:17px;line-height:1.35;color:var(--text);text-shadow:none}
+.aviso{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--lcd) 18%,transparent);border:1px solid color-mix(in srgb,var(--lcd) 45%,transparent);font-family:var(--f-body);font-size:17px;font-weight:600;line-height:1.35;color:var(--lcd);text-shadow:none}
 .aviso span{flex:1;min-width:0}
 .aviso button{flex:none;background:none;border:0;color:var(--lcd);font-size:18px;min-width:32px;min-height:32px}
 .vus{display:flex;justify-content:center;gap:14px;margin:16px auto 0;max-width:420px}
@@ -2217,7 +2217,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '58', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
+const VERSION = '59', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
