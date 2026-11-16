@@ -309,6 +309,8 @@ h1 span{color:var(--dial)}
 .mus-cab{display:flex;align-items:center;gap:10px}.mus-cab .podtit{flex:1;min-width:0}
 #musCar{width:56px;height:56px;border-radius:6px;object-fit:cover;flex:none;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .mus-elige{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;margin:-4px 0 8px;border:1px dashed var(--dial);border-radius:10px;font-size:14px;color:var(--muted);list-style:none}
+.pa-luz{display:flex;gap:8px;align-items:flex-start;margin:12px 0;font-size:15px;line-height:1.4}
+.pa-luz input{width:22px;height:22px;flex:none;margin-top:2px}
 .pa-lista{margin:6px 0 14px;padding-left:20px;line-height:1.7}
 /* Controles nítidos: borde más grueso y letra algo más gruesa */
 .timer,.rec,.chip,.btn,.tab,.field,select.mini,.mbtn{border-width:1.5px!important}
@@ -2217,7 +2219,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '59', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
+const VERSION = '60', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4272,12 +4274,13 @@ setInterval(() => {
   });
 }, 15000);
 
-/* ---------- Contador del paseo ---------- */
-let paseo = null, paseos = [];
+/* ---------- Contador del paseo, con la distancia andada (GPS del teléfono) ---------- */
+let paseo = null, paseos = [], geoId = null, luzPaseo = null;
 try { paseo = JSON.parse(localStorage.getItem('radio.paseoAhora')); } catch(e){}
 try { paseos = JSON.parse(localStorage.getItem('radio.paseos')) || []; } catch(e){}
 const guardaPaseo = () => { try { localStorage.setItem('radio.paseoAhora', JSON.stringify(paseo)); localStorage.setItem('radio.paseos', JSON.stringify(paseos)); } catch(e){} };
 const duracion = ms => { const m = Math.round(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+const kmTxt = km => (km || 0).toLocaleString('es-ES', {minimumFractionDigits: km < 10 ? 2 : 1, maximumFractionDigits: km < 10 ? 2 : 1}) + ' km';
 function queSuena(){
   if (audio.paused || !cab.classList.contains('on')) return null;
   if (musActual) return esLibro(musActual) ? 'Audiolibro: ' + musArtista(musActual) : 'Mi música';
@@ -4285,63 +4288,133 @@ function queSuena(){
   if (playingRec) return 'Una grabación';
   return cur ? (cur._label || cur.name).trim() : null;
 }
+// Distancia entre dos puntos del mapa, en metros
+function metros(a, b){
+  const R = 6371000, r = x => x * Math.PI / 180;
+  const dLa = r(b.la - a.la), dLo = r(b.lo - a.lo);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.la)) * Math.cos(r(b.la)) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function posicion(pos){
+  if (!paseo) return;
+  const c = pos.coords, p = {la: c.latitude, lo: c.longitude, t: pos.timestamp || Date.now()};
+  paseo.gps = 'ok';
+  if (c.accuracy > 50) return;                                     // punto poco preciso: no se cuenta
+  if (!paseo.ult){ paseo.ult = p; guardaPaseo(); return; }
+  const d = metros(paseo.ult, p), seg = Math.max(1, (p.t - paseo.ult.t) / 1000);
+  if (d < Math.max(6, c.accuracy * .6)) return;                      // temblor del GPS estando quieto
+  if (d / seg > 8) { paseo.ult = p; return; }                       // salto imposible andando (más de 29 km/h): se descarta
+  if (seg > 120) paseo.aprox = true;                                // hubo un rato sin GPS (pantalla bloqueada)
+  paseo.km = (paseo.km || 0) + d / 1000;
+  paseo.ult = p;
+  guardaPaseo(); pintaBotonPaseo();
+}
+function errorGPS(e){
+  if (!paseo) return;
+  paseo.gps = e.code === 1 ? 'denegado' : 'sin señal';
+  guardaPaseo();
+}
+function arrancaGPS(){
+  if (!('geolocation' in navigator)) { if (paseo) paseo.gps = 'no hay'; return; }
+  if (!window.isSecureContext) { if (paseo) paseo.gps = 'inseguro'; return; }
+  if (geoId != null) return;
+  geoId = navigator.geolocation.watchPosition(posicion, errorGPS, {enableHighAccuracy: true, maximumAge: 5000, timeout: 30000});
+}
+function paraGPS(){ if (geoId != null){ navigator.geolocation.clearWatch(geoId); geoId = null; } }
+async function luzEncendida(si){
+  try {
+    if (si && 'wakeLock' in navigator && !luzPaseo){ luzPaseo = await navigator.wakeLock.request('screen'); luzPaseo.addEventListener('release', () => luzPaseo = null); }
+    if (!si && luzPaseo){ luzPaseo.release(); luzPaseo = null; }
+  } catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && paseo && ajustes.paseoLuz) luzEncendida(true); });
+function pintaBotonPaseo(){
+  if (!paseo){ $('pPaseo').textContent = 'Paseo'; return; }
+  $('pPaseo').textContent = (paseo.km ? kmTxt(paseo.km).replace(' km', 'km') + ' · ' : 'Paseo ') + duracion(Date.now() - paseo.ini).replace(' min', '′');
+}
 setInterval(() => {                                                 // cada 10 s apunta lo que suena
   if (!paseo) return;
   const q = queSuena(); if (q){ paseo.oido[q] = (paseo.oido[q] || 0) + 10; }
-  $('pPaseo').textContent = 'Paseo ' + duracion(Date.now() - paseo.ini).replace(' min', '′');
-  guardaPaseo();
+  pintaBotonPaseo(); guardaPaseo();
 }, 10000);
 function resumenPaseo(p){
   const lista = Object.entries(p.oido).sort((a, b) => b[1] - a[1]);
-  return {dur: duracion(p.fin - p.ini), lista};
+  const horas = (p.fin - p.ini) / 3600000;
+  const ritmo = p.km > .2 ? (p.fin - p.ini) / 60000 / p.km : 0;     // minutos por kilómetro
+  return {dur: duracion(p.fin - p.ini), lista, km: p.km || 0, vel: p.km && horas ? p.km / horas : 0, ritmo};
+}
+const ritmoTxt = r => { const m = Math.floor(r), s = Math.round((r - m) * 60); return `${m}:${String(s).padStart(2, '0')} min/km`; };
+function avisoGPS(p){
+  return p.gps === 'inseguro' ? 'La distancia solo se puede medir en la radio de GitHub (https). En la radio de casa el teléfono no deja usar el GPS.'
+    : p.gps === 'denegado' ? 'No se ha medido la distancia: el teléfono no dio permiso para usar la ubicación. Actívalo en Ajustes del iPhone → Privacidad → Localización → Safari.'
+    : p.gps === 'no hay' ? 'Este aparato no tiene GPS.'
+    : p.gps === 'sin señal' && !p.km ? 'No ha habido señal de GPS.' : '';
 }
 function pintaPaseos(ultimo){
   const out = $('paOut'); out.replaceChildren();
   if (ultimo){
     const r = resumenPaseo(ultimo);
-    out.append(texto('mt-big', r.dur), texto('mt-sub', `Saliste a las ${hhmm(new Date(ultimo.ini))} y volviste a las ${hhmm(new Date(ultimo.fin))}.`));
+    out.append(texto('mt-big', r.km ? kmTxt(r.km) : r.dur));
+    if (r.km) out.append(texto('mt-mid', `en ${r.dur}` + (r.ritmo ? ` · ${ritmoTxt(r.ritmo)} · ${r.vel.toLocaleString('es-ES', {maximumFractionDigits: 1})} km/h` : '')));
+    out.append(texto('mt-sub', `Saliste a las ${hhmm(new Date(ultimo.ini))} y volviste a las ${hhmm(new Date(ultimo.fin))}.`));
+    if (ultimo.aprox) out.append(texto('mt-sub', 'Distancia aproximada: hubo ratos sin GPS (con la pantalla bloqueada el teléfono no siempre da la posición).'));
+    const av = avisoGPS(ultimo); if (av) out.append(texto('mt-sub', av));
     if (r.lista.length){
       out.append(texto('mt-mid', 'Has escuchado:'));
       const ul = document.createElement('ul'); ul.className = 'pa-lista';
       r.lista.forEach(([n, s]) => ul.append(Object.assign(document.createElement('li'), {textContent: `${n} · ${Math.max(1, Math.round(s / 60))} min`})));
       out.append(ul);
-    } else out.append(texto('mt-sub', 'No ha sonado nada durante el paseo.'));
+    }
+  }
+  if (paseo){
+    out.append(texto('mt-big', paseo.km ? kmTxt(paseo.km) : '0 km'), texto('mt-sub', `Llevas ${duracion(Date.now() - paseo.ini)} de paseo.`));
+    const av = avisoGPS(paseo); if (av) out.append(texto('mt-sub', av));
   }
   if (paseos.length){
-    out.append(texto('mt-mid', 'Últimos paseos:'));
+    const semana = paseos.filter(p => Date.now() - p.ini < 7 * 86400000).reduce((a, p) => a + (p.km || 0), 0);
+    out.append(texto('mt-mid', 'Últimos paseos' + (semana ? ` · esta semana ${kmTxt(semana)}` : '') + ':'));
     const ul = document.createElement('ul'); ul.className = 'pa-lista';
     paseos.forEach(p => {
       const d = new Date(p.ini);
-      ul.append(Object.assign(document.createElement('li'), {textContent: `${d.toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric', month: 'short'})} · ${hhmm(d)} · ${duracion(p.fin - p.ini)}`}));
+      ul.append(Object.assign(document.createElement('li'), {textContent: `${d.toLocaleDateString('es-ES', {weekday: 'short', day: 'numeric', month: 'short'})} · ${hhmm(d)} · ${duracion(p.fin - p.ini)}${p.km ? ' · ' + kmTxt(p.km) : ''}`}));
     });
     out.append(ul);
   }
-  if (!ultimo && !paseos.length) out.append(texto('mt-sub', 'Pulsa Empezar al salir de casa y Terminar al volver.'));
+  if (!ultimo && !paseo){
+    if (!paseos.length) out.append(texto('mt-sub', 'Pulsa Empezar al salir de casa y Terminar al volver. La radio cuenta el tiempo, los kilómetros y lo que has escuchado.'));
+    const f = document.createElement('label'); f.className = 'pa-luz';
+    const c = Object.assign(document.createElement('input'), {type: 'checkbox', checked: !!ajustes.paseoLuz});
+    c.onchange = () => { ajustes.paseoLuz = c.checked; guardaAjustes(); };
+    f.append(c, ' Dejar la pantalla encendida durante el paseo (mide mejor los kilómetros, pero gasta más batería)');
+    out.append(f);
+    if (!window.isSecureContext) out.append(texto('mt-sub', 'Ojo: en la radio de casa no se pueden medir los kilómetros. Para el paseo usa la radio de GitHub.'));
+  }
   $('paBoton').textContent = paseo ? 'Terminar el paseo' : 'Empezar el paseo';
   $('paseoPan').hidden = false;
 }
-function botonPaseo(){
-  if (!paseo){ pintaPaseos(null); return; }                        // sin paseo: se abre el panel para empezar
-  pintaPaseos(null);
-}
-$('pPaseo').onclick = botonPaseo;
+$('pPaseo').onclick = () => pintaPaseos(null);
 $('paBoton').onclick = () => {
   if (!paseo){
-    paseo = {ini: Date.now(), oido: {}}; guardaPaseo();
-    $('pPaseo').textContent = 'Paseo 0′'; $('pPaseo').classList.add('activo');
+    paseo = {ini: Date.now(), oido: {}, km: 0}; guardaPaseo();
+    arrancaGPS(); if (ajustes.paseoLuz) luzEncendida(true);
+    $('pPaseo').classList.add('activo'); pintaBotonPaseo();
     $('paseoPan').hidden = true; setStatus('¡Buen paseo! Pulsa Paseo al volver');
     if (ajustes.recVoz !== false) habla('Buen paseo.');
     return;
   }
   paseo.fin = Date.now();
-  const hecho = paseo; paseo = null;
-  paseos = [{ini: hecho.ini, fin: hecho.fin}, ...paseos].slice(0, 10); guardaPaseo();
-  $('pPaseo').textContent = 'Paseo'; $('pPaseo').classList.remove('activo');
+  const hecho = paseo; paseo = null; paraGPS(); luzEncendida(false);
+  paseos = [{ini: hecho.ini, fin: hecho.fin, km: Math.round((hecho.km || 0) * 100) / 100}, ...paseos].slice(0, 30); guardaPaseo();
+  $('pPaseo').classList.remove('activo'); pintaBotonPaseo();
   pintaPaseos(hecho);
-  if (ajustes.recVoz !== false) habla(`Bienvenido a casa. Has estado fuera ${resumenPaseo(hecho).dur.replace('h', 'horas').replace('min', 'minutos')}.`);
+  if (ajustes.recVoz !== false){
+    const r = resumenPaseo(hecho);
+    const kmVoz = r.km >= .1 ? ` y has andado ${r.km.toLocaleString('es-ES', {maximumFractionDigits: 1})} kilómetros` : '';
+    habla(`Bienvenido a casa. Has estado fuera ${r.dur.replace('h', 'horas').replace('min', 'minutos')}${kmVoz}.`);
+  }
 };
 $('paCerrar').onclick = () => { $('paseoPan').hidden = true; };
-if (paseo){ $('pPaseo').classList.add('activo'); $('pPaseo').textContent = 'Paseo ' + duracion(Date.now() - paseo.ini).replace(' min', '′'); }
+if (paseo){ $('pPaseo').classList.add('activo'); pintaBotonPaseo(); arrancaGPS(); }
 
 /* ---------- Copia de seguridad en el NAS ---------- */
 // Guarda todo lo de la radio (favoritas, memorias, fotos, cumpleaños, ajustes, listas...) en el NAS, en radio/copia_radio.json
