@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Grabadora">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#101418">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAFo0lEQVR4Xu2dy5GkVhBFacUYMIqYxTiihZxoY9sJLWSMXNCCCKKiKeAlL/+csy8+mYf7Eqju+vj56/cC8I4/KAscgRyAHCCH5ACSA+SQHEBygBySA0gOkENyAMkBckgOIDlADskBJAfIITmA5AA5JAeQHCDnh/wjHfjv77+kp/HnP/9KP1Kdjyd8wfiGCiO016WtHEZCHNFSlG5yODuxp5MlTeQId6KlJbXlSOhEJ0uqylFCi1cqLjf15CinRV1FKslRWouKitSQo40WtRQp8G6lpRnLUuC8UidHVy2+kXZWzZscDzEjc4RkTI7naJE8QtIlx2PNSBghueR4shkrqSqQZVlJVZQMZJhSUyQHZuzJUJN4OTJUISfhlQmWI/z8kxNbn0g5Ys+8CoFVCpMj8JzLEVWrmLuVqLN9z9fXoS6fn3lM8r9/CZAjixknTuzJYYmzH95ypDBDpMUrCRTx9MN15qhtxrLct0oPzxq6yhHP7czYmN9CHfzk8FRePHiKiPbDrZJOcridzyG6HdXdmhyfenrI4XMmZ1j00mKbEhyq6iFHMHZdtNtyDszlcBDcOzNeCfXDura2clgfPZhW2FaOYHwua5+9RGAoh6nUsGFXZys57I4Y9hhV20qOeDzT3nNfjpjIYSQynGBRcxM5oAf6clgoDCOoV15fDmiDshzq8oII3forywGd0JRDV1u4h2IXNOWAZiAHHKImh2KawSRavVCTA/qBHGC8rGjlGGih0hGSA4yTA1qikBwqCQbqzPdFQQ7oCnIAMwfImU2O+YUN7Jjszqwc0BjkAGYOkENyAMkBcqaSY3IYBgdmejQlB/QGOYCZA+SQHEBygBySA0gOkENyAMkBckgOIDlADskBD0wOz5/c8tyXIyQHHPKjWG3e/jvYtBduraPd0To5fKTx2UsEU3J4/owl3GOmR1NyFMD6srbefijd5VgWw/61NmNZysnxth+XP1pg0cXLbRafRgvKcZvLXorQ3VpWHrCsbGh1VGs76ZmVY2YY1uRyZVmZ7+vgFgaPx5jJ7szKEcBRewb7Mdjdtwx+9uhIBj+ehmpPSFVYmzQok1bkFOTj56/fk4c98zdV91G8Ok8suXGtKx7YNJPLioIcyxLhh25Htch0VJNmVL6VPbmmReuFIpnMUKHgQLqRyo92Zqglx3yC6eOZH577GkOlI5WT4/K5hU/PzvdyY6RNQ3E5RvywU+Trq7EZy6J0t7ISc0+7MmKA4kXsvDshKmvKsrR5CPb5ed2wraO3LRlxYuX2LjLR6AnpiB/7mLns4rgQI7dRpdB5CLYRubJs3GinFpeq2aO1pqjdyuYiqkNR+zVDOTmCx9JvuEVIGi0UY6PRQPqWG29fpaTRwgL95MgVHnaDSD4tdGOje3K8svVycq3J54QdJsmRNDz2DIpSQQj12HhScpwMJUcPWCs4YYrVuxULkeEIo2pbybEsVkcM3zAyo+lDMFDCMDkIDwfsYsMjOUyP/uFY19Y2OaA0HnJYC/5MHKrqIQfDhzoOZnjMHBs+5/ME3CrplBxQEVc53JRvjGcNrV68neD0VcLBl2pauLyI8TTDdeZg+JjE2YwYObh5uYG/GWFy4IeIEDMi5cCPQaLMCJYDPy4JNCNeDvw4IdYM5T+knsHp/rYO4WYkkmMFRVJFqesT0ksyXC6xpKpALjlSXTf+pDIj3bLyyqOWmGxarKRLjo2c9bIg7ZkGvHiT0jhC0mqRPTnaR0hyM1LPHHvaREh+LVYKLCvfKK1IFS2qyrFSTpFaWtSWo5AiFbXoIMdGwiCp68RGvZnjnHBLGjjRVo6oLOnkRH85XjGKk5ZCvNJtWRnkhi7tVdjzUDlghLwv3iAc5IBDkAOQA+SQHEBygBySA0gOkENyAMkBckgOIDlADskBJAfIITmA5AA5JAeQHCDnf0t3guzDiR8lAAAAAElFTkSuQmCC">
+<title>Mi Grabadora</title>
+<style>
+:root{--bg:#101418;--panel:#1b2129;--txt:#fff;--suave:#d3dbe4;--acento:#ffd24a;--rojo:#ff4d4d;--verde:#3ddc84;--borde:#4a5666;--t:21px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--txt);font:var(--t)/1.45 -apple-system,system-ui,sans-serif;padding:calc(env(safe-area-inset-top) + 10px) 16px calc(30px + env(safe-area-inset-bottom));max-width:640px;margin:auto}
+h1{font-size:1.25em;margin:.2em 0 .6em;display:flex;align-items:center;gap:.4em}
+h1 .tam{margin-left:auto;display:flex;gap:6px}
+h2{font-size:1.05em;margin:1.4em 0 .5em;color:var(--acento)}
+button{font:inherit;color:var(--txt);background:var(--panel);border:2px solid var(--borde);border-radius:14px;padding:.55em .8em;cursor:pointer}
+button:active{transform:scale(.97)}
+.peq{font-size:.8em;padding:.35em .6em}
+.panel{background:var(--panel);border:2px solid var(--borde);border-radius:18px;padding:16px;margin-bottom:14px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip[aria-pressed=true]{background:var(--acento);color:#111;border-color:var(--acento);font-weight:700}
+input[type=text]{font:inherit;width:100%;padding:.5em .7em;border-radius:12px;border:2px solid var(--borde);background:#0c0f13;color:var(--txt)}
+label.caja{display:flex;align-items:center;gap:.5em;margin:12px 0 4px;color:var(--suave)}
+label.caja input{width:28px;height:28px}
+#grabar{display:block;width:100%;padding:.9em;font-size:1.35em;font-weight:800;background:var(--rojo);border-color:var(--rojo);border-radius:20px;margin-top:10px}
+#grabar.on{background:#fff;color:#c00;border-color:#fff;animation:late 1.4s infinite}
+@keyframes late{50%{box-shadow:0 0 0 10px rgba(255,77,77,.35)}}
+#reloj{font-size:2.4em;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:.2em 0 0}
+#vivo{font-size:1.3em;line-height:1.4;min-height:3em;max-height:45vh;overflow:auto;background:#000;border-radius:14px;padding:12px;margin-top:10px;white-space:pre-wrap}
+#vivo .gris{color:var(--acento)}
+.aviso{color:var(--acento);font-weight:600}
+.nota{color:var(--suave);font-size:.85em}
+ul{list-style:none;padding:0;margin:0}
+li.g{display:flex;align-items:center;gap:12px;background:var(--panel);border:2px solid var(--borde);border-radius:16px;padding:12px;margin-bottom:10px;cursor:pointer}
+li.g .ic{font-size:1.6em}
+li.g .t1{font-weight:700}
+li.g .t2{color:var(--suave);font-size:.85em}
+li.g .vista{margin-left:auto;color:var(--verde);font-size:.8em;white-space:nowrap}
+/* reproductor */
+#rep .tit{font-size:1.15em;font-weight:800}
+#barra{width:100%;height:44px;accent-color:var(--acento)}
+.tiempos{display:flex;justify-content:space-between;color:var(--suave);font-variant-numeric:tabular-nums}
+.mandos{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:10px;margin:10px 0}
+.mandos button{padding:.7em .2em;font-weight:700}
+#play{font-size:1.6em;background:var(--verde);color:#062;border-color:var(--verde)}
+.fila{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.fila button{flex:1}
+.sel[aria-pressed=true]{background:var(--acento);color:#111;border-color:var(--acento);font-weight:700}
+#texto{font-size:1.15em;white-space:pre-wrap;background:#000;border-radius:14px;padding:12px}
+.peligro{border-color:var(--rojo);color:#ffb3b3}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- ============ PANTALLA PRINCIPAL ============ -->
+<main id="inicio">
+  <h1>🎙️ Mi Grabadora
+    <span class="tam"><button class="peq" id="menos" aria-label="Letra más pequeña">A−</button><button class="peq" id="mas" aria-label="Letra más grande">A+</button></span>
+  </h1>
+
+  <section class="panel">
+    <div class="chips" id="quien">
+      <button class="chip" data-q="Médico" aria-pressed="true">🩺 Médico</button>
+      <button class="chip" data-q="Hijos" aria-pressed="false">👨‍👩‍👧 Hijos</button>
+      <button class="chip" data-q="Otra persona" aria-pressed="false">🙂 Otra persona</button>
+    </div>
+    <input type="text" id="nota" placeholder="Nota (opcional): p. ej. «Dr. García, análisis»">
+    <label class="caja"><input type="checkbox" id="conTexto" checked> Escribir en pantalla lo que se dice</label>
+    <button id="grabar">● GRABAR</button>
+    <p id="reloj" hidden>00:00</p>
+    <div id="vivo" hidden></div>
+    <p class="nota" id="consejo">Deja el iPhone en la mesa, con la pantalla encendida y esta página abierta mientras graba.</p>
+  </section>
+
+  <h2>Mis grabaciones</h2>
+  <ul id="lista"></ul>
+
+  <details class="panel">
+    <summary><b>📞 ¿Y las llamadas de teléfono?</b></summary>
+    <p>Esta grabadora es para hablar en persona (en la consulta, en casa…). Las llamadas las graba el propio iPhone: durante la llamada toca el botón de ondas arriba a la izquierda. Se guardan en la app <b>Notas</b>, en «Grabaciones de llamadas».</p>
+  </details>
+</main>
+
+<!-- ============ REPRODUCTOR ============ -->
+<main id="rep" hidden>
+  <button id="volver">← Volver</button>
+  <section class="panel" style="margin-top:12px">
+    <div class="tit" id="rTit"></div>
+    <div class="nota" id="rFecha"></div>
+    <audio id="audio" preload="auto" playsinline></audio>
+    <input type="range" id="barra" min="0" max="1" step="0.1" value="0" aria-label="Posición">
+    <div class="tiempos"><span id="tAhora">0:00</span><span id="tTotal">0:00</span></div>
+    <div class="mandos">
+      <button id="atras">⟲ 10 s</button>
+      <button id="play">▶</button>
+      <button id="adelante">10 s ⟳</button>
+    </div>
+    <div class="nota">Velocidad</div>
+    <div class="fila" id="velos">
+      <button class="sel" data-v="0.7">Muy despacio</button>
+      <button class="sel" data-v="0.85">Despacio</button>
+      <button class="sel" data-v="1">Normal</button>
+    </div>
+    <div class="fila">
+      <button class="sel" id="volumen" aria-pressed="false">🔊 Más volumen y voces más claras</button>
+    </div>
+  </section>
+
+  <section class="panel" id="cajaTexto">
+    <b>Lo que se dijo (escrito)</b>
+    <div id="texto" style="margin-top:8px"></div>
+  </section>
+
+  <section class="panel">
+    <input type="text" id="rNota" placeholder="Nota de esta grabación">
+    <div class="fila" style="margin-top:12px">
+      <button id="exportar">📤 Guardar en el iPhone / enviar</button>
+    </div>
+    <div class="fila"><button id="borrar" class="peligro">🗑 Borrar esta grabación</button></div>
+  </section>
+</main>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const leeLS = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } };
+const ponLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} };
+
+/* ---------- Tamaño de letra ---------- */
+let tam = leeLS('grab.tam', 21);
+const ponTam = () => { document.documentElement.style.setProperty('--t', tam + 'px'); ponLS('grab.tam', tam); };
+$('menos').onclick = () => { tam = Math.max(16, tam - 2); ponTam(); };
+$('mas').onclick = () => { tam = Math.min(32, tam + 2); ponTam(); };
+ponTam();
+
+/* ---------- Base de datos del iPhone (IndexedDB) ---------- */
+let db;
+const req = r => new Promise((ok, mal) => { r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); });
+function abreDB(){
+  return new Promise((ok, mal) => {
+    const r = indexedDB.open('mi-grabadora', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('g', {keyPath: 'id'});
+    r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error);
+  });
+}
+const almacen = modo => db.transaction('g', modo).objectStore('g');
+const todas = () => req(almacen('readonly').getAll());
+const una = id => req(almacen('readonly').get(id));
+const guarda = g => req(almacen('readwrite').put(g));
+const quita = id => req(almacen('readwrite').delete(id));
+
+/* ---------- Utilidades ---------- */
+const mmss = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${x}` : `${m}:${x}`; };
+const fechaLarga = t => new Date(t).toLocaleString('es-ES', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+const fechaCorta = t => new Date(t).toLocaleString('es-ES', {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'});
+const icono = q => q === 'Médico' ? '🩺' : q === 'Hijos' ? '👨‍👩‍👧' : '🙂';
+
+/* ---------- Grabar ---------- */
+let quien = 'Médico';
+$('quien').onclick = e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  quien = b.dataset.q;
+  [...$('quien').children].forEach(c => c.setAttribute('aria-pressed', c === b));
+};
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR){ $('conTexto').checked = false; $('conTexto').disabled = true; $('conTexto').parentElement.append(' (no disponible en este navegador)'); }
+
+let grabadora, trozos = [], flujo, inicio = 0, tic, recono = null, texto = '', grabando = false, luz = null;
+
+async function empieza(){
+  try {
+    flujo = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}});
+  } catch(e){
+    alertaSuave('No puedo usar el micrófono. En el iPhone: Ajustes → Apps → Safari → Micrófono → «Permitir». Luego vuelve a abrir la grabadora.');
+    return;
+  }
+  const tipo = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+  grabadora = new MediaRecorder(flujo, tipo ? {mimeType: tipo} : undefined);
+  trozos = []; texto = '';
+  grabadora.ondataavailable = e => { if (e.data && e.data.size) trozos.push(e.data); };
+  grabadora.onstop = termina;
+  grabadora.start(1000);                      // guarda un trozo cada segundo
+  grabando = true; inicio = Date.now();
+  $('grabar').textContent = '■ PARAR Y GUARDAR'; $('grabar').classList.add('on');
+  $('reloj').hidden = false; $('reloj').textContent = '00:00';
+  tic = setInterval(() => { $('reloj').textContent = mmss((Date.now() - inicio) / 1000); }, 500);
+  try { luz = await navigator.wakeLock.request('screen'); } catch(e){}   // que no se apague la pantalla
+  if ($('conTexto').checked && SR) arrancaTexto();
+}
+
+function arrancaTexto(){
+  $('vivo').hidden = false; $('vivo').innerHTML = '<span class="gris">Escuchando…</span>';
+  recono = new SR();
+  recono.lang = 'es-ES'; recono.continuous = true; recono.interimResults = true;
+  recono.onresult = e => {
+    let parcial = '';
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const r = e.results[i];
+      if (r.isFinal) texto += r[0].transcript.trim() + '\n'; else parcial += r[0].transcript;
+    }
+    const v = $('vivo');
+    v.textContent = texto;
+    if (parcial){ const s = document.createElement('span'); s.className = 'gris'; s.textContent = parcial; v.append(s); }
+    v.scrollTop = v.scrollHeight;
+  };
+  recono.onerror = e => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture'){
+      recono = null;
+      $('vivo').textContent = texto + '\n(El iPhone no deja escribir el texto ahora mismo. La grabación sigue bien.)';
+    }
+  };
+  recono.onend = () => { if (grabando && recono) setTimeout(() => { try { recono && recono.start(); } catch(e){} }, 250); };  // se para solo de vez en cuando: lo vuelvo a encender
+  try { recono.start(); } catch(e){}
+}
+
+function para(){
+  grabando = false;
+  clearInterval(tic);
+  if (recono){ const r = recono; recono = null; try { r.stop(); } catch(e){} }
+  try { grabadora.stop(); } catch(e){}
+  flujo && flujo.getTracks().forEach(t => t.stop());
+  if (luz){ luz.release().catch(() => {}); luz = null; }
+  $('grabar').textContent = 'Guardando…'; $('grabar').disabled = true;
+}
+
+async function termina(){
+  const tipo = grabadora.mimeType || (trozos[0] && trozos[0].type) || 'audio/mp4';
+  const blob = new Blob(trozos, {type: tipo});
+  // dejo un momento para que llegue el último texto
+  await new Promise(r => setTimeout(r, 700));
+  const g = {id: Date.now(), fecha: inicio, dura: Math.round((Date.now() - inicio) / 1000), quien, nota: $('nota').value.trim(),
+             tipo, datos: await blob.arrayBuffer(), texto: texto.trim()};
+  try { await guarda(g); }
+  catch(e){ alertaSuave('No se ha podido guardar (¿iPhone sin espacio?). Error: ' + e.message); }
+  $('grabar').disabled = false; $('grabar').textContent = '● GRABAR'; $('grabar').classList.remove('on');
+  $('reloj').hidden = true; $('vivo').hidden = true; $('nota').value = '';
+  await pintaLista();
+  abre(g.id);
+}
+
+$('grabar').onclick = () => grabando ? para() : empieza();
+
+// si se cierra o se esconde la página mientras graba, guardo lo que haya
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && grabando && !luz){ try { luz = await navigator.wakeLock.request('screen'); } catch(e){} }
+});
+window.addEventListener('pagehide', () => { if (grabando) para(); });
+
+function alertaSuave(msg){
+  const p = document.createElement('p'); p.className = 'aviso'; p.textContent = msg;
+  $('consejo').after(p); setTimeout(() => p.remove(), 15000);
+}
+
+/* ---------- Lista ---------- */
+async function pintaLista(){
+  const ul = $('lista'); ul.replaceChildren();
+  const gs = (await todas()).sort((a, b) => b.fecha - a.fecha);
+  if (!gs.length){ ul.innerHTML = '<li class="nota">Todavía no hay grabaciones. Elige con quién hablas y pulsa GRABAR.</li>'; return; }
+  gs.forEach(g => {
+    const li = document.createElement('li'); li.className = 'g';
+    const pos = leeLS('grab.pos.' + g.id, 0);
+    li.innerHTML = `<span class="ic">${icono(g.quien)}</span><div><div class="t1"></div><div class="t2"></div></div><span class="vista"></span>`;
+    li.querySelector('.t1').textContent = g.quien + (g.nota ? ' · ' + g.nota : '');
+    li.querySelector('.t2').textContent = fechaCorta(g.fecha) + ' · ' + mmss(g.dura);
+    li.querySelector('.vista').textContent = pos > 5 ? '▶ ' + mmss(pos) : '';
+    li.onclick = () => abre(g.id);
+    ul.append(li);
+  });
+}
+
+/* ---------- Reproductor ---------- */
+const audio = $('audio');
+audio.preservesPitch = true;   // más despacio pero sin voz de «disco lento»
+let actual = null, url = '', velocidad = leeLS('grab.vel', 0.85), ctx = null, fuente, compresor, ganancia, refuerzo = leeLS('grab.vol', false), ultimoGuardado = 0;
+
+const total = () => isFinite(audio.duration) && audio.duration > 0 ? audio.duration : (actual ? actual.dura : 0);
+
+async function abre(id){
+  actual = await una(id); if (!actual) return;
+  if (url) URL.revokeObjectURL(url);
+  url = URL.createObjectURL(new Blob([actual.datos], {type: actual.tipo}));
+  audio.src = url;
+  $('rTit').textContent = icono(actual.quien) + ' ' + actual.quien + (actual.nota ? ' · ' + actual.nota : '');
+  $('rFecha').textContent = fechaLarga(actual.fecha) + ' · ' + mmss(actual.dura);
+  $('rNota').value = actual.nota || '';
+  $('texto').textContent = actual.texto || '';
+  $('cajaTexto').hidden = !actual.texto;
+  $('tTotal').textContent = mmss(actual.dura); $('tAhora').textContent = '0:00';
+  $('barra').max = actual.dura || 1; $('barra').value = 0;
+  $('play').textContent = '▶';
+  ponVelocidad(velocidad);
+  $('inicio').hidden = true; $('rep').hidden = false; scrollTo(0, 0);
+}
+audio.onloadedmetadata = () => {
+  $('barra').max = total(); $('tTotal').textContent = mmss(total());
+  const pos = leeLS('grab.pos.' + actual.id, 0);
+  if (pos > 5 && pos < total() - 3) audio.currentTime = pos;      // sigue donde lo dejaste
+  audio.playbackRate = velocidad;
+};
+audio.ontimeupdate = () => {
+  $('barra').value = audio.currentTime; $('tAhora').textContent = mmss(audio.currentTime);
+  if (Date.now() - ultimoGuardado > 3000){ ultimoGuardado = Date.now(); ponLS('grab.pos.' + actual.id, audio.currentTime); }
+};
+audio.onplay = () => { $('play').textContent = '❚❚'; };
+audio.onpause = () => { $('play').textContent = '▶'; if (actual) ponLS('grab.pos.' + actual.id, audio.currentTime); };
+audio.onended = () => { ponLS('grab.pos.' + actual.id, 0); };
+
+$('play').onclick = () => {
+  if (refuerzo) montaRefuerzo();
+  if (audio.paused){ audio.playbackRate = velocidad; audio.play().catch(() => {}); } else audio.pause();
+};
+$('atras').onclick = () => { audio.currentTime = Math.max(0, audio.currentTime - 10); };
+$('adelante').onclick = () => { audio.currentTime = Math.min(total(), audio.currentTime + 10); };
+$('barra').oninput = () => { audio.currentTime = +$('barra').value; };
+
+function ponVelocidad(v){
+  velocidad = v; audio.playbackRate = v; ponLS('grab.vel', v);
+  [...$('velos').children].forEach(b => b.setAttribute('aria-pressed', +b.dataset.v === v));
+}
+$('velos').onclick = e => { const b = e.target.closest('button'); if (b) ponVelocidad(+b.dataset.v); };
+
+// Más volumen: un compresor iguala las voces flojas y las fuertes, y luego se sube el volumen
+function montaRefuerzo(){
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  if (!ctx){
+    ctx = new AC();
+    fuente = ctx.createMediaElementSource(audio);
+    compresor = ctx.createDynamicsCompressor();
+    compresor.threshold.value = -45; compresor.knee.value = 20; compresor.ratio.value = 8;
+    compresor.attack.value = 0.005; compresor.release.value = 0.25;
+    ganancia = ctx.createGain();
+    compresor.connect(ganancia).connect(ctx.destination);
+  }
+  ctx.resume();
+  fuente.disconnect();
+  if (refuerzo){ fuente.connect(compresor); ganancia.gain.value = 2.8; }
+  else fuente.connect(ctx.destination);
+}
+function pintaRefuerzo(){ $('volumen').setAttribute('aria-pressed', refuerzo); }
+$('volumen').onclick = () => { refuerzo = !refuerzo; ponLS('grab.vol', refuerzo); pintaRefuerzo(); montaRefuerzo(); };
+pintaRefuerzo();
+
+$('volver').onclick = () => { audio.pause(); $('rep').hidden = true; $('inicio').hidden = false; pintaLista(); };
+
+$('rNota').onchange = async () => { actual.nota = $('rNota').value.trim(); await guarda(actual); $('rTit').textContent = icono(actual.quien) + ' ' + actual.quien + (actual.nota ? ' · ' + actual.nota : ''); };
+
+$('exportar').onclick = async () => {
+  const ext = actual.tipo.includes('mp4') ? 'm4a' : 'webm';
+  const d = new Date(actual.fecha), dd = n => String(n).padStart(2, '0');
+  const nombre = `${actual.quien} ${d.getFullYear()}-${dd(d.getMonth() + 1)}-${dd(d.getDate())} ${dd(d.getHours())}.${dd(d.getMinutes())}.${ext}`;
+  const archivos = [new File([actual.datos], nombre, {type: actual.tipo})];
+  if (actual.texto) archivos.push(new File([fechaLarga(actual.fecha) + '\n' + actual.quien + (actual.nota ? ' · ' + actual.nota : '') + '\n\n' + actual.texto], nombre.replace(/\.\w+$/, '.txt'), {type: 'text/plain'}));
+  if (navigator.canShare && navigator.canShare({files: archivos})){
+    try { await navigator.share({files: archivos, title: nombre}); } catch(e){}
+    return;
+  }
+  archivos.forEach(f => { const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(f), download: f.name}); document.body.append(a); a.click(); a.remove(); });
+};
+
+let seguro = 0;
+$('borrar').onclick = async () => {
+  if (!seguro){ $('borrar').textContent = '¿Seguro? Pulsa otra vez para borrar'; seguro = setTimeout(() => { seguro = 0; $('borrar').textContent = '🗑 Borrar esta grabación'; }, 4000); return; }
+  clearTimeout(seguro); seguro = 0; $('borrar').textContent = '🗑 Borrar esta grabación';
+  audio.pause(); await quita(actual.id); localStorage.removeItem('grab.pos.' + actual.id);
+  $('volver').onclick();
+};
+
+/* ---------- Arranque ---------- */
+(async () => {
+  try { db = await abreDB(); } catch(e){ alertaSuave('Este navegador no deja guardar grabaciones.'); return; }
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});   // pide al iPhone que no borre las grabaciones
+  pintaLista();
+})();
+</script>
+</body>
+</html>
