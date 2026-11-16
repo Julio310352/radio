@@ -2217,7 +2217,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '57', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
+const VERSION = '58', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -5156,9 +5156,11 @@ async function diagnostico(caja){
     if (j.respuesta) l.push(`Respuesta: ${j.respuesta}`);
     if (j.servidor) l.push(`Servidor: ${j.servidor}`);
     if (j.tipo) l.push(`Tipo de sonido: ${j.tipo}`);
+    if (j.formato) l.push(`Forma de emitir: ${j.formato}`);
     if (j.titulos_cada) l.push(`Manda títulos cada: ${j.titulos_cada}`);
     if (j.triton) l.push(`Servicio Triton: ${j.triton}`);
-    l.push(j.t ? `✓ Ahora suena: ${j.t}` : `✗ Sin título${j.problema ? ': ' + j.problema : ''}`);
+    (j.pasos || []).forEach(x => l.push('· ' + x));
+    l.push(j.t ? `✓ Ahora suena: ${j.t}${j.metodo ? '  (' + j.metodo + ')' : ''}` : `✗ Sin título${j.problema ? ': ' + j.problema : ''}`);
     caja.textContent = l.join('\n');
   } catch(e){ caja.textContent = 'No se ha podido comprobar (¿está ahora.php en el NAS?).'; }
 }
