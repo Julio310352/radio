@@ -86,6 +86,7 @@ li.g .vista{margin-left:auto;color:var(--verde);font-size:.8em;white-space:nowra
     <summary><b>📞 ¿Y las llamadas de teléfono?</b></summary>
     <p>Esta grabadora es para hablar en persona (en la consulta, en casa…). Las llamadas las graba el propio iPhone: durante la llamada toca el botón de ondas arriba a la izquierda. Se guardan en la app <b>Notas</b>, en «Grabaciones de llamadas».</p>
   </details>
+  <p class="nota" style="text-align:center">Versión 2</p>
 </main>
 
 <!-- ============ REPRODUCTOR ============ -->
@@ -94,7 +95,8 @@ li.g .vista{margin-left:auto;color:var(--verde);font-size:.8em;white-space:nowra
   <section class="panel" style="margin-top:12px">
     <div class="tit" id="rTit"></div>
     <div class="nota" id="rFecha"></div>
-    <audio id="audio" preload="auto" playsinline></audio>
+    <audio id="audio" preload="auto" playsinline hidden style="width:100%;margin-top:10px"></audio>
+    <p class="aviso" id="rError" hidden></p>
     <input type="range" id="barra" min="0" max="1" step="0.1" value="0" aria-label="Posición">
     <div class="tiempos"><span id="tAhora">0:00</span><span id="tTotal">0:00</span></div>
     <div class="mandos">
@@ -157,6 +159,8 @@ const guarda = g => req(almacen('readwrite').put(g));
 const quita = id => req(almacen('readwrite').delete(id));
 
 /* ---------- Utilidades ---------- */
+// En el iPhone: 'playback' = suena por el altavoz aunque esté en silencio; 'play-and-record' = mientras graba
+function modoSonido(tipo){ try { if (navigator.audioSession) navigator.audioSession.type = tipo; } catch(e){} }
 const mmss = s => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = String(s % 60).padStart(2, '0'); return h ? `${h}:${String(m).padStart(2, '0')}:${x}` : `${m}:${x}`; };
 const fechaLarga = t => new Date(t).toLocaleString('es-ES', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'});
 const fechaCorta = t => new Date(t).toLocaleString('es-ES', {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'});
@@ -176,6 +180,7 @@ if (!SR){ $('conTexto').checked = false; $('conTexto').disabled = true; $('conTe
 let grabadora, trozos = [], flujo, inicio = 0, tic, recono = null, texto = '', grabando = false, luz = null;
 
 async function empieza(){
+  modoSonido('play-and-record');
   try {
     flujo = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}});
   } catch(e){
@@ -187,7 +192,7 @@ async function empieza(){
   trozos = []; texto = '';
   grabadora.ondataavailable = e => { if (e.data && e.data.size) trozos.push(e.data); };
   grabadora.onstop = termina;
-  grabadora.start(1000);                      // guarda un trozo cada segundo
+  grabadora.start();                          // una sola pieza: el iPhone la reproduce mejor
   grabando = true; inicio = Date.now();
   $('grabar').textContent = '■ PARAR Y GUARDAR'; $('grabar').classList.add('on');
   $('reloj').hidden = false; $('reloj').textContent = '00:00';
@@ -228,6 +233,7 @@ function para(){
   try { grabadora.stop(); } catch(e){}
   flujo && flujo.getTracks().forEach(t => t.stop());
   if (luz){ luz.release().catch(() => {}); luz = null; }
+  modoSonido('playback');                     // el sonido vuelve al altavoz, no al auricular
   $('grabar').textContent = 'Guardando…'; $('grabar').disabled = true;
 }
 
@@ -287,7 +293,8 @@ async function abre(id){
   actual = await una(id); if (!actual) return;
   if (url) URL.revokeObjectURL(url);
   url = URL.createObjectURL(new Blob([actual.datos], {type: actual.tipo}));
-  audio.src = url;
+  audio.controls = false; audio.hidden = true; $('rError').hidden = true;
+  audio.src = url; audio.load();
   $('rTit').textContent = icono(actual.quien) + ' ' + actual.quien + (actual.nota ? ' · ' + actual.nota : '');
   $('rFecha').textContent = fechaLarga(actual.fecha) + ' · ' + mmss(actual.dura);
   $('rNota').value = actual.nota || '';
@@ -313,10 +320,24 @@ audio.onplay = () => { $('play').textContent = '❚❚'; };
 audio.onpause = () => { $('play').textContent = '▶'; if (actual) ponLS('grab.pos.' + actual.id, audio.currentTime); };
 audio.onended = () => { ponLS('grab.pos.' + actual.id, 0); };
 
+function fallo(msg){
+  $('rError').textContent = msg; $('rError').hidden = false;
+  audio.controls = true; audio.hidden = false;           // reproductor de reserva del propio iPhone
+}
 $('play').onclick = () => {
-  if (refuerzo) montaRefuerzo();
-  if (audio.paused){ audio.playbackRate = velocidad; audio.play().catch(() => {}); } else audio.pause();
+  modoSonido('playback');
+  $('rError').hidden = true;
+  if (!audio.paused){ audio.pause(); return; }
+  try { if (refuerzo) montaRefuerzo(); } catch(e){ refuerzo = false; pintaRefuerzo(); }
+  audio.playbackRate = velocidad;
+  const r = audio.play();
+  if (r) r.catch(e => {
+    // si el «más volumen» da problemas, lo quito y vuelvo a probar
+    if (refuerzo){ refuerzo = false; ponLS('grab.vol', false); pintaRefuerzo(); try { fuente.disconnect(); fuente.connect(ctx.destination); } catch(x){} }
+    audio.play().catch(e2 => fallo('No puedo reproducirla (' + e2.name + '). Prueba con el reproductor de abajo, o con «Guardar en el iPhone».'));
+  });
 };
+audio.onerror = () => fallo('El iPhone no reconoce esta grabación (error ' + (audio.error ? audio.error.code : '?') + '). Prueba «Guardar en el iPhone» y ábrela desde Archivos.');
 $('atras').onclick = () => { audio.currentTime = Math.max(0, audio.currentTime - 10); };
 $('adelante').onclick = () => { audio.currentTime = Math.min(total(), audio.currentTime + 10); };
 $('barra').oninput = () => { audio.currentTime = +$('barra').value; };
@@ -339,7 +360,7 @@ function montaRefuerzo(){
     ganancia = ctx.createGain();
     compresor.connect(ganancia).connect(ctx.destination);
   }
-  ctx.resume();
+  modoSonido('playback'); ctx.resume();
   fuente.disconnect();
   if (refuerzo){ fuente.connect(compresor); ganancia.gain.value = 2.8; }
   else fuente.connect(ctx.destination);
