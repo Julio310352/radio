@@ -504,6 +504,17 @@ details.lista-em summary{font-size:16px}
 .flabel{font-family:var(--f-display);font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dial);margin-bottom:-4px}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
+.bib-libros{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:10px 0}
+.bib-caps{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px;margin:10px 0}
+.bib-libros .btn,.bib-caps .btn{font-size:16px;padding:10px 6px}
+.bib-on{border-color:var(--dial)!important;color:var(--dial)!important;font-weight:800}
+.bib-ahora{border:1.5px solid var(--dial);border-radius:14px;padding:12px;margin:8px 0 12px}
+.bib-tit{font-size:20px;font-weight:800;color:var(--lcd)}
+.bib-mandos{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
+.bib-mandos .btn{padding:10px 2px;font-size:15px}
+.bib-sig{display:flex;gap:8px;align-items:center;font-size:15px}
+.bib-sig input{width:22px;height:22px}
+.bib-seguir{width:100%;margin:6px 0 12px;font-weight:700}
 .chip{flex:none;background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--muted)}
 .chip[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
 :focus-visible{outline:2px solid var(--dial);outline-offset:2px}
@@ -816,6 +827,10 @@ body.noche #nocheVelo{opacity:.5}
   <div class="not-cab"><h2>🎵 Últimas canciones</h2><button class="d-btn not-cerrar" id="cnCerrar" type="button">Cerrar</button></div>
   <div id="cnOut"></div>
 </div>
+<div class="noticias ajustesPan" id="biPan" hidden role="dialog" aria-label="La Biblia">
+  <div class="not-cab"><h2>📖 La Biblia</h2><button class="d-btn not-cerrar" id="biCerrar" type="button">Cerrar</button></div>
+  <div id="biOut"></div>
+</div>
 <div class="noticias ajustesPan" id="estadPan" hidden role="dialog" aria-label="Lo que más escuchas">
   <div class="not-cab"><h2>📊 Mis horas de radio</h2><button class="d-btn not-cerrar" id="esCerrar" type="button">Cerrar</button></div>
   <div id="estOut"></div>
@@ -862,6 +877,7 @@ body.noche #nocheVelo{opacity:.5}
     <button class="timer" id="pMorse" data-ico="·−" type="button" aria-label="Practicar Morse">Morse</button>
     <button class="timer" id="pEstad" data-ico="📊" type="button" aria-label="Lo que más escuchas">Mis horas</button>
     <button class="timer" id="pCanc" data-ico="🎵" type="button" aria-label="Últimas canciones">Canciones</button>
+    <button class="timer" id="pBiblia" data-ico="📖" type="button" aria-label="La Biblia en audio">Biblia</button>
     <div class="recinfo" id="pRecInfo"></div>
   </div>
 </div>
@@ -1313,7 +1329,7 @@ function toggle(){
   else { quiereSonar = false; audio.pause(); }
 }
 $('pBtn').onclick = toggle;
-wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? (podActual ? 'Podcast' : musActual ? 'Mi música' : 'Escuchando grabación') : 'En directo', 'live'); setPlaying(true); });
+wire('playing', () => { switching = false; staticOff(); cab.classList.remove('tuning'); cab.classList.add('on'); $('iST').classList.add('on'); if (!playingRec && cur) $('lRT').textContent = rtText(cur) + (eq.on && audio === audioNormal ? ' · sin ecualizador' : ''); setStatus(playingRec ? (podActual ? (podActual.biblia ? 'La Biblia · ' + podActual.titulo : 'Podcast') : musActual ? 'Mi música' : 'Escuchando grabación') : 'En directo', 'live'); setPlaying(true); });
 wire('waiting', () => setStatus('Cargando…'));
 wire('pause', () => {
   if (necesitaVigilia() && !switching) setTimeout(() => { if (audio.paused && !switching) modoSilencio(); }, 400); if (!switching){ staticOff(); cab.classList.remove('on', 'tuning'); $('iST').classList.remove('on'); } setPlaying(false); if (!switching && !audio.error) setStatus('En pausa'); });
@@ -2219,7 +2235,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '60', FECHA_VERSION = '13-11-2026';   // cambiar en cada versión nueva
+const VERSION = '61', FECHA_VERSION = '16-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -5328,6 +5344,128 @@ async function pintaCanciones(){
 $('pCanc').onclick = pintaCanciones;
 $('cnCerrar').onclick = () => { $('cnPan').hidden = true; };
 $('ahora').onclick = pintaCanciones;
+
+/* ---------- La Biblia en audio (Reina-Valera, de archive.org) ---------- */
+// La lista de capítulos se pide una vez a archive.org y se guarda en el aparato.
+// Cada capítulo se escucha como un episodio de podcast: recuerda por dónde vas.
+const BIB_ID = 'AudioBiblia_ReinaValera', BIB_BASE = 'https://archive.org/download/' + BIB_ID + '/';
+const BIB_ACENTOS = {Genesis: 'Génesis', Exodo: 'Éxodo', Levitico: 'Levítico', Numeros: 'Números', Josue: 'Josué', Cronicas: 'Crónicas',
+  Nehemias: 'Nehemías', Eclesiastes: 'Eclesiastés', Isaias: 'Isaías', Jeremias: 'Jeremías', Abdias: 'Abdías', Jonas: 'Jonás',
+  Nahum: 'Nahúm', Sofonias: 'Sofonías', Zacarias: 'Zacarías', Malaquias: 'Malaquías', Galatas: 'Gálatas', Filemon: 'Filemón',
+  Habacuc: 'Habacuc', Cantar: 'Cantar', Rut: 'Rut', Ester: 'Ester', Job: 'Job', Hechos: 'Hechos'};
+const bibNombre = s => s.split('_').map(w => BIB_ACENTOS[w] || w).join(' ');
+let bibLibros = null, bibVista = {test: 'AT', libro: null}, bibSeguido = true;
+try { bibSeguido = JSON.parse(localStorage.getItem('radio.bibSeguido') ?? 'true'); } catch(e){}
+async function cargaBiblia(){
+  if (bibLibros) return bibLibros;
+  let nombres = null;
+  try { const c = JSON.parse(localStorage.getItem('radio.bibliaLista')); if (Array.isArray(c) && c.length > 1000) nombres = c; } catch(e){}
+  if (!nombres){
+    const j = await conTiempo(fetch('https://archive.org/metadata/' + BIB_ID).then(r => r.json()), 20000);
+    nombres = (j.files || []).map(f => f.name).filter(n => /\.(mp3|ogg)$/i.test(n));
+    if (nombres.length > 1000) try { localStorage.setItem('radio.bibliaLista', JSON.stringify(nombres)); } catch(e){}
+  }
+  // los .ogg llevan delante el número del libro: 01001-Genesis_01.ogg → libro 1
+  const orden = {};
+  nombres.forEach(n => { const m = n.split('/').pop().match(/^(\d{2})\d{3}-(.+)\.ogg$/i); if (m) orden[m[2]] = +m[1]; });
+  const libros = {};
+  nombres.filter(n => /\.mp3$/i.test(n)).forEach(n => {
+    const stem = n.split('/').pop().replace(/\.mp3$/i, '');
+    const m = stem.match(/^(.+?)_(\d+)$/); if (!m) return;
+    const l = libros[m[1]] = libros[m[1]] || {clave: m[1], nombre: bibNombre(m[1]), num: 99, caps: []};
+    l.caps.push({n: +m[2], ruta: n, stem});
+    if (orden[stem]) l.num = Math.min(l.num, orden[stem]);
+  });
+  bibLibros = Object.values(libros);
+  bibLibros.forEach(l => l.caps.sort((a, b) => a.n - b.n));
+  bibLibros.sort((a, b) => a.num - b.num || a.nombre.localeCompare(b.nombre, 'es'));
+  if (!bibLibros.length) throw new Error('vacía');
+  return bibLibros;
+}
+const bibId = cap => 'biblia:' + cap.stem;
+function bibCap(libro, cap){
+  playPodcast({id: bibId(cap), titulo: `${libro.nombre} ${cap.n}`, url: BIB_BASE + cap.ruta.split('/').map(encodeURIComponent).join('/'),
+               podcast: 'La Biblia', img: '', biblia: true, libro, cap});
+  $('lFreq').textContent = 'BIB';
+  setStatus('Cargando la Biblia…');
+  try { localStorage.setItem('radio.bibliaUlt', JSON.stringify({libro: libro.clave, cap: cap.n})); } catch(e){}
+  if (!$('biPan').hidden) pintaBiblia();
+}
+function bibSig(d){
+  const a = podActual; if (!a || !a.biblia || !bibLibros) return;
+  let li = bibLibros.indexOf(a.libro), ci = a.libro.caps.indexOf(a.cap) + d;
+  if (ci >= a.libro.caps.length){ li++; ci = 0; }
+  else if (ci < 0){ li--; ci = li >= 0 ? bibLibros[li].caps.length - 1 : 0; }
+  if (li < 0 || li >= bibLibros.length) return;
+  bibCap(bibLibros[li], bibLibros[li].caps[ci]);
+}
+audioNormal.addEventListener('ended', () => { if (podActual && podActual.biblia && bibSeguido) setTimeout(() => { if (podActual && podActual.biblia) bibSig(1); }, 1500); });
+audioNormal.addEventListener('timeupdate', () => {
+  if (!podActual || !podActual.biblia || $('biPan').hidden || !$('biTiempo')) return;
+  const d = audio.duration || 0;
+  $('biTiempo').textContent = fmtTime(audio.currentTime) + (d ? ' / ' + fmtTime(d) : '');
+});
+['play', 'pause'].forEach(ev => audioNormal.addEventListener(ev, () => { const b = $('biPlay'); if (b) b.textContent = audioNormal.paused ? '▶' : '❚❚'; }));
+
+async function pintaBiblia(){
+  const out = $('biOut'); $('biPan').hidden = false;
+  if (!bibLibros){
+    out.replaceChildren(note('Cargando la Biblia…'));
+    try { await cargaBiblia(); }
+    catch(e){ out.replaceChildren(note('No he podido traer la lista de la Biblia. Comprueba que hay internet y vuelve a intentarlo.'), boton('Reintentar', pintaBiblia)); return; }
+  }
+  out.replaceChildren();
+  // lo que suena ahora, con sus mandos
+  const a = podActual && podActual.biblia ? podActual : null;
+  if (a){
+    const caja = document.createElement('div'); caja.className = 'bib-ahora';
+    caja.append(Object.assign(document.createElement('div'), {className: 'bib-tit', textContent: '📖 ' + a.titulo}),
+      Object.assign(document.createElement('div'), {className: 'note', id: 'biTiempo', textContent: fmtTime(audio.currentTime)}));
+    const f = document.createElement('div'); f.className = 'bib-mandos';
+    const play = boton(audio.paused ? '▶' : '❚❚', () => { audio.paused ? audio.play().catch(() => {}) : audio.pause(); });
+    play.id = 'biPlay';
+    f.append(boton('⏮ Cap.', () => bibSig(-1)), boton('⟲ 15 s', () => salto(-15)), play, boton('30 s ⟳', () => salto(30)), boton('Cap. ⏭', () => bibSig(1)));
+    const sig = Object.assign(document.createElement('label'), {className: 'bib-sig'});
+    const chk = Object.assign(document.createElement('input'), {type: 'checkbox', checked: bibSeguido});
+    chk.onchange = () => { bibSeguido = chk.checked; try { localStorage.setItem('radio.bibSeguido', JSON.stringify(bibSeguido)); } catch(e){} };
+    sig.append(chk, ' Al terminar, seguir con el capítulo siguiente');
+    caja.append(f, sig); out.append(caja);
+  } else {
+    let ult = null; try { ult = JSON.parse(localStorage.getItem('radio.bibliaUlt')); } catch(e){}
+    const l = ult && bibLibros.find(x => x.clave === ult.libro), c = l && l.caps.find(x => x.n === ult.cap);
+    if (c){ const p = podPos[bibId(c)]; out.append(boton(`▶ Seguir por donde lo dejé: ${l.nombre} ${c.n}` + (p && !p.fin && p.t > 5 ? ` (vas por ${fmtTime(p.t)})` : ''), () => bibCap(l, c), 'btn bib-seguir')); }
+  }
+  // Antiguo / Nuevo Testamento
+  const tabs = document.createElement('div'); tabs.className = 'chips';
+  [['AT', 'Antiguo Testamento'], ['NT', 'Nuevo Testamento']].forEach(([v, t]) => {
+    const b = boton(t, () => { bibVista = {test: v, libro: null}; pintaBiblia(); }, 'chip');
+    b.setAttribute('aria-pressed', bibVista.test === v); tabs.append(b);
+  });
+  out.append(tabs);
+  const libro = bibVista.libro && bibLibros.find(x => x.clave === bibVista.libro);
+  if (libro){
+    out.append(boton('← Todos los libros', () => { bibVista.libro = null; pintaBiblia(); }), heading(libro.nombre));
+    const g = document.createElement('div'); g.className = 'bib-caps';
+    libro.caps.forEach(c => {
+      const p = podPos[bibId(c)];
+      const b = boton(String(c.n) + (p && p.fin ? ' ✓' : p && p.t > 5 ? ' ◐' : ''), () => bibCap(libro, c), 'btn');
+      if (a && a.cap === c) b.classList.add('bib-on');
+      b.setAttribute('aria-label', `${libro.nombre}, capítulo ${c.n}`); g.append(b);
+    });
+    out.append(note('Toca un capítulo. ✓ = ya escuchado · ◐ = empezado'), g);
+  } else {
+    const g = document.createElement('div'); g.className = 'bib-libros';
+    bibLibros.filter(l => (l.num <= 39) === (bibVista.test === 'AT')).forEach(l => {
+      const b = boton(l.nombre, () => { bibVista.libro = l.clave; pintaBiblia(); $('biPan').scrollTop = 0; }, 'btn');
+      if (a && a.libro === l) b.classList.add('bib-on');
+      g.append(b);
+    });
+    out.append(g);
+  }
+  out.append(note('Biblia Reina-Valera leída en voz alta, de archive.org. Necesita internet.'));
+}
+$('pBiblia').onclick = () => { if (podActual && podActual.biblia) bibVista = {test: podActual.libro.num <= 39 ? 'AT' : 'NT', libro: podActual.libro.clave}; pintaBiblia(); };
+$('biCerrar').onclick = () => { $('biPan').hidden = true; };
 
 /* ---------- Arranque ---------- */
 try {
