@@ -86,7 +86,7 @@ li.g .vista{margin-left:auto;color:var(--verde);font-size:.8em;white-space:nowra
     <summary><b>📞 ¿Y las llamadas de teléfono?</b></summary>
     <p>Esta grabadora es para hablar en persona (en la consulta, en casa…). Las llamadas las graba el propio iPhone: durante la llamada toca el botón de ondas arriba a la izquierda. Se guardan en la app <b>Notas</b>, en «Grabaciones de llamadas».</p>
   </details>
-  <p class="nota" style="text-align:center">Versión 2</p>
+  <p class="nota" style="text-align:center">Versión 3</p>
 </main>
 
 <!-- ============ REPRODUCTOR ============ -->
@@ -95,7 +95,9 @@ li.g .vista{margin-left:auto;color:var(--verde);font-size:.8em;white-space:nowra
   <section class="panel" style="margin-top:12px">
     <div class="tit" id="rTit"></div>
     <div class="nota" id="rFecha"></div>
-    <audio id="audio" preload="auto" playsinline hidden style="width:100%;margin-top:10px"></audio>
+    <p class="aviso" id="rEstado" style="text-align:center;margin:.3em 0"></p>
+    <div class="nota" style="margin-top:6px">Si los botones grandes no suenan, usa este reproductor del iPhone:</div>
+    <audio id="audio" preload="auto" playsinline controls style="width:100%;margin-top:6px"></audio>
     <p class="aviso" id="rError" hidden></p>
     <input type="range" id="barra" min="0" max="1" step="0.1" value="0" aria-label="Posición">
     <div class="tiempos"><span id="tAhora">0:00</span><span id="tTotal">0:00</span></div>
@@ -175,6 +177,8 @@ $('quien').onclick = e => {
 };
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+$('conTexto').checked = leeLS('grab.texto', true);
+$('conTexto').onchange = () => ponLS('grab.texto', $('conTexto').checked);
 if (!SR){ $('conTexto').checked = false; $('conTexto').disabled = true; $('conTexto').parentElement.append(' (no disponible en este navegador)'); }
 
 let grabadora, trozos = [], flujo, inicio = 0, tic, recono = null, texto = '', grabando = false, luz = null;
@@ -240,6 +244,7 @@ function para(){
 async function termina(){
   const tipo = grabadora.mimeType || (trozos[0] && trozos[0].type) || 'audio/mp4';
   const blob = new Blob(trozos, {type: tipo});
+  if (blob.size < 3000 && $('conTexto').checked){ $('conTexto').checked = false; ponLS('grab.texto', false); }
   // dejo un momento para que llegue el último texto
   await new Promise(r => setTimeout(r, 700));
   const g = {id: Date.now(), fecha: inicio, dura: Math.round((Date.now() - inicio) / 1000), quien, nota: $('nota').value.trim(),
@@ -293,10 +298,12 @@ async function abre(id){
   actual = await una(id); if (!actual) return;
   if (url) URL.revokeObjectURL(url);
   url = URL.createObjectURL(new Blob([actual.datos], {type: actual.tipo}));
-  audio.controls = false; audio.hidden = true; $('rError').hidden = true;
+  $('rError').hidden = true; $('rEstado').textContent = '';
   audio.src = url; audio.load();
   $('rTit').textContent = icono(actual.quien) + ' ' + actual.quien + (actual.nota ? ' · ' + actual.nota : '');
-  $('rFecha').textContent = fechaLarga(actual.fecha) + ' · ' + mmss(actual.dura);
+  const kb = Math.round((actual.datos.byteLength || 0) / 1024);
+  $('rFecha').textContent = fechaLarga(actual.fecha) + ' · ' + mmss(actual.dura) + ' · ' + (kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB');
+  if (kb < 3) fallo('Esta grabación ha salido vacía: el micrófono no grabó nada. Haz otra con la casilla «Escribir en pantalla lo que se dice» DESMARCADA.');
   $('rNota').value = actual.nota || '';
   $('texto').textContent = actual.texto || '';
   $('cajaTexto').hidden = !actual.texto;
@@ -317,12 +324,13 @@ audio.ontimeupdate = () => {
   if (Date.now() - ultimoGuardado > 3000){ ultimoGuardado = Date.now(); ponLS('grab.pos.' + actual.id, audio.currentTime); }
 };
 audio.onplay = () => { $('play').textContent = '❚❚'; };
-audio.onpause = () => { $('play').textContent = '▶'; if (actual) ponLS('grab.pos.' + actual.id, audio.currentTime); };
+audio.onplaying = () => { $('rEstado').textContent = '🔊 Sonando'; };
+audio.onwaiting = () => { $('rEstado').textContent = 'Cargando…'; };
+audio.onpause = () => { $('play').textContent = '▶'; $('rEstado').textContent = ''; if (actual) ponLS('grab.pos.' + actual.id, audio.currentTime); };
 audio.onended = () => { ponLS('grab.pos.' + actual.id, 0); };
 
 function fallo(msg){
   $('rError').textContent = msg; $('rError').hidden = false;
-  audio.controls = true; audio.hidden = false;           // reproductor de reserva del propio iPhone
 }
 $('play').onclick = () => {
   modoSonido('playback');
@@ -330,6 +338,7 @@ $('play').onclick = () => {
   if (!audio.paused){ audio.pause(); return; }
   try { if (refuerzo) montaRefuerzo(); } catch(e){ refuerzo = false; pintaRefuerzo(); }
   audio.playbackRate = velocidad;
+  $('rEstado').textContent = 'Cargando…';
   const r = audio.play();
   if (r) r.catch(e => {
     // si el «más volumen» da problemas, lo quito y vuelvo a probar
