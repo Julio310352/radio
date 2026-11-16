@@ -5365,17 +5365,34 @@ async function cargaBiblia(){
     nombres = (j.files || []).map(f => f.name).filter(n => /\.(mp3|ogg)$/i.test(n));
     if (nombres.length > 1000) try { localStorage.setItem('radio.bibliaLista', JSON.stringify(nombres)); } catch(e){}
   }
-  // los .ogg llevan delante el número del libro: 01001-Genesis_01.ogg → libro 1
+  // Los nombres pueden venir de dos formas:
+  //   01001-Genesis.mp3 / 01001-Genesis_01.ogg → libro 01, capítulo 001
+  //   Genesis_01.mp3 (y el número del libro sale del .ogg con el mismo nombre)
   const orden = {};
-  nombres.forEach(n => { const m = n.split('/').pop().match(/^(\d{2})\d{3}-(.+)\.ogg$/i); if (m) orden[m[2]] = +m[1]; });
-  const libros = {};
-  nombres.filter(n => /\.mp3$/i.test(n)).forEach(n => {
-    const stem = n.split('/').pop().replace(/\.mp3$/i, '');
-    const m = stem.match(/^(.+?)_(\d+)$/); if (!m) return;
-    const l = libros[m[1]] = libros[m[1]] || {clave: m[1], nombre: bibNombre(m[1]), num: 99, caps: []};
-    l.caps.push({n: +m[2], ruta: n, stem});
-    if (orden[stem]) l.num = Math.min(l.num, orden[stem]);
+  nombres.forEach(n => { const m = n.split('/').pop().match(/^(\d{2})\d{3}-(.+)\.(?:ogg|mp3)$/i); if (m) orden[m[2]] = +m[1]; });
+  const libros = {}, vistos = {};
+  // primero los .mp3 (van en todos los aparatos); el .ogg solo si no hay .mp3 de ese capítulo
+  const lista = [...nombres.filter(n => /\.mp3$/i.test(n)), ...nombres.filter(n => /\.ogg$/i.test(n))];
+  lista.forEach(n => {
+    const stem = n.split('/').pop().replace(/\.(mp3|ogg)$/i, '');
+    let num, cap, nombre;
+    const m1 = stem.match(/^(\d{2})(\d{3})-(.+)$/);
+    if (m1){
+      num = +m1[1]; cap = +m1[2];
+      nombre = m1[3].replace(/_(\d+|\d+kb|vbr)$/i, '');
+    } else {
+      const m2 = stem.match(/^(.+?)_(\d+)$/); if (!m2) return;
+      nombre = m2[1]; cap = +m2[2]; num = orden[stem] || 99;
+    }
+    const clave = nombre, idCap = clave + '#' + cap;
+    if (vistos[idCap]) return; vistos[idCap] = true;
+    const l = libros[clave] = libros[clave] || {clave, nombre: bibNombre(nombre), num: 99, caps: []};
+    l.caps.push({n: cap, ruta: n, stem});
+    l.num = Math.min(l.num, num);
   });
+  // Antiguo o Nuevo Testamento: por el número del libro (1-39 = AT) o, si no lo hay, por su nombre
+  const NT = /(^|_)(Mateo|Marcos|Lucas|Juan|Hechos|Romanos|Corintios|Galatas|Efesios|Filipenses|Colosenses|Tesalonicenses|Timoteo|Tito|Filemon|Hebreos|Santiago|Pedro|Judas|Apocalipsis)$/i;
+  Object.values(libros).forEach(l => { l.nt = l.num !== 99 ? l.num > 39 : NT.test(l.clave.replace(/^\d+/, '')); });
   bibLibros = Object.values(libros);
   bibLibros.forEach(l => l.caps.sort((a, b) => a.n - b.n));
   bibLibros.sort((a, b) => a.num - b.num || a.nombre.localeCompare(b.nombre, 'es'));
@@ -5455,7 +5472,7 @@ async function pintaBiblia(){
     out.append(note('Toca un capítulo. ✓ = ya escuchado · ◐ = empezado'), g);
   } else {
     const g = document.createElement('div'); g.className = 'bib-libros';
-    bibLibros.filter(l => (l.num <= 39) === (bibVista.test === 'AT')).forEach(l => {
+    bibLibros.filter(l => l.nt === (bibVista.test === 'NT')).forEach(l => {
       const b = boton(l.nombre, () => { bibVista.libro = l.clave; pintaBiblia(); $('biPan').scrollTop = 0; }, 'btn');
       if (a && a.libro === l) b.classList.add('bib-on');
       g.append(b);
@@ -5464,7 +5481,7 @@ async function pintaBiblia(){
   }
   out.append(note('Biblia Reina-Valera leída en voz alta, de archive.org. Necesita internet.'));
 }
-$('pBiblia').onclick = () => { if (podActual && podActual.biblia) bibVista = {test: podActual.libro.num <= 39 ? 'AT' : 'NT', libro: podActual.libro.clave}; pintaBiblia(); };
+$('pBiblia').onclick = () => { if (podActual && podActual.biblia) bibVista = {test: podActual.libro.nt ? 'NT' : 'AT', libro: podActual.libro.clave}; pintaBiblia(); };
 $('biCerrar').onclick = () => { $('biPan').hidden = true; };
 
 /* ---------- Arranque ---------- */
