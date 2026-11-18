@@ -893,11 +893,14 @@ async function api(path){
     try{
       const ctl = new AbortController();
       const t = setTimeout(() => ctl.abort(), 9000);
-      const r = await fetch(s + path, {signal: ctl.signal});
-      clearTimeout(t);
-      if (!r.ok) throw new Error(r.status);
-      srv = (srv + i) % SERVERS.length;
-      return await r.json();
+      try {
+        const r = await fetch(s + path, {signal: ctl.signal});
+        if (!r.ok) throw new Error(r.status);
+        srv = (srv + i) % SERVERS.length;
+        return await r.json();
+      } finally {
+        clearTimeout(t);
+      }
     }catch(e){ /* probamos el siguiente servidor */ }
   }
   throw new Error('sin conexión');
@@ -1367,9 +1370,11 @@ wire('waiting', () => {
 wire('playing', () => clearTimeout(vigia));
 wire('ended', () => { if (quiereSonar && cur && !playingRec) setTimeout(() => { if (quiereSonar) { setStatus('Reconectando…'); play(cur, {reintento: true}); } }, 2000); });
 if ('mediaSession' in navigator){
-  navigator.mediaSession.setActionHandler('play', () => cur && play(cur));
-  navigator.mediaSession.setActionHandler('pause', () => { quiereSonar = false; audio.pause(); });
-  try { navigator.mediaSession.setActionHandler('stop', () => audio.pause()); } catch(e){}
+  // Algunos navegadores solo implementan una parte de Media Session.
+  // Cada acción se registra por separado para que una no impida las demás.
+  try { navigator.mediaSession.setActionHandler('play', () => cur && play(cur)); } catch(e){}
+  try { navigator.mediaSession.setActionHandler('pause', () => { quiereSonar = false; audio.pause(); }); } catch(e){}
+  try { navigator.mediaSession.setActionHandler('stop', () => { quiereSonar = false; audio.pause(); }); } catch(e){}
   // Botones ⏮ ⏭ de la pantalla de bloqueo y de los auriculares
   try { navigator.mediaSession.setActionHandler('nexttrack', () => saltar(1)); } catch(e){}
   try { navigator.mediaSession.setActionHandler('previoustrack', () => saltar(-1)); } catch(e){}
@@ -1537,7 +1542,8 @@ function updRec(){
   const b = $('pRec');
   if (!rec){ b.classList.remove('act'); $('pRecTxt').textContent = 'Grabar'; $('iREC').classList.remove('on'); recMsg(''); return; }
   b.classList.add('act'); $('pRecTxt').textContent = 'Parar'; $('iREC').classList.add('on');
-  recMsg(`${fmtTime((Date.now() - rec.start) / 1000)} · ${fmtMB(rec.bytes)} · ${(rec.st._label || rec.st.name).trim()}`);
+  const avisoMemoria = rec.bytes >= 100 * 1048576 ? ' · archivo grande: detén y guarda pronto' : '';
+  recMsg(`${fmtTime((Date.now() - rec.start) / 1000)} · ${fmtMB(rec.bytes)} · ${(rec.st._label || rec.st.name).trim()}${avisoMemoria}`);
 }
 async function startRec(){
   if (!cur || playingRec){ recMsg('Elige primero una emisora.'); return; }
@@ -5273,10 +5279,16 @@ async function cargaHistorial(){
               .sort((a, b) => b.h - a.h);
 }
 function csvHistorial(lista){
-  const q = v => '"' + String(v || '').replace(/"/g, '""') + '"';
+  // Evita que Excel/LibreOffice interpreten nombres de emisoras o canciones
+  // que empiecen por =, +, - o @ como fórmulas al abrir el CSV.
+  const q = v => {
+    let s = String(v ?? '');
+    if (/^[\s]*[=+\-@]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
   const filas = [['Fecha', 'Hora', 'Canción', 'Artista', 'Disco', 'Emisora', 'Favorita'].map(q).join(';')];
   lista.forEach(c => { const d = new Date(c.h); filas.push([d.toLocaleDateString('es-ES'), hhmm(d), c.titulo || c.t, c.artista, c.disco, c.est, cancFav[c.t] ? 'Sí' : ''].map(q).join(';')); });
-  const blob = new Blob(['﻿' + filas.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const blob = new Blob(['\uFEFF' + filas.join('\r\n')], {type: 'text/csv;charset=utf-8'});
   const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: `canciones_mi_radio_${fechaISO(new Date())}.csv`});
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
@@ -5327,14 +5339,14 @@ async function pintaCanciones(){
   const cuenta = Object.assign(document.createElement('p'), {className: 'note', id: 'cnCuenta', textContent: 'Cargando…'});
   const lista = Object.assign(document.createElement('div'), {id: 'cnLista'});
   const pie = document.createElement('div'); pie.className = 'fila';
-  pie.append(boton('⬇ Descargar la lista (Excel)', () => csvHistorial(histTodas), 'btn'));
+  pie.append(boton('⬇ Descargar CSV (Excel / LibreOffice)', () => csvHistorial(histTodas), 'btn'));
   let seg = 0;
   const borra = boton('Borrar el historial de este aparato', () => {
     if (!seg){ borra.textContent = '¿Seguro? Pulsa otra vez'; seg = setTimeout(() => { seg = 0; borra.textContent = 'Borrar el historial de este aparato'; }, 4000); return; }
     canciones = []; guardaCanciones(); pintaCanciones();
   }, 'btn');
   pie.append(borra);
-  out.append(f, cuenta, note('Toca una canción para buscarla y escucharla entera. La ★ la guarda en tus favoritas.'), lista, pie);
+  out.append(f, cuenta, note('Toca una canción para buscarla y escucharla entera. La ★ la guarda en tus favoritas. La descarga es CSV compatible con Excel y LibreOffice.'), lista, pie);
   histTodas = await cargaHistorial();
   const emisoras = [...new Set(histTodas.map(c => c.est))].sort((a, b) => a.localeCompare(b, 'es'));
   est.append(new Option('Todas las emisoras', ''), ...emisoras.map(e => new Option(e, e)));
