@@ -2235,7 +2235,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '62', FECHA_VERSION = '19-11-2026';   // cambiar en cada versión nueva
+const VERSION = '63', FECHA_VERSION = '19-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4451,9 +4451,13 @@ async function copiaGuardar(msg){
     const bytes = new TextEncoder().encode(cuerpo), TROZO = 512 * 1024;
     const n = Math.max(1, Math.ceil(bytes.length / TROZO)), id = Date.now().toString(36);
     for (let i = 0; i < n; i++){
-      const r = await fetch(`copia.php?id=${id}&parte=${i}&de=${n}`, {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: new Blob([bytes.subarray(i * TROZO, (i + 1) * TROZO)])});
+      const r = await fetch(`copia.php?id=${id}&parte=${i}&de=${n}&total=${bytes.length}`, {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: new Blob([bytes.subarray(i * TROZO, (i + 1) * TROZO)])});
       if (r.status === 404) throw new Error('no encuentro copia.php en la carpeta radio del NAS. Hay que copiarlo allí.');
-      let j; try { j = await r.json(); } catch(e){ throw new Error(`copia.php no contesta bien (error ${r.status}). Copia al NAS el copia.php nuevo.`); }
+      const txt = await r.text();
+      let j; try { j = JSON.parse(txt); } catch(e){
+        const cual = txt.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+        throw new Error(`copia.php no contesta bien (error ${r.status}${cual ? ': ' + cual : ''}). Copia al NAS el copia.php nuevo.`);
+      }
       if (!j.ok) throw new Error(j.error || 'error ' + r.status);
       if (n > 1) msg.textContent = `Guardando en el NAS… ${Math.round((i + 1) / n * 100)} %`;
     }
