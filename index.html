@@ -2235,7 +2235,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '61', FECHA_VERSION = '16-11-2026';   // cambiar en cada versión nueva
+const VERSION = '62', FECHA_VERSION = '19-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4447,11 +4447,19 @@ async function copiaGuardar(msg){
   msg.textContent = 'Guardando en el NAS…';
   try {
     const cuerpo = JSON.stringify({v: 1, fecha: new Date().toISOString(), version: VERSION, aparato: navigator.platform || '', datos: datosRadio()});
-    const r = await fetch('copia.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: cuerpo});
-    const j = await r.json();
-    if (!j.ok) throw new Error();
-    msg.textContent = `Copia guardada en el NAS (${Math.max(1, Math.round(cuerpo.length / 1024))} KB). La copia anterior también se conserva.`;
-  } catch(e){ msg.textContent = 'No se ha podido guardar. Comprueba que copia.php está en la carpeta radio del NAS.'; }
+    // se manda en trozos de medio mega: el NAS no admite envíos muy grandes de una vez
+    const bytes = new TextEncoder().encode(cuerpo), TROZO = 512 * 1024;
+    const n = Math.max(1, Math.ceil(bytes.length / TROZO)), id = Date.now().toString(36);
+    for (let i = 0; i < n; i++){
+      const r = await fetch(`copia.php?id=${id}&parte=${i}&de=${n}`, {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: new Blob([bytes.subarray(i * TROZO, (i + 1) * TROZO)])});
+      if (r.status === 404) throw new Error('no encuentro copia.php en la carpeta radio del NAS. Hay que copiarlo allí.');
+      let j; try { j = await r.json(); } catch(e){ throw new Error(`copia.php no contesta bien (error ${r.status}). Copia al NAS el copia.php nuevo.`); }
+      if (!j.ok) throw new Error(j.error || 'error ' + r.status);
+      if (n > 1) msg.textContent = `Guardando en el NAS… ${Math.round((i + 1) / n * 100)} %`;
+    }
+    const kb = Math.max(1, Math.round(bytes.length / 1024));
+    msg.textContent = `Copia guardada en el NAS (${kb >= 1024 ? (kb / 1024).toLocaleString('es-ES', {maximumFractionDigits: 1}) + ' MB' : kb + ' KB'}). La copia anterior también se conserva.`;
+  } catch(e){ msg.textContent = 'No se ha podido guardar: ' + (e.message === 'Failed to fetch' || e.message === 'Load failed' ? 'no llego al NAS. ¿Estás en el Wi-Fi de casa?' : e.message); }
 }
 async function copiaRecuperar(msg){
   msg.textContent = 'Leyendo la copia del NAS…';
@@ -5365,34 +5373,17 @@ async function cargaBiblia(){
     nombres = (j.files || []).map(f => f.name).filter(n => /\.(mp3|ogg)$/i.test(n));
     if (nombres.length > 1000) try { localStorage.setItem('radio.bibliaLista', JSON.stringify(nombres)); } catch(e){}
   }
-  // Los nombres pueden venir de dos formas:
-  //   01001-Genesis.mp3 / 01001-Genesis_01.ogg → libro 01, capítulo 001
-  //   Genesis_01.mp3 (y el número del libro sale del .ogg con el mismo nombre)
+  // los .ogg llevan delante el número del libro: 01001-Genesis_01.ogg → libro 1
   const orden = {};
-  nombres.forEach(n => { const m = n.split('/').pop().match(/^(\d{2})\d{3}-(.+)\.(?:ogg|mp3)$/i); if (m) orden[m[2]] = +m[1]; });
-  const libros = {}, vistos = {};
-  // primero los .mp3 (van en todos los aparatos); el .ogg solo si no hay .mp3 de ese capítulo
-  const lista = [...nombres.filter(n => /\.mp3$/i.test(n)), ...nombres.filter(n => /\.ogg$/i.test(n))];
-  lista.forEach(n => {
-    const stem = n.split('/').pop().replace(/\.(mp3|ogg)$/i, '');
-    let num, cap, nombre;
-    const m1 = stem.match(/^(\d{2})(\d{3})-(.+)$/);
-    if (m1){
-      num = +m1[1]; cap = +m1[2];
-      nombre = m1[3].replace(/_(\d+|\d+kb|vbr)$/i, '');
-    } else {
-      const m2 = stem.match(/^(.+?)_(\d+)$/); if (!m2) return;
-      nombre = m2[1]; cap = +m2[2]; num = orden[stem] || 99;
-    }
-    const clave = nombre, idCap = clave + '#' + cap;
-    if (vistos[idCap]) return; vistos[idCap] = true;
-    const l = libros[clave] = libros[clave] || {clave, nombre: bibNombre(nombre), num: 99, caps: []};
-    l.caps.push({n: cap, ruta: n, stem});
-    l.num = Math.min(l.num, num);
+  nombres.forEach(n => { const m = n.split('/').pop().match(/^(\d{2})\d{3}-(.+)\.ogg$/i); if (m) orden[m[2]] = +m[1]; });
+  const libros = {};
+  nombres.filter(n => /\.mp3$/i.test(n)).forEach(n => {
+    const stem = n.split('/').pop().replace(/\.mp3$/i, '');
+    const m = stem.match(/^(.+?)_(\d+)$/); if (!m) return;
+    const l = libros[m[1]] = libros[m[1]] || {clave: m[1], nombre: bibNombre(m[1]), num: 99, caps: []};
+    l.caps.push({n: +m[2], ruta: n, stem});
+    if (orden[stem]) l.num = Math.min(l.num, orden[stem]);
   });
-  // Antiguo o Nuevo Testamento: por el número del libro (1-39 = AT) o, si no lo hay, por su nombre
-  const NT = /(^|_)(Mateo|Marcos|Lucas|Juan|Hechos|Romanos|Corintios|Galatas|Efesios|Filipenses|Colosenses|Tesalonicenses|Timoteo|Tito|Filemon|Hebreos|Santiago|Pedro|Judas|Apocalipsis)$/i;
-  Object.values(libros).forEach(l => { l.nt = l.num !== 99 ? l.num > 39 : NT.test(l.clave.replace(/^\d+/, '')); });
   bibLibros = Object.values(libros);
   bibLibros.forEach(l => l.caps.sort((a, b) => a.n - b.n));
   bibLibros.sort((a, b) => a.num - b.num || a.nombre.localeCompare(b.nombre, 'es'));
@@ -5472,7 +5463,7 @@ async function pintaBiblia(){
     out.append(note('Toca un capítulo. ✓ = ya escuchado · ◐ = empezado'), g);
   } else {
     const g = document.createElement('div'); g.className = 'bib-libros';
-    bibLibros.filter(l => l.nt === (bibVista.test === 'NT')).forEach(l => {
+    bibLibros.filter(l => (l.num <= 39) === (bibVista.test === 'AT')).forEach(l => {
       const b = boton(l.nombre, () => { bibVista.libro = l.clave; pintaBiblia(); $('biPan').scrollTop = 0; }, 'btn');
       if (a && a.libro === l) b.classList.add('bib-on');
       g.append(b);
@@ -5481,7 +5472,7 @@ async function pintaBiblia(){
   }
   out.append(note('Biblia Reina-Valera leída en voz alta, de archive.org. Necesita internet.'));
 }
-$('pBiblia').onclick = () => { if (podActual && podActual.biblia) bibVista = {test: podActual.libro.nt ? 'NT' : 'AT', libro: podActual.libro.clave}; pintaBiblia(); };
+$('pBiblia').onclick = () => { if (podActual && podActual.biblia) bibVista = {test: podActual.libro.num <= 39 ? 'AT' : 'NT', libro: podActual.libro.clave}; pintaBiblia(); };
 $('biCerrar').onclick = () => { $('biPan').hidden = true; };
 
 /* ---------- Arranque ---------- */
