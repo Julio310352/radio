@@ -476,6 +476,11 @@ details.lista-em summary{font-size:16px}
 .cn-diag{white-space:pre-wrap;word-break:break-all;font-family:var(--f-body);font-size:14px;line-height:1.5;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px;margin:8px 0}
 .cn-filtros{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:10px 0}
 .cn-filtros .chip[aria-pressed="true"]{border-color:var(--estrella,#f5b400);color:var(--estrella,#f5b400)}
+.cn-hora{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cn-hora .field{width:auto;flex:0 1 auto}
+.cn-comp{font-size:20px}
+.cmp-lista{list-style:none;padding:0;margin:8px 0;font-size:16px;line-height:1.5}
+.cmp-lista li{padding:4px 0;border-bottom:1px solid var(--line)}
 .cn-dia{list-style:none;margin:14px 0 4px;font-family:var(--f-display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--dial)}
 /* Tarjeta «Ahora suena» */
 .ahora{display:flex;align-items:center;gap:14px;width:100%;margin:12px 0 4px;padding:10px;text-align:left;cursor:pointer;
@@ -515,6 +520,7 @@ details.lista-em summary{font-size:16px}
 .bib-sig{display:flex;gap:8px;align-items:center;font-size:15px}
 .bib-sig input{width:22px;height:22px}
 .bib-seguir{width:100%;margin:6px 0 12px;font-weight:700}
+.bib-plan{border:1.5px solid var(--line);border-radius:14px;padding:12px;margin:0 0 12px}
 .chip{flex:none;background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;color:var(--muted)}
 .chip[aria-pressed="true"]{border-color:var(--dial);color:var(--dial)}
 :focus-visible{outline:2px solid var(--dial);outline-offset:2px}
@@ -658,6 +664,8 @@ body.noche #nocheVelo{opacity:.5}
         <div class="eqpanel off" id="eqPanel" hidden>
           <label class="eqsw"><input type="checkbox" id="eqOn"> Ecualizador</label>
           <label class="eqsw" style="font-size:17px"><input type="checkbox" id="eqPorEm"> Recordar un ajuste para cada emisora</label>
+          <label class="eqsw" style="font-size:17px"><input type="checkbox" id="eqVoces"> 🗣 Voces claras (tertulias y noticias)</label>
+          <label class="eqsw" style="font-size:17px"><input type="checkbox" id="eqIgualar"> 🔈 Mismo volumen en todas las emisoras</label>
           <div class="eqbands" id="eqBands"></div>
           <div class="eqpre" id="eqPre"></div>
           <p class="vhint">Si una emisora no lo permite, suena igual pero sin ecualizador.</p>
@@ -1377,13 +1385,21 @@ if ('mediaSession' in navigator){
 
 /* ---------- Volumen y ecualizador ---------- */
 const EQ_BANDAS = [[60, 'lowshelf', '60'], [230, 'peaking', '230'], [910, 'peaking', '910'], [3600, 'peaking', '3,6k'], [14000, 'highshelf', '14k']];
-const EQ_PRESETS = {Plano: [0, 0, 0, 0, 0], Voz: [-4, -1, 3, 4, 1], 'Música': [3, 1, 0, 1, 3], Graves: [7, 4, 0, -1, -1], 'Clásica': [2, 0, -1, 1, 3]};
+const EQ_PRESETS = {Plano: [0, 0, 0, 0, 0], Voz: [-4, -1, 3, 4, 1], 'Voces claras': [-6, -2, 2, 6, 3], 'Música': [3, 1, 0, 1, 3], Graves: [7, 4, 0, -1, -1], 'Clásica': [2, 0, -1, 1, 3]};
 function loadEq(){
   const d = {on: false, g: [0, 0, 0, 0, 0], vol: 1};
   try { return Object.assign(d, JSON.parse(localStorage.getItem('radio.eq')) || {}); } catch(e){ return d; }
 }
 function saveEq(){ try { localStorage.setItem('radio.eq', JSON.stringify(eq)); } catch(e){} }
-let eq = loadEq(), eqFiltros = [], eqGanancia = null, analizador = null;
+let eq = loadEq(), eqFiltros = [], eqGanancia = null, analizador = null, eqComp = null, eqRealce = null;
+// Voces claras e igualar volumen: un compresor sube lo que suena flojo y baja lo que suena fuerte
+function aplicaComp(){
+  if (!eqComp) return;
+  //            umbral  rodilla  proporción  ataque  relajación  realce
+  const m = eq.voces ? [-40, 15, 8, .005, .25, 2.2] : eq.igualar ? [-28, 10, 4, .01, .3, 1.6] : [0, 0, 1, .01, .3, 1];
+  ['threshold', 'knee', 'ratio', 'attack', 'release'].forEach((k, i) => { eqComp[k].value = m[i]; });
+  eqRealce.gain.value = m[5];
+}
 // ¿Deja el navegador cambiar el volumen? (el iPhone no)
 const volFijo = (() => { const a = new Audio(); a.volume = .5; return a.volume !== .5; })();
 
@@ -1408,6 +1424,9 @@ function getEqPlayer(){
         b.type = tipo; b.frequency.value = f; b.Q.value = 1; b.gain.value = eq.g[i];
         nodo.connect(b); nodo = b; eqFiltros.push(b);
       });
+      eqComp = actx.createDynamicsCompressor(); eqRealce = actx.createGain();
+      nodo.connect(eqComp); eqComp.connect(eqRealce); nodo = eqRealce;
+      aplicaComp();
       eqGanancia = actx.createGain(); eqGanancia.gain.value = eq.vol;
       nodo.connect(eqGanancia).connect(actx.destination);
       analizador = actx.createAnalyser(); analizador.fftSize = 1024; analizador.smoothingTimeConstant = .6;
@@ -1473,6 +1492,22 @@ $('eqOn').addEventListener('change', e => {
   updHint();
 });
 updHint();
+// Voces claras y mismo volumen necesitan el ecualizador encendido: se enciende solo
+function activaEqPor(){
+  const reconecta = !eq.on || audio !== audioEq;
+  if (!eq.on){ eq.on = true; $('eqOn').checked = true; $('eqPanel').classList.remove('off'); }
+  saveEq(); aplicaComp(); updHint();
+  if (reconecta && cur && !playingRec && !audio.paused) play(cur);
+}
+$('eqVoces').checked = !!eq.voces;
+$('eqIgualar').checked = !!eq.igualar;
+$('eqVoces').onchange = e => {
+  eq.voces = e.target.checked;
+  if (eq.voces){ eq.gAntes = [...eq.g]; EQ_PRESETS['Voces claras'].forEach((v, i) => setBanda(i, v, true)); }
+  else if (eq.gAntes){ eq.gAntes.forEach((v, i) => setBanda(i, v, true)); delete eq.gAntes; }
+  activaEqPor();
+};
+$('eqIgualar').onchange = e => { eq.igualar = e.target.checked; activaEqPor(); };
 
 /* ---------- Temporizador de apagado ---------- */
 const STEPS = [0, 15, 30, 60, 90];
@@ -2235,7 +2270,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '64', FECHA_VERSION = '19-11-2026';   // cambiar en cada versión nueva
+const VERSION = '65', FECHA_VERSION = '20-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4323,6 +4358,14 @@ function posicion(pos){
   if (seg > 120) paseo.aprox = true;                                // hubo un rato sin GPS (pantalla bloqueada)
   paseo.km = (paseo.km || 0) + d / 1000;
   paseo.ult = p;
+  const enteros = Math.floor(paseo.km);
+  if (enteros > (paseo.kmDicho || 0)){
+    paseo.kmDicho = enteros;
+    if (ajustes.kmVoz !== false && ajustes.recVoz !== false){
+      const ms = Date.now() - paseo.ini;
+      habla(`Llevas ${enteros === 1 ? 'un kilómetro' : enteros + ' kilómetros'}, en ${duracion(ms).replace('h', 'horas').replace('min', 'minutos')}. Vas a ${Math.round(ms / 60000 / paseo.km)} minutos por kilómetro.`);
+    }
+  }
   guardaPaseo(); pintaBotonPaseo();
 }
 function errorGPS(e){
@@ -4439,20 +4482,29 @@ function datosRadio(){
   const d = {};
   for (let i = 0; i < localStorage.length; i++){
     const k = localStorage.key(i);
-    if (k.startsWith('radio.') && !['radio.encendida', 'radio.hechos', 'radio.paseoAhora'].includes(k)) d[k] = localStorage.getItem(k);
+    if (k.startsWith('radio.') && !['radio.encendida', 'radio.hechos', 'radio.paseoAhora', 'radio.aparato'].includes(k)) d[k] = localStorage.getItem(k);
   }
   return d;
 }
+// Cada aparato (iPhone, ordenador...) guarda su propia copia, para que no se pisen unas a otras
+function nombreAparato(){
+  let n = ''; try { n = localStorage.getItem('radio.aparato') || ''; } catch(e){}
+  if (n) return n;
+  const u = navigator.userAgent;
+  return /iPhone/.test(u) ? 'iPhone' : /iPad/.test(u) ? 'iPad' : /Android/.test(u) ? 'Móvil Android' : /Windows/.test(u) ? 'Ordenador Windows' : /Linux/.test(u) ? 'Ordenador CachyOS' : /Mac/.test(u) ? 'Mac' : 'Aparato';
+}
+const claveAparato = n => sinAcentos(n).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'aparato';
 async function copiaGuardar(msg){
   msg.textContent = 'Guardando en el NAS…';
-  const cuerpo = JSON.stringify({v: 1, fecha: new Date().toISOString(), version: VERSION, aparato: navigator.platform || '', datos: datosRadio()});
+  const cuerpo = JSON.stringify({v: 2, fecha: new Date().toISOString(), nombre: nombreAparato(), version: VERSION, aparato: navigator.platform || '', datos: datosRadio()});
+  const ap = claveAparato(nombreAparato());
   const bytes = new TextEncoder().encode(cuerpo);
   // se manda en trozos: el NAS no admite envíos grandes de una vez.
   // Primero trozos de medio mega; si el NAS los rechaza, trozos pequeños de 12 KB (más lento, pero siempre entra).
   async function enviar(TROZO){
     const n = Math.max(1, Math.ceil(bytes.length / TROZO)), id = Date.now().toString(36);
     for (let i = 0; i < n; i++){
-      const r = await fetch(`copia.php?id=${id}&parte=${i}&de=${n}&total=${bytes.length}`, {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: new Blob([bytes.subarray(i * TROZO, (i + 1) * TROZO)])});
+      const r = await fetch(`copia.php?aparato=${ap}&id=${id}&parte=${i}&de=${n}&total=${bytes.length}`, {method: 'POST', headers: {'Content-Type': 'text/plain'}, body: new Blob([bytes.subarray(i * TROZO, (i + 1) * TROZO)])});
       if (r.status === 404) throw new Error('no encuentro copia.php en la carpeta radio del NAS. Hay que copiarlo allí.');
       const txt = await r.text();
       let j; try { j = JSON.parse(txt); } catch(e){
@@ -4469,10 +4521,10 @@ async function copiaGuardar(msg){
     msg.textContent = `Copia guardada en el NAS (${kb >= 1024 ? (kb / 1024).toLocaleString('es-ES', {maximumFractionDigits: 1}) + ' MB' : kb + ' KB'}). La copia anterior también se conserva.`;
   } catch(e){ msg.textContent = 'No se ha podido guardar: ' + (e.message === 'Failed to fetch' || e.message === 'Load failed' ? 'no llego al NAS. ¿Estás en el Wi-Fi de casa?' : e.message + (e.nas ? '. Abre http://192.168.178.130/radio/copia.php?diag=1 y mándale a Claude lo que salga.' : '')); }
 }
-async function copiaRecuperar(msg){
+async function copiaRecuperar(msg, clave = ''){
   msg.textContent = 'Leyendo la copia del NAS…';
   try {
-    const r = await fetch('copia.php?t=' + Date.now(), {cache: 'no-store'});
+    const r = await fetch(`copia.php?aparato=${clave}&t=` + Date.now(), {cache: 'no-store'});
     if (r.status === 404){ msg.textContent = 'Todavía no hay ninguna copia en el NAS.'; return; }
     const j = await r.json();
     if (!j.datos) throw new Error();
@@ -4481,6 +4533,28 @@ async function copiaRecuperar(msg){
     msg.textContent = 'Copia recuperada. Reiniciando…';
     setTimeout(() => location.replace(location.pathname + '?v=' + Date.now()), 1200);
   } catch(e){ msg.textContent = 'No se ha podido leer la copia del NAS.'; }
+}
+// Lista de copias del NAS, una por aparato, con su botón de recuperar
+async function copiasNAS(caja, msg){
+  caja.replaceChildren();
+  let l = [];
+  try { l = await (await fetch('copia.php?lista=1&t=' + Date.now(), {cache: 'no-store'})).json(); } catch(e){ return; }
+  if (!Array.isArray(l) || !l.length){ caja.append(note('Todavía no hay copias en el NAS.')); return; }
+  const mia = claveAparato(nombreAparato());
+  l.sort((a, b) => (b.clave === mia) - (a.clave === mia) || String(b.fecha).localeCompare(String(a.fecha)));
+  caja.append(Object.assign(document.createElement('p'), {className: 'note', innerHTML: '<b>Copias guardadas en el NAS:</b>'}));
+  l.forEach(c => {
+    const r = Object.assign(document.createElement('div'), {className: 'fila'});
+    const cuando = c.fecha ? new Date(c.fecha).toLocaleString('es-ES', {weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '¿?';
+    const t = `${c.clave === mia ? '👉 ' : ''}${c.nombre || (c.clave || 'Copia antigua')}${c.clave === mia ? ' (este aparato)' : ''} · ${cuando} · ${c.kb >= 1024 ? (c.kb / 1024).toFixed(1) + ' MB' : c.kb + ' KB'}`;
+    let seg = 0;
+    const b = boton('Recuperar', () => {
+      if (!seg){ b.textContent = '¿Sustituir lo de aquí?'; seg = setTimeout(() => { seg = 0; b.textContent = 'Recuperar'; }, 4000); return; }
+      clearTimeout(seg); copiaRecuperar(msg, c.clave);
+    }, 'btn');
+    r.append(Object.assign(document.createElement('span'), {textContent: t, style: 'flex:1 1 220px'}), b);
+    caja.append(r);
+  });
 }
 async function copiaFecha(msg){
   try {
@@ -4501,6 +4575,7 @@ function ajustesExtra(g, casilla){
   titulo('🗣 Voz');
   g.append(casilla('ajHoraVoz', 'Decir la hora en voz después de las campanadas', !!ajustes.horaVoz, v => { ajustes.horaVoz = v; guardaAjustes(); }));
   g.append(casilla('ajRecVoz', 'Leer en voz alta los recordatorios y el paseo', ajustes.recVoz !== false, v => { ajustes.recVoz = v; guardaAjustes(); }));
+  g.append(casilla('ajKmVoz', '   … y en el paseo, decir cada kilómetro que llevo', ajustes.kmVoz !== false, v => { ajustes.kmVoz = v; guardaAjustes(); }));
   const fh = fila(); fh.append(boton('🔊 Decir la hora ahora', diHora, 'btn')); g.append(fh);
 
   // Emisora según la hora
@@ -4568,15 +4643,18 @@ function ajustesExtra(g, casilla){
     msg.textContent = 'Solo funciona abriendo la radio desde el NAS (http://192.168.178.130/radio/). Aquí usa «Pasar ajustes» de Favoritas.';
     g.append(msg);
   } else {
+    const yo = Object.assign(document.createElement('p'), {className: 'note'});
+    const pintaYo = () => { yo.textContent = `Este aparato se llama «${nombreAparato()}». Cada aparato guarda su propia copia, así no se pisan.`; };
+    pintaYo();
+    const lista = document.createElement('div');
     const f = fila();
-    let segT = 0;
-    const rec = boton('Recuperar del NAS', () => {
-      if (!segT){ rec.textContent = '¿Sustituir lo de aquí?'; segT = setTimeout(() => { segT = 0; rec.textContent = 'Recuperar del NAS'; }, 4000); return; }
-      clearTimeout(segT); copiaRecuperar(msg);
-    }, 'btn');
-    f.append(boton('Guardar en el NAS', () => copiaGuardar(msg), 'btn'), rec);
-    g.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Guarda favoritas, memorias, fotos, cumpleaños, listas, recordatorios y ajustes. Las grabaciones no.'}), f, msg);
-    copiaFecha(msg);
+    f.append(boton('Guardar en el NAS', async () => { await copiaGuardar(msg); copiasNAS(lista, msg); }, 'btn'),
+      boton('Cambiar el nombre', () => {
+        const n = prompt('¿Cómo se llama este aparato? Por ejemplo: iPhone de Julio, Ordenador del salón', nombreAparato());
+        if (n && n.trim()){ try { localStorage.setItem('radio.aparato', n.trim().slice(0, 40)); } catch(e){} pintaYo(); copiasNAS(lista, msg); }
+      }, 'btn'));
+    g.append(Object.assign(document.createElement('p'), {className: 'note', textContent: 'Guarda favoritas, memorias, fotos, cumpleaños, listas, recordatorios y ajustes. Las grabaciones no.'}), yo, f, msg, lista);
+    copiasNAS(lista, msg);
   }
 }
 
@@ -5273,7 +5351,50 @@ async function diagnostico(caja){
 let cancFav = {};
 try { cancFav = JSON.parse(localStorage.getItem('radio.cancFav')) || {}; } catch(e){}
 const guardaCancFav = () => { try { localStorage.setItem('radio.cancFav', JSON.stringify(cancFav)); } catch(e){} };
-let histFiltro = {q: '', est: '', fav: false}, histTodas = [];
+let histFiltro = {q: '', est: '', fav: false, dia: '', hora: ''}, histTodas = [];
+// Mandar una canción a la familia (WhatsApp, mensajes...)
+async function compartirCancion(c){
+  const txt = `🎵 ${c.titulo || c.t}${c.artista ? ' – ' + c.artista : ''}\nLa he oído en ${c.est} con Mi Radio.\nEscúchala: https://music.youtube.com/search?q=${encodeURIComponent(c.t)}`;
+  if (navigator.share){ try { await navigator.share({text: txt}); return; } catch(e){ if (e.name === 'AbortError') return; } }
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener');
+}
+// ¿Qué favoritas dan la canción? Prueba todas, de tres en tres
+const COMO_TIT = {nas: 'Título dentro de la señal (NAS)', triton: 'Servicio Triton', icecast: 'Servidor Icecast'};
+async function comprobarFavoritas(caja){
+  caja.hidden = false; caja.replaceChildren();
+  if (!favs.length){ caja.append(note('No tienes emisoras favoritas.')); return; }
+  const res = [], ul = document.createElement('ul'); ul.className = 'cmp-lista';
+  const estado = note(`Comprobando ${favs.length} emisoras… (tarda un poco)`);
+  caja.append(estado, ul);
+  const orden = (enNAS() ? ['nas'] : []).concat(['triton', 'icecast']);
+  let hechas = 0;
+  async function una(s){
+    let t = '', como = '';
+    for (const m of orden){
+      try { t = await METODOS[m](s); } catch(e){ t = ''; }
+      if (t && cancionValida(t, s)){ como = m; break; }
+      t = '';
+    }
+    if (como) metodoEmisora[s.stationuuid] = como;
+    res.push({est: (s._label || s.name).trim(), t, como});
+    const li = document.createElement('li');
+    li.textContent = `${t ? '✅' : '❌'} ${(s._label || s.name).trim()} — ${t || 'no manda el título (o ahora está en anuncios)'}`;
+    ul.append(li);
+    estado.textContent = `Comprobando… ${++hechas} de ${favs.length}`;
+  }
+  const cola = favs.slice();
+  await Promise.all([1, 2, 3].map(async () => { while (cola.length) await una(cola.shift()); }));
+  guardaMetodo();
+  const si = res.filter(x => x.t).length;
+  estado.textContent = `${si} de ${res.length} favoritas dan la canción ahora mismo.` + (enNAS() ? ' Si alguna sale ❌, prueba otra vez más tarde: puede que estuviera en anuncios.' : ' En la radio de casa (NAS) salen muchas más.');
+  caja.append(boton('⬇ Descargar el resultado (Excel)', () => {
+    const q = v => '"' + String(v || '').replace(/"/g, '""') + '"', hoy = new Date();
+    const filas = [['Emisora', 'Canción y carátula', 'Cómo la da', 'Canción en ese momento', 'Fecha'].map(q).join(';')];
+    res.sort((a, b) => a.est.localeCompare(b.est, 'es')).forEach(x => filas.push([x.est, x.t ? 'Sí' : 'No', COMO_TIT[x.como] || '', x.t, hoy.toLocaleDateString('es-ES')].map(q).join(';')));
+    const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(new Blob(['\ufeff' + filas.join('\r\n')], {type: 'text/csv;charset=utf-8'})), download: `emisoras_con_cancion_${fechaISO(hoy)}.csv`});
+    document.body.append(a); a.click(); a.remove();
+  }, 'btn'));
+}
 function apuntaEnNAS(ent){
   if (!enNAS()) return;
   fetch('historial.php', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(ent)}).catch(() => {});
@@ -5299,7 +5420,10 @@ function csvHistorial(lista){
 function pintaListaHist(){
   const caja = $('cnLista'); caja.replaceChildren();
   const q = sinAcentos(histFiltro.q.trim());
-  const lista = histTodas.filter(c => (!histFiltro.est || c.est === histFiltro.est) && (!histFiltro.fav || cancFav[c.t]) &&
+  // buscar por día y hora: «¿qué sonaba ayer hacia las 10?» (media hora antes o después)
+  const [hh, mm] = (histFiltro.hora || '').split(':').map(Number), minBusca = histFiltro.hora ? hh * 60 + mm : null;
+  const okHora = c => { const d = new Date(c.h); return (!histFiltro.dia || fechaISO(d) === histFiltro.dia) && (minBusca == null || Math.abs(d.getHours() * 60 + d.getMinutes() - minBusca) <= 30); };
+  const lista = histTodas.filter(c => (!histFiltro.est || c.est === histFiltro.est) && (!histFiltro.fav || cancFav[c.t]) && okHora(c) &&
     (!q || sinAcentos([c.t, c.artista, c.titulo, c.disco, c.est].join(' ')).includes(q)));
   $('cnCuenta').textContent = `${lista.length} ${lista.length === 1 ? 'canción' : 'canciones'}`;
   if (!lista.length){ caja.append(note(histTodas.length ? 'Ninguna canción coincide con lo que buscas.' : 'Todavía no hay canciones. Pon una emisora musical: cuando la emisora manda el título, se apunta aquí solo.')); return; }
@@ -5318,7 +5442,9 @@ function pintaListaHist(){
     const star = document.createElement('button'); star.type = 'button'; star.className = 'star'; star.textContent = '★';
     star.setAttribute('aria-label', 'Canción favorita'); star.setAttribute('aria-pressed', !!cancFav[c.t]);
     star.onclick = () => { if (cancFav[c.t]) delete cancFav[c.t]; else cancFav[c.t] = 1; guardaCancFav(); star.setAttribute('aria-pressed', !!cancFav[c.t]); if (histFiltro.fav) pintaListaHist(); };
-    li.append(a, star); ul.append(li);
+    const comp = document.createElement('button'); comp.type = 'button'; comp.className = 'star cn-comp'; comp.textContent = '📤';
+    comp.setAttribute('aria-label', 'Mandar esta canción'); comp.onclick = () => compartirCancion(c);
+    li.append(a, comp, star); ul.append(li);
   });
   caja.append(ul);
   if (lista.length > 400) caja.append(note(`Se ven las 400 más recientes. Usa el buscador para encontrar las demás, o descarga la lista completa.`));
@@ -5326,6 +5452,9 @@ function pintaListaHist(){
 async function pintaCanciones(){
   const out = $('cnOut'); out.replaceChildren();
   $('cnPan').hidden = false;
+  if (cancionAhora && canciones[0] && canciones[0].t === cancionAhora) out.append(boton('📤 Mandar la canción que suena', () => compartirCancion(canciones[0]), 'btn'));
+  const cmp = document.createElement('div'); cmp.hidden = true;
+  out.append(boton('✅ Comprobar qué favoritas dan la canción', () => comprobarFavoritas(cmp), 'btn'), cmp);
   if (cur && enNAS()){
     const caja = Object.assign(document.createElement('pre'), {className: 'cn-diag'}); caja.hidden = true;
     out.append(boton('🔍 Comprobar por qué esta emisora no da el título', () => { caja.hidden = false; diagnostico(caja); }, 'btn'), caja);
@@ -5339,7 +5468,17 @@ async function pintaCanciones(){
   const fav = Object.assign(document.createElement('button'), {type: 'button', className: 'chip', textContent: '★ Solo mis favoritas'});
   fav.setAttribute('aria-pressed', histFiltro.fav);
   fav.onclick = () => { histFiltro.fav = !histFiltro.fav; fav.setAttribute('aria-pressed', histFiltro.fav); pintaListaHist(); };
-  f.append(bus, est, fav);
+  // ¿Qué sonaba…? día y hora
+  const ch = document.createElement('div'); ch.className = 'cn-hora';
+  const dia = Object.assign(document.createElement('input'), {type: 'date', className: 'field', value: histFiltro.dia});
+  const hora = Object.assign(document.createElement('input'), {type: 'time', className: 'field', value: histFiltro.hora});
+  dia.setAttribute('aria-label', 'Día'); hora.setAttribute('aria-label', 'Hacia la hora');
+  const pon = () => { histFiltro.dia = dia.value; histFiltro.hora = hora.value; pintaListaHist(); };
+  dia.onchange = hora.onchange = pon;
+  const atras = n => { const d = new Date(); d.setDate(d.getDate() - n); dia.value = fechaISO(d); pon(); };
+  ch.append(Object.assign(document.createElement('span'), {textContent: '¿Qué sonaba…?'}), boton('Hoy', () => atras(0), 'chip'), boton('Ayer', () => atras(1), 'chip'),
+    dia, Object.assign(document.createElement('span'), {textContent: 'hacia las'}), hora, boton('✕', () => { dia.value = hora.value = ''; pon(); }, 'chip'));
+  f.append(bus, est, fav, ch);
   const cuenta = Object.assign(document.createElement('p'), {className: 'note', id: 'cnCuenta', textContent: 'Cargando…'});
   const lista = Object.assign(document.createElement('div'), {id: 'cnLista'});
   const pie = document.createElement('div'); pie.className = 'fila';
@@ -5415,7 +5554,38 @@ function bibSig(d){
   if (li < 0 || li >= bibLibros.length) return;
   bibCap(bibLibros[li], bibLibros[li].caps[ci]);
 }
-audioNormal.addEventListener('ended', () => { if (podActual && podActual.biblia && bibSeguido) setTimeout(() => { if (podActual && podActual.biblia) bibSig(1); }, 1500); });
+// Plan de un año: los 1.189 capítulos repartidos en 365 días (3 o 4 capítulos al día)
+let bibPlanHechos = {};
+try { bibPlanHechos = JSON.parse(localStorage.getItem('radio.bibPlan')) || {}; } catch(e){}
+const bibTodos = () => bibLibros.flatMap(l => l.caps.map(c => ({l, c})));
+function diaDelAno(d = new Date()){ return Math.min(365, Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000)); }
+function lecturaDia(n){
+  const todos = bibTodos(), desde = Math.floor((n - 1) * todos.length / 365), hasta = Math.floor(n * todos.length / 365) - 1;
+  const a = todos[desde], b = todos[hasta];
+  const txt = a.l === b.l ? `${a.l.nombre} ${a.c.n}${hasta > desde ? '–' + b.c.n : ''}` : `${a.l.nombre} ${a.c.n} – ${b.l.nombre} ${b.c.n}`;
+  return {n, desde, hasta, txt, todos};
+}
+function empiezaLectura(n){
+  const L = lecturaDia(n), x = L.todos[L.desde];
+  bibCap(x.l, x.c);
+  if (podActual && podActual.biblia) podActual.plan = {dia: n, hasta: L.hasta};
+}
+audioNormal.addEventListener('ended', () => {
+  const a = podActual; if (!a || !a.biblia) return;
+  const plan = a.plan;
+  if (plan){
+    const i = bibTodos().findIndex(x => x.c === a.cap);
+    if (i >= plan.hasta){                                       // lectura de hoy terminada
+      bibPlanHechos[plan.dia] = Date.now();
+      try { localStorage.setItem('radio.bibPlan', JSON.stringify(bibPlanHechos)); } catch(e){}
+      setStatus('Lectura del día terminada');
+      if (ajustes.recVoz !== false) setTimeout(() => habla('Lectura del día terminada.'), 800);
+      if (!$('biPan').hidden) pintaBiblia();
+      return;
+    }
+  }
+  if (bibSeguido || plan) setTimeout(() => { if (podActual === a){ bibSig(1); if (plan && podActual && podActual.biblia) podActual.plan = plan; } }, 1500);
+});
 audioNormal.addEventListener('timeupdate', () => {
   if (!podActual || !podActual.biblia || $('biPan').hidden || !$('biTiempo')) return;
   const d = audio.duration || 0;
@@ -5451,6 +5621,14 @@ async function pintaBiblia(){
     const l = ult && bibLibros.find(x => x.clave === ult.libro), c = l && l.caps.find(x => x.n === ult.cap);
     if (c){ const p = podPos[bibId(c)]; out.append(boton(`▶ Seguir por donde lo dejé: ${l.nombre} ${c.n}` + (p && !p.fin && p.t > 5 ? ` (vas por ${fmtTime(p.t)})` : ''), () => bibCap(l, c), 'btn bib-seguir')); }
   }
+  // Lectura del día
+  const hoy = diaDelAno(), L = lecturaDia(hoy), hechos = Object.keys(bibPlanHechos).length;
+  const plan = document.createElement('div'); plan.className = 'bib-plan';
+  plan.append(Object.assign(document.createElement('div'), {className: 'bib-tit', textContent: `📅 Lectura de hoy: ${L.txt}`}),
+    note(`Día ${hoy} de 365 · Leyendo así, en un año escuchas la Biblia entera.` + (hechos ? ` Llevas ${hechos} ${hechos === 1 ? 'día' : 'días'} hechos.` : '') + (bibPlanHechos[hoy] ? ' ✓ La de hoy ya está.' : '')),
+    boton(bibPlanHechos[hoy] ? '▶ Volver a escuchar la de hoy' : '▶ Escuchar la lectura de hoy', () => empiezaLectura(hoy), 'btn bib-seguir'));
+  if (hoy > 1 && !bibPlanHechos[hoy - 1]) plan.append(boton(`Ayer: ${lecturaDia(hoy - 1).txt}`, () => empiezaLectura(hoy - 1), 'btn'));
+  out.append(plan);
   // Antiguo / Nuevo Testamento
   const tabs = document.createElement('div'); tabs.className = 'chips';
   [['AT', 'Antiguo Testamento'], ['NT', 'Nuevo Testamento']].forEach(([v, t]) => {
