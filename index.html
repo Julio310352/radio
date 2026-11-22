@@ -1503,6 +1503,7 @@ $('eqVoces').checked = !!eq.voces;
 $('eqIgualar').checked = !!eq.igualar;
 $('eqVoces').onchange = e => {
   eq.voces = e.target.checked;
+  if (typeof ajustes !== 'undefined'){ ajustes.vozClara = eq.voces; guardaAjustes(); marcaVozClara(); setStatus(eq.voces ? 'Voz clara: voces realzadas' : 'Voz clara apagada'); }
   if (eq.voces){ eq.gAntes = [...eq.g]; EQ_PRESETS['Voces claras'].forEach((v, i) => setBanda(i, v, true)); }
   else if (eq.gAntes){ eq.gAntes.forEach((v, i) => setBanda(i, v, true)); delete eq.gAntes; }
   activaEqPor();
@@ -2270,7 +2271,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '65', FECHA_VERSION = '20-11-2026';   // cambiar en cada versión nueva
+const VERSION = '66', FECHA_VERSION = '22-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
@@ -4699,20 +4700,9 @@ $('dApagar').addEventListener('click', () => { $('despierta').classList.remove('
 /* ---------- 3. Voz clara: realza las voces para entender mejor ---------- */
 const VOZ_CLARA = [-8, -3, 4, 6, 2];
 function marcaVozClara(){ $('pVoz').setAttribute('aria-pressed', !!ajustes.vozClara); $('pVoz').classList.toggle('activo', !!ajustes.vozClara); }
-$('pVoz').onclick = () => {
-  if (!ajustes.vozClara){
-    ajustes.eqAntes = {on: eq.on, g: [...eq.g]};
-    VOZ_CLARA.forEach((v, i) => setBanda(i, v, true));
-    if (!eq.on){ $('eqOn').checked = true; $('eqOn').dispatchEvent(new Event('change')); }
-    ajustes.vozClara = true; setStatus('Voz clara: voces realzadas');
-  } else {
-    const a = ajustes.eqAntes || {on: false, g: [0, 0, 0, 0, 0]};
-    a.g.forEach((v, i) => setBanda(i, v, true));
-    if (eq.on !== a.on){ $('eqOn').checked = a.on; $('eqOn').dispatchEvent(new Event('change')); }
-    ajustes.vozClara = false; setStatus('Voz clara apagada');
-  }
-  guardaAjustes(); marcaVozClara();
-};
+// El botón «Voz clara» y la casilla «Voces claras» del ecualizador son lo mismo
+$('pVoz').onclick = () => { const v = $('eqVoces'); v.checked = !v.checked; v.dispatchEvent(new Event('change')); };
+if (ajustes.vozClara && !eq.voces){ eq.voces = true; $('eqVoces').checked = true; saveEq(); aplicaComp(); }
 marcaVozClara();
 
 /* ---------- 4. Onda corta en directo (receptor de la Universidad de Twente) ---------- */
