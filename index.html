@@ -595,6 +595,16 @@ body.noche #nocheVelo{opacity:.5}
 .mini{min-width:44px;height:44px;background:none;border:0;color:var(--muted);font-size:14px;padding:0 6px}
 .mini.play{color:var(--dial);font-size:18px}
 .mini.warn{color:var(--needle);font-weight:600}
+/* v68: paneles más nítidos (en el ordenador se veían «como a través de un cristal») */
+.ajustesPan{font-size:17px}
+.ajustesPan .note{color:var(--text);font-size:16px;font-weight:500}
+.ajustesPan .btn,.ajustesPan .chip{color:var(--text);background:color-mix(in srgb,var(--dial) 22%,var(--bg));border:2px solid var(--text);font-weight:700;font-size:16px}
+.ajustesPan .btn:hover,.ajustesPan .chip:hover{background:color-mix(in srgb,var(--dial) 30%,var(--bg))}
+.ajustesPan .chip[aria-pressed="true"]{background:var(--dial);color:var(--bg);border-color:var(--dial)}
+.ajustesPan .field,.ajustesPan select{border:2px solid color-mix(in srgb,var(--text) 40%,var(--bg));color:var(--text);font-size:17px}
+.ajustesPan details.oc,.ajustesPan details.aj-grupo{border:2px solid color-mix(in srgb,var(--text) 45%,var(--bg))}
+.ajustesPan .not-cerrar{border-width:2px}
+.ajustesPan .cmp-lista,.ajustesPan .bib-libros .btn,.ajustesPan .bib-caps .btn{font-size:17px}
 </style>
 <script>
   // Interruptor: si la radio se apagó, al abrirla solo aparece el botón de encender
@@ -2272,7 +2282,7 @@ function dibujaOnda(){
 requestAnimationFrame(dibujaOnda);
 
 /* ---------- Versión ---------- */
-const VERSION = '67', FECHA_VERSION = '22-11-2026';   // cambiar en cada versión nueva
+const VERSION = '68', FECHA_VERSION = '22-11-2026';   // cambiar en cada versión nueva
 $('version').textContent = `Versión ${VERSION} · ${FECHA_VERSION}`;
 
 /* ---------- Resaltado de la emisora que suena ---------- */
